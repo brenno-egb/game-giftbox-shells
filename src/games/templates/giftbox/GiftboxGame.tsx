@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Andika } from "next/font/google";
+import { useWheelGame } from "@/games/core/hooks/useWheel";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -19,7 +20,7 @@ const btnGhost =
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <svg xmlns="http:
     <defs>
       <radialGradient id="g" cx="30%" cy="30%" r="70%">
         <stop offset="0" stop-color="rgba(255,255,255,.75)"/>
@@ -36,7 +37,7 @@ const PrizeItem = ({ prize }: { prize: any }) => (
     <img
       src={prize.icon || DEFAULT_ICON}
       alt={prize.name}
-      className="h-[34px] w-[34px] object-contain drop-shadow-[0_10px_16px_rgba(20,25,60,.16)]"
+      className="h-[34px] w-[34px] object-contain"
       decoding="async"
     />
     <div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[12px] leading-[1.1] text-slate-900/70">
@@ -46,194 +47,34 @@ const PrizeItem = ({ prize }: { prize: any }) => (
 );
 
 export default function GiftboxGame({ smartico, templateId, skin }: any) {
-  const [selectedGame, setSelectedGame] = useState<any>(null);
-  const [playerInfo, setPlayerInfo] = useState<any>(null);
-  const [pool, setPool] = useState<any[]>([]);
+  const gameState = useWheelGame({ smartico, templateId });
 
   const [phase, setPhase] = useState<"intro" | "roll">("intro");
-  const [playing, setPlaying] = useState(false);
-  const [canPlay, setCanPlay] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("Carregando…");
-
   const [targetPrizeIndex, setTargetPrizeIndex] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
   const [lastPrize, setLastPrize] = useState<any>(null);
-
   const [showRules, setShowRules] = useState(false);
   const [showWin, setShowWin] = useState(false);
-
-  // Countdown state
-  const [countdown, setCountdown] = useState<string | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentXRef = useRef<number>(0);
 
-  const strip = useMemo(() => Array(12).fill(pool).flat(), [pool]);
+  const pool = useMemo(() => gameState.game?.prizes || [], [gameState.game]);
+  const STRIP_TARGET = 140;
 
-  // Formatar countdown
-  const formatCountdown = useCallback((ms: number) => {
-    if (ms <= 0) return null;
-    
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+  const poolKey = useMemo(
+    () => pool.map((p: any) => String(p.id)).join("|"),
+    [pool]
+  );
 
-    if (days > 0) {
-      return `${days}d ${hours % 24}h ${minutes % 60}m`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds % 60}s`;
-    } else {
-      return `${seconds}s`;
-    }
-  }, []);
-
-  // Verificar se pode jogar
-  const checkCanPlay = useCallback((game: any, info: any) => {
-    console.log(game)
-    if (!game) return false;
-
-    // Verificar período ativo
-    const now = Date.now();
-    if (game.activeFromDate && now < game.activeFromDate) return false;
-    if (game.activeTillDate && now > game.activeTillDate) return false;
-
-    // Verificar se há próximo spin disponível
-    if (game.next_available_spin_ts) {
-      const nextAvailable = game.next_available_spin_ts;
-      if (now < nextAvailable) return false;
-    }
-
-    switch (game.saw_buyin_type) {
-      case "free":
-        return true;
-      case "spins":
-        const used = game.spin_count ?? 0;
-        const max = game.max_number_of_attempts ?? 0;
-        return used < max;
-      case "points":
-        return (game.buyin_cost_points ?? 0) <= (info?.ach_points_balance ?? 0);
-      default:
-        return true;
-    }
-  }, []);
-
-  // Atualizar countdown
-  useEffect(() => {
-    if (!selectedGame?.next_available_spin_ts) {
-      setCountdown(null);
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-        countdownIntervalRef.current = null;
-      }
-      return;
-    }
-
-    const updateCountdown = () => {
-      const now = Date.now();
-      const nextAvailable = selectedGame.next_available_spin_ts;
-      const remaining = nextAvailable - now;
-
-      if (remaining <= 0) {
-        setCountdown(null);
-        if (countdownIntervalRef.current) {
-          clearInterval(countdownIntervalRef.current);
-          countdownIntervalRef.current = null;
-        }
-        // Atualizar estado do jogo quando o countdown terminar
-        refreshState();
-      } else {
-        setCountdown(formatCountdown(remaining));
-      }
-    };
-
-    updateCountdown();
-    countdownIntervalRef.current = setInterval(updateCountdown, 1000);
-
-    return () => {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
-        countdownIntervalRef.current = null;
-      }
-    };
-  }, [selectedGame?.next_available_spin_ts, formatCountdown]);
-
-  useEffect(() => {
-    const loadGame = async () => {
-      try {
-        const [games, info] = await Promise.all([
-          smartico.api.getMiniGames(),
-          smartico.getPublicProps(),
-        ]);
-
-        const game = games.find(
-          (g: any) => String(g.id) === String(templateId)
-        );
-
-        if (!game) {
-          setStatusMessage("Jogo não encontrado");
-          return;
-        }
-
-        setSelectedGame(game);
-        setPlayerInfo(info);
-        setPool(Array.isArray(game.prizes) ? game.prizes : []);
-
-        const canPlayNow = checkCanPlay(game, info);
-        setCanPlay(canPlayNow);
-        
-        if (!canPlayNow) {
-          if (game.next_available_spin_ts && Date.now() < game.next_available_spin_ts) {
-            setStatusMessage("Aguarde o próximo giro disponível");
-          } else if (game.saw_buyin_type === "spins" && (game.spin_count ?? 0) === 0) {
-            setStatusMessage("Sem tentativas disponíveis");
-          } else {
-            setStatusMessage(game.no_attempts_message || "Indisponível.");
-          }
-        } else {
-          setStatusMessage("Pronto. Clique em Jogar.");
-        }
-      } catch (error) {
-        console.error("Erro ao carregar jogo:", error);
-        setStatusMessage("Erro ao carregar");
-      }
-    };
-
-    loadGame();
-  }, [smartico, templateId, checkCanPlay]);
-
-  const refreshState = useCallback(async () => {
-    try {
-      const [games, info] = await Promise.all([
-        smartico.api.getMiniGames(),
-        smartico.getPublicProps(),
-      ]);
-
-      const updated = games.find(
-        (g: any) => String(g.id) === String(selectedGame?.id)
-      );
-      if (updated) {
-        setSelectedGame(updated);
-        setPlayerInfo(info);
-        const canPlayNow = checkCanPlay(updated, info);
-        setCanPlay(canPlayNow);
-        
-        if (!canPlayNow && phase === "intro") {
-          if (updated.next_available_spin_ts && Date.now() < updated.next_available_spin_ts) {
-            setStatusMessage("Aguarde o próximo giro disponível");
-          } else {
-            setStatusMessage("Sem tentativas disponíveis");
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar:", error);
-    }
-  }, [smartico, selectedGame?.id, checkCanPlay, phase]);
+  const strip = useMemo(() => {
+    if (!pool.length) return [];
+    const repeats = Math.max(3, Math.ceil(STRIP_TARGET / pool.length));
+    return Array.from({ length: repeats }, () => pool).flat();
+  }, [poolKey]);
 
   const getStepPx = useCallback(() => {
     if (!trackRef.current) return 140;
@@ -256,12 +97,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   }, []);
 
   const animateTo = useCallback(
-    (
-      fromX: number,
-      toX: number,
-      durationMs: number,
-      onUpdate: (x: number) => void
-    ) => {
+    (fromX: number, toX: number, durationMs: number) => {
       return new Promise<void>((resolve) => {
         const startTime = performance.now();
 
@@ -271,11 +107,16 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           const eased = easeOutCubic(progress);
           const newX = fromX + (toX - fromX) * eased;
 
-          onUpdate(newX);
+          currentXRef.current = newX;
+
+          if (trackRef.current) {
+            trackRef.current.style.transform = `translate3d(${newX}px, 0, 0)`;
+          }
 
           if (progress < 1) {
             rafRef.current = requestAnimationFrame(tick);
           } else {
+            setCurrentX(newX);
             resolve();
           }
         };
@@ -287,101 +128,71 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   );
 
   const playGame = useCallback(async () => {
-    if (!selectedGame || !canPlay || playing) return;
+    if (!gameState.canPlay || gameState.isPlaying || isAnimating) return;
 
-    setPlaying(true);
-    setStatusMessage("Abrindo…");
+    setIsAnimating(true);
+
     setChestOpen(false);
+    setTargetPrizeIndex(null);
+    setLastPrize(null);
+    setCurrentX(0);
+    currentXRef.current = 0;
+    if (trackRef.current) {
+      trackRef.current.style.transform = "translate3d(0px, 0, 0)";
+    }
 
-    try {
-      const result = await smartico.api.playMiniGame(selectedGame.id);
+    const result = await gameState.play();
 
-      if (result?.err_code !== 0) {
-        console.error("Erro playMiniGame:", result);
-        setStatusMessage("Falha ao jogar. Tente novamente.");
-        setPlaying(false);
-        return;
-      }
+    if (!result) {
+      setIsAnimating(false);
+      return;
+    }
 
-      const prizeId = result?.prize_id != null ? String(result.prize_id) : "";
-      const prize = prizeId
-        ? pool.find((p) => String(p.id) === prizeId) || null
-        : null;
+    const prizeId = result?.prize_id != null ? String(result.prize_id) : "";
+    const prize = prizeId
+      ? pool.find((p) => String(p.id) === prizeId) || null
+      : null;
 
-      const startIndex = Math.floor(strip.length * 0.65);
-      let targetIndex = startIndex;
+    const startIndex = Math.floor(strip.length * 0.65);
+    let targetIndex = startIndex;
 
-      if (prizeId) {
-        for (let i = startIndex; i < strip.length; i++) {
-          if (String(strip[i]?.id) === prizeId) {
-            targetIndex = i;
-            break;
-          }
+    if (prizeId) {
+      for (let i = startIndex; i < strip.length; i++) {
+        if (String(strip[i]?.id) === prizeId) {
+          targetIndex = i;
+          break;
         }
       }
-
-      setChestOpen(true);
-      setTargetPrizeIndex(targetIndex);
-
-      const kick = getStepPx() * 6;
-      let tempX = currentX;
-
-      await animateTo(tempX, tempX - kick, 220, (x) => {
-        tempX = x;
-        setCurrentX(x);
-      });
-
-      const toX = getTargetX(targetIndex, tempX);
-      await animateTo(tempX, toX, 2400, setCurrentX);
-
-      setStatusMessage("Resultado!");
-      setLastPrize(prize);
-      setShowWin(true);
-
-      await refreshState();
-    } catch (error) {
-      console.error("Erro ao jogar:", error);
-      setStatusMessage("Erro no playMiniGame.");
-    } finally {
-      setPlaying(false);
     }
-  }, [
-    selectedGame,
-    canPlay,
-    playing,
-    pool,
-    strip,
-    getStepPx,
-    animateTo,
-    getTargetX,
-    currentX,
-    refreshState,
-  ]);
+
+    setChestOpen(true);
+    setTargetPrizeIndex(targetIndex);
+
+    const kick = getStepPx() * 6;
+    const startX = currentXRef.current;
+
+    await animateTo(startX, startX - kick, 220);
+
+    const toX = getTargetX(targetIndex, currentXRef.current);
+    await animateTo(currentXRef.current, toX, 2400);
+
+    setLastPrize(prize);
+    setShowWin(true);
+    setIsAnimating(false);
+
+    await gameState.refresh();
+  }, [gameState, isAnimating, pool, strip, getStepPx, animateTo, getTargetX]);
 
   const goToRoll = useCallback(() => {
-    if (!canPlay || !selectedGame) return;
+    if (!gameState.canPlay || !gameState.game) return;
     setPhase("roll");
-    setStatusMessage("Pronto para girar.");
-  }, [canPlay, selectedGame]);
+  }, [gameState.canPlay, gameState.game]);
 
   const goToIntro = useCallback(() => {
     setPhase("intro");
     setChestOpen(false);
     setTargetPrizeIndex(null);
-    setStatusMessage(canPlay ? "Pronto. Clique em Jogar." : "Sem tentativas disponíveis");
-  }, [canPlay]);
-
-  const reset = useCallback(() => {
-    setChestOpen(false);
-    setTargetPrizeIndex(null);
-    setLastPrize(null);
-    setCurrentX(0);
-    setStatusMessage(
-      phase === "intro" 
-        ? (canPlay ? "Pronto. Clique em Jogar." : "Sem tentativas disponíveis")
-        : "Pronto para girar."
-    );
-  }, [phase, canPlay]);
+  }, []);
 
   const closeWin = useCallback(() => {
     setShowWin(false);
@@ -393,12 +204,16 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   }, [lastPrize, smartico]);
 
   useEffect(() => {
-    if (!trackRef.current || targetPrizeIndex === null || playing) return;
+    if (!trackRef.current || targetPrizeIndex === null || isAnimating) return;
 
     const handleResize = () => {
-      if (!playing && targetPrizeIndex !== null) {
-        const toX = getTargetX(targetPrizeIndex, currentX);
+      if (!isAnimating && targetPrizeIndex !== null) {
+        const toX = getTargetX(targetPrizeIndex, currentXRef.current);
+        currentXRef.current = toX;
         setCurrentX(toX);
+        if (trackRef.current) {
+          trackRef.current.style.transform = `translate3d(${toX}px, 0, 0)`;
+        }
       }
     };
 
@@ -412,96 +227,13 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       resizeObserver.disconnect();
       window.removeEventListener("resize", handleResize);
     };
-  }, [targetPrizeIndex, playing, getTargetX, currentX]);
+  }, [targetPrizeIndex, isAnimating, getTargetX]);
 
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
-
-  // Display de tentativas melhorado
-  const attemptsDisplay = useMemo(() => {
-    if (!selectedGame) {
-      return (
-        <>
-          <div className="text-xs text-slate-600">Tentativas</div>
-          <div className="text-base font-black">—</div>
-        </>
-      );
-    }
-
-    if (selectedGame.saw_buyin_type === "free") {
-      return (
-        <>
-          <div className="text-xs text-slate-600">Modo</div>
-          <div className="text-base font-black">Grátis</div>
-        </>
-      );
-    }
-
-    if (selectedGame.saw_buyin_type === "spins") {
-      const remaining = selectedGame.spin_count ?? 0;
-      const maxAttempts = selectedGame.max_number_of_attempts ?? 0;
-      const used = maxAttempts > 0 ? maxAttempts - remaining : 0;
-
-      return (
-        <>
-          <div className="text-xs text-slate-600">
-            {countdown ? "Próximo em" : "Tentativas"}
-          </div>
-          <div className="text-base font-black">
-            {countdown ? (
-              <span className="text-orange-600">{countdown}</span>
-            ) : (
-              <>
-                {remaining > 0 ? (
-                  maxAttempts > 0 ? (
-                    <span>
-                      {remaining} <span className="text-xs text-slate-500">/ {maxAttempts}</span>
-                    </span>
-                  ) : (
-                    remaining
-                  )
-                ) : (
-                  <span className="text-red-600">0</span>
-                )}
-              </>
-            )}
-          </div>
-        </>
-      );
-    }
-
-    if (selectedGame.saw_buyin_type === "points") {
-      const cost = selectedGame.buyin_cost_points ?? 0;
-      const balance = playerInfo?.ach_points_balance ?? 0;
-
-      return (
-        <>
-          <div className="text-xs text-slate-600">
-            {countdown ? "Próximo em" : `Pontos (custo: ${cost})`}
-          </div>
-          <div className="text-base font-black">
-            {countdown ? (
-              <span className="text-orange-600">{countdown}</span>
-            ) : (
-              <span className={balance >= cost ? "" : "text-red-600"}>
-                {balance}
-              </span>
-            )}
-          </div>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <div className="text-xs text-slate-600">Status</div>
-        <div className="text-base font-black">Indisponível</div>
-      </>
-    );
-  }, [selectedGame, canPlay, playerInfo, countdown]);
 
   const prizeLabel = useMemo(() => {
     if (!lastPrize) return "Jogada concluída.";
@@ -511,6 +243,22 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       lastPrize.name
     }`;
   }, [lastPrize]);
+
+  if (gameState.isLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="text-lg font-bold">Carregando jogo...</div>
+      </div>
+    );
+  }
+
+  if (gameState.error) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="text-lg font-bold text-red-600">{gameState.error}</div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -525,10 +273,10 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         {/* Header */}
         <div className="mb-3">
           <div className="text-[22px] font-extrabold">
-            {selectedGame?.name || "Carregando…"}
+            {gameState.game?.name || "Carregando…"}
           </div>
           <div className="mt-1 text-sm text-slate-600">
-            {selectedGame?.promo_text || "Preparando o baú"}
+            {gameState.game?.promo_text || "Preparando o baú"}
           </div>
         </div>
 
@@ -542,28 +290,33 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                   ? "Primeiro: aperte Jogar. Depois: abra o baú na roleta."
                   : "Clique em Abrir Baú para girar e revelar o prêmio."}
               </div>
-              <div className="mt-2 text-sm font-extrabold">{statusMessage}</div>
+              <div className="mt-2 text-sm font-extrabold">
+                {gameState.statusMessage}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2.5">
-              <div className="text-right">{attemptsDisplay}</div>
+              {/* 🎯 Usar attemptsDisplay do hook */}
+              <div className="text-right">
+                <div className="text-xs text-slate-600">
+                  {gameState.attemptsDisplay.label}
+                </div>
+                <div
+                  className={`text-base font-black ${
+                    gameState.attemptsDisplay.valueColor || ""
+                  }`}
+                >
+                  {gameState.attemptsDisplay.value}
+                </div>
+              </div>
 
               <button
                 className={btnGhost}
                 onClick={() => setShowRules(true)}
-                disabled={!selectedGame || playing}
+                disabled={!gameState.game || isAnimating}
                 type="button"
               >
                 Regras
-              </button>
-
-              <button
-                className={btnGhost}
-                onClick={reset}
-                disabled={playing || phase !== "roll"}
-                type="button"
-              >
-                Reset
               </button>
             </div>
           </div>
@@ -578,10 +331,12 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                     Um baú misterioso apareceu…
                   </div>
                   <div className="mt-1.5 text-[13px] text-slate-600">
-                    {canPlay ? (
-                      <>Clique em <b>Jogar</b> para revelar a roleta.</>
-                    ) : countdown ? (
-                      <>Aguarde {countdown} para o próximo giro.</>
+                    {gameState.canPlay ? (
+                      <>
+                        Clique em <b>Jogar</b> para revelar a roleta.
+                      </>
+                    ) : gameState.countdown ? (
+                      <>Aguarde {gameState.countdown} para o próximo giro.</>
                     ) : (
                       <>Você não tem tentativas disponíveis no momento.</>
                     )}
@@ -589,7 +344,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
                   {/* Chest */}
                   <div
-                    className={`relative mx-auto my-3 h-[140px] w-[170px] scale-[1.05] drop-shadow-[0_18px_45px_rgba(20,25,60,.22)] ${
+                    className={`relative mx-auto my-3 h-[140px] w-[170px] scale-[1.05] ${
                       chestOpen ? "open" : ""
                     }`}
                     aria-hidden="true"
@@ -609,24 +364,32 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                     {/* Base */}
                     <div className="absolute bottom-0 left-0 right-0 h-[92px] rounded-[18px] bg-[linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.65))] shadow-[inset_0_0_0_1px_rgba(20,25,60,.10)]" />
                     {/* Lock */}
-                    <div className={`absolute bottom-[30px] left-1/2 h-[46px] w-[46px] -translate-x-1/2 rounded-[14px] shadow-[inset_0_0_0_1px_rgba(20,25,60,.10)] transition-colors ${
-                      canPlay ? "bg-slate-900/5" : "bg-red-500/10"
-                    }`}>
-                      <div className={`absolute left-1/2 top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-[6px] transition-all ${
-                        canPlay 
-                          ? "bg-[rgba(196,113,237,.25)] shadow-[0_0_16px_rgba(196,113,237,.18)]"
-                          : "bg-red-500/30 shadow-[0_0_16px_rgba(239,68,68,.15)]"
-                      }`} />
+                    <div
+                      className={`absolute bottom-[30px] left-1/2 h-[46px] w-[46px] -translate-x-1/2 rounded-[14px] shadow-[inset_0_0_0_1px_rgba(20,25,60,.10)] transition-colors ${
+                        gameState.canPlay ? "bg-slate-900/5" : "bg-red-500/10"
+                      }`}
+                    >
+                      <div
+                        className={`absolute left-1/2 top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-[6px] transition-all ${
+                          gameState.canPlay
+                            ? "bg-[rgba(196,113,237,.25)] shadow-[0_0_16px_rgba(196,113,237,.18)]"
+                            : "bg-red-500/30 shadow-[0_0_16px_rgba(239,68,68,.15)]"
+                        }`}
+                      />
                     </div>
                   </div>
 
                   <button
                     className={btnPrimary + " px-4 py-3 text-[15px]"}
                     onClick={goToRoll}
-                    disabled={playing || !selectedGame || !canPlay}
+                    disabled={
+                      isAnimating || !gameState.game || !gameState.canPlay
+                    }
                     type="button"
                   >
-                    {!canPlay && countdown ? `Aguarde (${countdown})` : "Jogar"}
+                    {!gameState.canPlay && gameState.countdown
+                      ? `Aguarde (${gameState.countdown})`
+                      : "Jogar"}
                   </button>
 
                   <div className="mt-2 text-xs text-slate-600">
@@ -639,7 +402,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             {/* FASE 2 - Roleta */}
             {phase === "roll" && (
               <div className="flex h-full items-center justify-center">
-                <div className="relative w-full max-w-[760px] overflow-hidden rounded-[18px] border border-slate-900/10 bg-white/80 p-3 shadow-[0_20px_70px_rgba(20,25,60,.12)]">
+                <div className="relative w-full max-w-190 overflow-hidden rounded-[18px] border border-slate-900/10 bg-white/80 p-3 shadow-[0_20px_70px_rgba(20,25,60,.12)]">
                   <div className="mb-2.5">
                     <div className="text-base font-black">Roleta do Baú</div>
                     <div className="mt-0.5 text-xs text-slate-600">
@@ -648,7 +411,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                   </div>
 
                   {/* Seta */}
-                  <div className="absolute left-1/2 top-12 z-[5] h-[96px] w-[3px] -translate-x-[1px] rounded bg-[rgba(18,194,233,.55)] shadow-[0_0_18px_rgba(18,194,233,.22)]" />
+                  <div className="absolute left-1/2 top-12 z-5 h-24 w-0.75 -translate-x-px rounded bg-[rgba(18,194,233,.55)] shadow-[0_0_18px_rgba(18,194,233,.22)]" />
 
                   {/* Track */}
                   <div className="relative h-[100px] overflow-hidden rounded-[14px] bg-slate-900/5 shadow-[inset_0_0_0_1px_rgba(20,25,60,.08)]">
@@ -657,9 +420,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                       className="absolute left-0 top-[7px] flex gap-2.5 will-change-transform"
                       style={{
                         transform: `translate3d(${currentX}px, 0, 0)`,
-                        transition: playing
-                          ? "none"
-                          : "transform 140ms ease-out",
                       }}
                     >
                       {strip.map((prize, idx) => (
@@ -672,7 +432,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                     <button
                       className={btnPrimary + " px-4 py-3 text-[15px]"}
                       onClick={playGame}
-                      disabled={playing || !canPlay}
+                      disabled={isAnimating || !gameState.canPlay}
                       type="button"
                     >
                       Abrir Baú
@@ -681,7 +441,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                     <button
                       className={btnGhost}
                       onClick={goToIntro}
-                      disabled={playing}
+                      disabled={isAnimating}
                       type="button"
                     >
                       Voltar
@@ -714,9 +474,9 @@ Fluxo:
 2) Abre a roleta e clica "Abrir Baú"
 3) O Smartico decide o prêmio (playMiniGame) e a roleta para exatamente nele.
 
-Tentativas: ${selectedGame?.max_number_of_attempts ?? 0} no total${
-                selectedGame?.description
-                  ? `\n\n(Regras do BackOffice)\n${selectedGame.description}`
+Tentativas: ${gameState.game?.max_number_of_attempts ?? 0} no total${
+                gameState.game?.description
+                  ? `\n\n(Regras do BackOffice)\n${gameState.game.description}`
                   : ""
               }`}
             </div>
