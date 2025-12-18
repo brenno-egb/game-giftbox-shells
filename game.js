@@ -43,17 +43,21 @@ let strip = [];       // sequência repetida na roleta
 let playing = false;
 let currentX = 0;
 
-// layout (precisa bater com CSS)
-const ITEM_W = 128;
-const GAP = 10;
-const STEP = ITEM_W + GAP;
+let phase = 'intro';         // 'intro' | 'roll'
+let lastStopIndex = null;    // índice exato onde parou (no strip)
+let lastPrize = null;        // prêmio da última jogada (pra dp correto)
+let pendingRealign = false;
+
+let initialized = false;
+let ro = null;
 
 // ---------- helpers ----------
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+const strId = (v) => (v === null || v === undefined ? '' : String(v));
 
-const setPhase = (phase) => {
-  // phase: 'intro' | 'roll'
+const setPhase = (next) => {
+  phase = next;
   if (phase === 'intro') {
     sceneIntro.classList.remove('is-hidden');
     sceneRoll.classList.add('is-hidden');
@@ -64,6 +68,23 @@ const setPhase = (phase) => {
     sceneRoll.classList.remove('is-hidden');
     elStatus.textContent = 'Pronto para girar.';
   }
+  updateButtons();
+};
+
+const updateButtons = () => {
+  const hasGame = !!selectedGame;
+  const ok = !!canPlay;
+
+  // Botões gerais
+  elRulesBtn.disabled = !hasGame || playing;
+  elResetBtn.disabled = playing || phase !== 'roll';
+
+  // Fase intro
+  playBtn.disabled = playing || phase !== 'intro' || !hasGame || !ok;
+
+  // Fase roll
+  openBtn.disabled = playing || phase !== 'roll' || !hasGame || !ok;
+  backBtn.disabled = playing || phase !== 'roll';
 };
 
 const SAWCanPlay = (game, pointsBalance) => {
@@ -79,19 +100,37 @@ const SAWCanPlay = (game, pointsBalance) => {
 };
 
 const setAttemptsUI = (game, info, ok) => {
-  if (!game) { elAttemptsLabel.textContent = 'Tentativas'; elAttemptsValue.textContent = '—'; return; }
+  if (!game) {
+    elAttemptsLabel.textContent = 'Tentativas';
+    elAttemptsValue.textContent = '—';
+    return;
+  }
 
-  if (game.saw_buyin_type === 'free') { elAttemptsLabel.textContent = ''; elAttemptsValue.textContent = 'Free'; return; }
+  if (game.saw_buyin_type === 'free') {
+    elAttemptsLabel.textContent = '';
+    elAttemptsValue.textContent = 'Free';
+    return;
+  }
 
   if (game.saw_buyin_type === 'spins') {
-    if (ok) { elAttemptsLabel.textContent = 'Tentativas'; elAttemptsValue.textContent = String(game.spin_count ?? 0); }
-    else { elAttemptsLabel.textContent = game.no_attempts_message || 'Sem tentativas'; elAttemptsValue.textContent = ''; }
+    if (ok) {
+      elAttemptsLabel.textContent = 'Tentativas';
+      elAttemptsValue.textContent = String(game.spin_count ?? 0);
+    } else {
+      elAttemptsLabel.textContent = game.no_attempts_message || 'Sem tentativas';
+      elAttemptsValue.textContent = '';
+    }
     return;
   }
 
   if (game.saw_buyin_type === 'points') {
-    if (ok) { elAttemptsLabel.textContent = 'Pontos'; elAttemptsValue.textContent = String(info?.ach_points_balance ?? 0); }
-    else { elAttemptsLabel.textContent = game.no_attempts_message || 'Sem pontos'; elAttemptsValue.textContent = ''; }
+    if (ok) {
+      elAttemptsLabel.textContent = 'Pontos';
+      elAttemptsValue.textContent = String(info?.ach_points_balance ?? 0);
+    } else {
+      elAttemptsLabel.textContent = game.no_attempts_message || 'Sem pontos';
+      elAttemptsValue.textContent = '';
+    }
     return;
   }
 
@@ -100,29 +139,34 @@ const setAttemptsUI = (game, info, ok) => {
 };
 
 const prizeLabel = (prize) => {
-  if (!prize) return 'Resultado sem detalhes.';
+  if (!prize) return 'Jogada concluída.';
   if (prize.prize_type === 'no-prize') return prize.aknowledge_message || 'Quase!';
   return `${prize.aknowledge_message ?? 'Parabéns! Você ganhou'} ${prize.name}`;
 };
 
 const openRules = () => {
-  const backofficeRules = selectedGame?.description ? `\n\n(Regras do BackOffice)\n${selectedGame.description}` : '';
+  const backofficeRules = selectedGame?.description
+    ? `\n\n(Regras do BackOffice)\n${selectedGame.description}`
+    : '';
+
   rulesBody.textContent =
-`🧰 Baú Giratório (estilo case)
+`🧰 Baú Giratório
 
 Fluxo:
-1) Você vê o baú e clica "Jogar"
-2) Aparece a roleta e você clica "Abrir Baú"
-3) A roleta para no prêmio sorteado pelo Smartico
-
-Obs: os itens exibidos vêm de getMiniGames().prizes (quando disponível).` + backofficeRules;
+1) Você clica "Jogar"
+2) Abre a roleta e clica "Abrir Baú"
+3) O Smartico decide o prêmio (playMiniGame) e a roleta para exatamente nele.` + backofficeRules;
 
   rulesBackdrop.classList.remove('is-hidden');
 };
 const closeRulesModal = () => rulesBackdrop.classList.add('is-hidden');
 
 const openWin = (prize) => {
-  winTitle.textContent = (prize?.prize_type === 'no-prize') ? 'Quase!' : 'Você ganhou!';
+  lastPrize = prize || null;
+
+  const isNoPrize = prize?.prize_type === 'no-prize';
+  winTitle.textContent = isNoPrize ? 'Quase!' : (prize ? 'Você ganhou!' : 'Resultado');
+
   winText.textContent = prizeLabel(prize);
 
   if (prize?.icon) {
@@ -138,24 +182,24 @@ const openWin = (prize) => {
 
 const closeWinModal = () => {
   winBackdrop.classList.add('is-hidden');
+
+  // ✅ ack/track do prêmio certo (quando existir)
   try {
-    const dp = selectedGame?.prizes?.[0]?.acknowledge_dp;
-    if (window._smartico && dp) _smartico.dp(dp);
-  } catch (e) {}
+    const dp = lastPrize?.acknowledge_dp;
+    if (window._smartico && typeof _smartico?.dp === 'function' && dp) {
+      _smartico.dp(dp);
+    }
+  } catch (e) {
+    // silencioso
+  } finally {
+    lastPrize = null;
+  }
 };
 
-// fallback se prizes não vierem
-const fallbackPool = () => ([
-  { id: 'f1', name: 'Moedas', icon: null, prize_type: 'reward' },
-  { id: 'f2', name: 'Ticket', icon: null, prize_type: 'reward' },
-  { id: 'f3', name: 'XP Boost', icon: null, prize_type: 'reward' },
-  { id: 'f4', name: 'Quase!', icon: null, prize_type: 'no-prize', aknowledge_message: 'Quase!' },
-  { id: 'f5', name: 'Surpresa', icon: null, prize_type: 'reward' },
-]);
-
+// ---------- UI: roleta ----------
 const normalizePool = (game) => {
   const prizes = Array.isArray(game?.prizes) ? game.prizes : [];
-  return prizes.length ? prizes : fallbackPool();
+  return prizes;
 };
 
 const renderItem = (p) => {
@@ -163,6 +207,8 @@ const renderItem = (p) => {
   div.className = 'item';
 
   const img = document.createElement('img');
+  img.decoding = 'async';
+
   if (p?.icon) {
     img.src = p.icon;
   } else {
@@ -190,8 +236,12 @@ const renderItem = (p) => {
 };
 
 const buildStrip = (poolIn) => {
-  const repeats = 10;
+  // sempre zera “parada anterior”, porque o DOM vai ser reconstruído
+  lastStopIndex = null;
+
+  const repeats = 12;
   strip = [];
+
   for (let r = 0; r < repeats; r++) {
     for (const p of poolIn) strip.push(p);
   }
@@ -200,16 +250,29 @@ const buildStrip = (poolIn) => {
   for (const p of strip) track.appendChild(renderItem(p));
 
   currentX = 0;
-  track.style.transform = `translateX(${currentX}px)`;
+  track.style.transform = `translate3d(${currentX}px,0,0)`;
 };
 
-const getViewportCenterX = () => {
+// distância entre itens (usando DOM real, não CSS hardcoded)
+const getStepPx = () => {
+  const a = track.children[0];
+  const b = track.children[1];
+  if (a && b) return b.offsetLeft - a.offsetLeft;
+  if (a) return a.offsetWidth + 10;
+  return 140;
+};
+
+const getToXForIndex = (index) => {
   const viewport = track.parentElement; // .viewport
-  const rect = viewport.getBoundingClientRect();
-  return rect.width / 2;
-};
+  const item = track.children[index];
 
-const itemCenterAt = (index) => index * STEP + (ITEM_W / 2);
+  if (!viewport || !item) return currentX;
+
+  const viewportCenter = viewport.clientWidth / 2;
+  const itemCenter = item.offsetLeft + item.offsetWidth / 2;
+
+  return Math.round(viewportCenter - itemCenter);
+};
 
 const animateTo = (toX, durationMs) => new Promise((resolve) => {
   const fromX = currentX;
@@ -219,7 +282,7 @@ const animateTo = (toX, durationMs) => new Promise((resolve) => {
     const t = clamp((now - start) / durationMs, 0, 1);
     const e = easeOutCubic(t);
     currentX = fromX + (toX - fromX) * e;
-    track.style.transform = `translateX(${currentX}px)`;
+    track.style.transform = `translate3d(${currentX}px,0,0)`;
 
     if (t < 1) requestAnimationFrame(tick);
     else resolve();
@@ -227,6 +290,20 @@ const animateTo = (toX, durationMs) => new Promise((resolve) => {
 
   requestAnimationFrame(tick);
 });
+
+const realignToStop = async (animate = false) => {
+  if (lastStopIndex == null) return;
+
+  const toX = getToXForIndex(lastStopIndex);
+
+  if (!animate) {
+    currentX = toX;
+    track.style.transform = `translate3d(${currentX}px,0,0)`;
+    return;
+  }
+
+  await animateTo(toX, 140);
+};
 
 // ---------- Smartico calls ----------
 const refreshState = async () => {
@@ -236,21 +313,21 @@ const refreshState = async () => {
   miniGames = games;
   playerInfo = info;
 
-  const updated = games.find(g => g.id === selectedGame?.id);
+  // mantém selectedGame atualizado (spin_count etc.)
+  const updated = games.find(g => strId(g.id) === strId(selectedGame?.id));
   if (updated) selectedGame = updated;
 
   canPlay = SAWCanPlay(selectedGame, playerInfo?.ach_points_balance);
   setAttemptsUI(selectedGame, playerInfo, canPlay);
 
-  // botões por fase
-  playBtn.disabled = !canPlay || playing;
-  openBtn.disabled = !canPlay || playing;
-  backBtn.disabled = playing;
-  elResetBtn.disabled = playing;
+  updateButtons();
 };
 
 const spinAndReveal = async () => {
   if (playing) return;
+  if (!selectedGame) return;
+
+  // cheque local (sem fallback)
   if (!canPlay) {
     chest.classList.add('shake');
     setTimeout(() => chest.classList.remove('shake'), 420);
@@ -258,17 +335,14 @@ const spinAndReveal = async () => {
   }
 
   playing = true;
-  playBtn.disabled = true;
-  openBtn.disabled = true;
-  backBtn.disabled = true;
-  elResetBtn.disabled = true;
-  elRulesBtn.disabled = true;
+  pendingRealign = false;
+  updateButtons();
 
-  chest.classList.remove('open');
   elStatus.textContent = 'Abrindo…';
+  chest.classList.remove('open');
 
   try {
-    // pega resultado primeiro (pra parar exatamente no prize)
+    // 1) resultado vem do Smartico
     const result = await window._smartico.api.playMiniGame(selectedGame.id);
 
     if (result?.err_code !== 0) {
@@ -279,32 +353,44 @@ const spinAndReveal = async () => {
       return;
     }
 
-    const prizeId = result?.prize_id || null;
-    const prize = prizeId ? (pool.find(p => p.id === prizeId) || null) : null;
+    const prizeId = result?.prize_id != null ? strId(result.prize_id) : '';
+    const prize = prizeId
+      ? (pool.find(p => strId(p.id) === prizeId) || null)
+      : null;
 
     chest.classList.add('open');
 
-    const viewportCenter = getViewportCenterX();
-    const baseIndex = Math.floor(strip.length * 0.75);
-    let targetIndex = baseIndex;
+    // 2) escolher um índice FUTURO no strip que corresponda ao prizeId
+    const startIndex = Math.max(0, Math.floor(strip.length * 0.65));
+    let targetIndex = startIndex;
 
     if (prizeId) {
-      for (let i = baseIndex; i < strip.length; i++) {
-        if (strip[i]?.id === prizeId) { targetIndex = i; break; }
+      for (let i = startIndex; i < strip.length; i++) {
+        if (strId(strip[i]?.id) === prizeId) { targetIndex = i; break; }
       }
     } else {
-      targetIndex = baseIndex + Math.floor(Math.random() * pool.length);
+      // jogo sem prize_id: só para em algum lugar “bonito”
+      targetIndex = startIndex + Math.floor(Math.random() * Math.max(1, pool.length));
     }
 
-    const targetCenter = itemCenterAt(targetIndex);
-    const toX = viewportCenter - targetCenter;
+    lastStopIndex = targetIndex;
 
-    await animateTo(currentX - (STEP * 6), 220);
+    // 3) anima “kick” + stop DOM-preciso
+    const kick = getStepPx() * 6;
+    await animateTo(currentX - kick, 220);
+
+    const toX = getToXForIndex(targetIndex);
     await animateTo(toX, 2400);
+
+    // garante que mesmo com drift subpixel ficou cravado
+    await realignToStop(false);
 
     elStatus.textContent = 'Resultado!';
     openWin(prize);
+
+    // 4) atualiza tentativas/saldo no HUD
     await refreshState();
+
   } catch (e) {
     console.error(e);
     elStatus.textContent = 'Erro no playMiniGame. Veja o console.';
@@ -312,25 +398,29 @@ const spinAndReveal = async () => {
     setTimeout(() => chest.classList.remove('shake'), 420);
   } finally {
     playing = false;
-    elRulesBtn.disabled = false;
-    playBtn.disabled = !canPlay;
-    openBtn.disabled = !canPlay;
-    backBtn.disabled = false;
-    elResetBtn.disabled = false;
+
+    // se redimensionou durante o giro, reancora no final com uma assentada suave
+    if (pendingRealign) {
+      pendingRealign = false;
+      await realignToStop(true);
+    }
+
+    updateButtons();
   }
 };
 
 const loadMiniGames = async (templateId) => {
+  // ✅ sem fallback: se Smartico não carregou, trava tudo
   if (!window._smartico) {
     elTitle.textContent = 'Baú Giratório';
-    elSubtitle.textContent = 'Smartico não carregou — modo visual apenas.';
+    elSubtitle.textContent = 'Smartico não carregou (smartico.js).';
+    elStatus.textContent = 'Indisponível.';
     selectedGame = null;
-    pool = fallbackPool();
-    buildStrip(pool);
-    canPlay = true;
-    setAttemptsUI(null, null, true);
-    playBtn.disabled = false;
-    openBtn.disabled = false;
+    pool = [];
+    strip = [];
+    canPlay = false;
+    setAttemptsUI(null, null, false);
+    updateButtons();
     return;
   }
 
@@ -340,14 +430,17 @@ const loadMiniGames = async (templateId) => {
   miniGames = games;
   playerInfo = info;
 
-  selectedGame = miniGames.find(g => g.id === templateId) || null;
+  selectedGame = miniGames.find(g => strId(g.id) === strId(templateId)) || null;
 
   if (!selectedGame) {
     elTitle.textContent = 'Jogo não encontrado';
     elSubtitle.textContent = `Não achei template_id=${templateId} em getMiniGames().`;
-    playBtn.disabled = true;
-    openBtn.disabled = true;
+    elStatus.textContent = 'Indisponível.';
+    pool = [];
+    strip = [];
     canPlay = false;
+    setAttemptsUI(null, null, false);
+    updateButtons();
     return;
   }
 
@@ -360,51 +453,97 @@ const loadMiniGames = async (templateId) => {
   canPlay = SAWCanPlay(selectedGame, playerInfo?.ach_points_balance);
   setAttemptsUI(selectedGame, playerInfo, canPlay);
 
-  playBtn.disabled = !canPlay;
-  openBtn.disabled = !canPlay;
+  elStatus.textContent = canPlay
+    ? 'Pronto. Clique em Jogar.'
+    : (selectedGame.no_attempts_message ? `Indisponível: ${selectedGame.no_attempts_message}` : 'Indisponível.');
 
-  elStatus.textContent = canPlay ? 'Pronto. Clique em Jogar.' :
-    (selectedGame.no_attempts_message ? `Indisponível: ${selectedGame.no_attempts_message}` : 'Indisponível.');
+  updateButtons();
+};
+
+// ---------- Resize “à prova de prêmio errado” ----------
+const installResizeHandlers = () => {
+  const viewportEl = track.parentElement;
+  if (!viewportEl) return;
+
+  const onResize = () => {
+    if (phase !== 'roll') return;
+    if (lastStopIndex == null) return;
+
+    if (playing) {
+      pendingRealign = true;
+      return;
+    }
+    // reancora instantâneo (não precisa animar)
+    realignToStop(false);
+  };
+
+  // ResizeObserver é o mais confiável (pega mudanças de layout/zoom)
+  try {
+    ro = new ResizeObserver(onResize);
+    ro.observe(viewportEl);
+  } catch (e) {
+    // ok — fica só com window resize
+  }
+
+  window.addEventListener('resize', onResize);
 };
 
 // ---------- Init ----------
 function initializeGame(templateId) {
-  winBackdrop.classList.add('is-hidden');
-  rulesBackdrop.classList.add('is-hidden');
+  if (!initialized) {
+    initialized = true;
 
-  setPhase('intro');
+    winBackdrop.classList.add('is-hidden');
+    rulesBackdrop.classList.add('is-hidden');
 
-  elRulesBtn.addEventListener('click', openRules);
-  rulesClose.addEventListener('click', closeRulesModal);
-  rulesBackdrop.addEventListener('click', (e) => { if (e.target === rulesBackdrop) closeRulesModal(); });
-
-  winClose.addEventListener('click', closeWinModal);
-  winBackdrop.addEventListener('click', (e) => { if (e.target === winBackdrop) closeWinModal(); });
-
-  playBtn.addEventListener('click', () => {
-    if (!canPlay) return;
-    setPhase('roll');
-    // garantia de medir viewport corretamente depois de aparecer
-    requestAnimationFrame(() => buildStrip(pool.length ? pool : fallbackPool()));
-  });
-
-  backBtn.addEventListener('click', () => {
-    if (playing) return;
     setPhase('intro');
-  });
 
-  openBtn.addEventListener('click', () => spinAndReveal());
+    elRulesBtn.addEventListener('click', openRules);
+    rulesClose.addEventListener('click', closeRulesModal);
+    rulesBackdrop.addEventListener('click', (e) => { if (e.target === rulesBackdrop) closeRulesModal(); });
 
-  elResetBtn.addEventListener('click', () => {
-    if (playing) return;
-    chest.classList.remove('open');
-    elStatus.textContent = sceneRoll.classList.contains('is-hidden') ? 'Pronto. Clique em Jogar.' : 'Pronto para girar.';
-    buildStrip(pool.length ? pool : fallbackPool());
-  });
+    winClose.addEventListener('click', closeWinModal);
+    winBackdrop.addEventListener('click', (e) => { if (e.target === winBackdrop) closeWinModal(); });
 
+    playBtn.addEventListener('click', () => {
+      if (!canPlay || !selectedGame) return;
+      setPhase('roll');
+
+      // reconstrói strip quando a roleta estiver visível (offsetLeft correto)
+      requestAnimationFrame(() => {
+        buildStrip(pool);
+        realignToStop(false);
+      });
+    });
+
+    backBtn.addEventListener('click', () => {
+      if (playing) return;
+      setPhase('intro');
+    });
+
+    openBtn.addEventListener('click', () => spinAndReveal());
+
+    elResetBtn.addEventListener('click', () => {
+      if (playing) return;
+      chest.classList.remove('open');
+      elStatus.textContent = (phase === 'intro') ? 'Pronto. Clique em Jogar.' : 'Pronto para girar.';
+      lastStopIndex = null;
+      lastPrize = null;
+      buildStrip(pool);
+    });
+
+    installResizeHandlers();
+  }
+
+  // sempre recarrega para o templateId atual
   loadMiniGames(templateId).catch((e) => {
     console.error(e);
     elTitle.textContent = 'Erro ao carregar';
     elSubtitle.textContent = 'Veja o console para detalhes.';
+    elStatus.textContent = 'Indisponível.';
+    selectedGame = null;
+    canPlay = false;
+    updateButtons();
   });
 }
+x
