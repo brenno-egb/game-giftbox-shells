@@ -28,7 +28,7 @@ export default function GiftboxChestLottie({
 
     try {
       anim.loop = true;
-      anim.playSegments?.([0, 15], true);
+      anim.playSegments?.([0, 78], true);
     } catch {
       anim.loop = true;
       anim.play?.();
@@ -52,7 +52,7 @@ export default function GiftboxChestLottie({
     try {
       anim.loop = false;
       anim.addEventListener?.("complete", handleComplete);
-      anim.playSegments?.([16, 30], true);
+      anim.playSegments?.([79, 80], true);
     } catch {
       anim.loop = false;
       anim.addEventListener?.("complete", handleComplete);

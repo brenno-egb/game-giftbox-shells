@@ -4,24 +4,15 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Andika } from "next/font/google";
 import { useWheelGame } from "@/games/core/hooks/useWheel";
 import GiftboxChestLottie from "./animation";
+import PrizeNebula from "./PrizeNebula";
+import PrizeCharmCurtain from "./PrizeNebula";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
-
-const btnBase =
-  "inline-flex items-center justify-center rounded-xl px-3 py-2 font-extrabold transition " +
-  "hover:-translate-y-px hover:brightness-[1.02] active:translate-y-0 active:brightness-[.98] " +
-  "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none";
-
-const btnPrimary =
-  btnBase +
-  " bg-[linear-gradient(90deg,rgba(18,194,233,.22),rgba(196,113,237,.22))] text-slate-950";
-const btnGhost =
-  btnBase + " bg-white/70 border border-slate-900/10 text-slate-950";
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
 const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
-  <svg xmlns="http:
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
     <defs>
       <radialGradient id="g" cx="30%" cy="30%" r="70%">
         <stop offset="0" stop-color="rgba(255,255,255,.75)"/>
@@ -34,14 +25,14 @@ const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
 `)}`;
 
 const PrizeItem = ({ prize }: { prize: any }) => (
-  <div className="flex h-[86px] w-[128px] flex-col items-center justify-center gap-2 rounded-[14px] border border-slate-900/10 bg-[radial-gradient(90px_60px_at_30%_30%,rgba(255,255,255,.80),rgba(255,255,255,.55))] p-[10px] shadow-[0_14px_30px_rgba(20,25,60,.10)] select-none">
+  <div className="flex h-[86px] w-[128px] flex-col items-center justify-center gap-2 rounded-[14px] border border-white/20 bg-white/10 backdrop-blur-sm p-[10px] shadow-lg select-none">
     <img
       src={prize.icon || DEFAULT_ICON}
       alt={prize.name}
       className="h-[34px] w-[34px] object-contain"
       decoding="async"
     />
-    <div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[12px] leading-[1.1] text-slate-900/70">
+    <div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[12px] leading-[1.1] text-white/90">
       {prize.name || "Item"}
     </div>
   </div>
@@ -50,12 +41,11 @@ const PrizeItem = ({ prize }: { prize: any }) => (
 export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const gameState = useWheelGame({ smartico, templateId });
 
-  const [phase, setPhase] = useState<"intro" | "roll">("intro");
+  const [phase, setPhase] = useState<"chest" | "wheel">("chest");
   const [chestOpen, setChestOpen] = useState(false);
   const [targetPrizeIndex, setTargetPrizeIndex] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
   const [lastPrize, setLastPrize] = useState<any>(null);
-  const [showRules, setShowRules] = useState(false);
   const [showWin, setShowWin] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -133,7 +123,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
     setIsAnimating(true);
 
-    setChestOpen(false);
+    // Reset estado
     setTargetPrizeIndex(null);
     setLastPrize(null);
     setCurrentX(0);
@@ -166,7 +156,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       }
     }
 
-    setChestOpen(true);
     setTargetPrizeIndex(targetIndex);
 
     const kick = getStepPx() * 6;
@@ -184,16 +173,18 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     await gameState.refresh();
   }, [gameState, isAnimating, pool, strip, getStepPx, animateTo, getTargetX]);
 
-  const goToRoll = () => {
-    if (!gameState.canPlay || !gameState.game) return;
+  const handleChestClick = () => {
+    if (!gameState.canPlay || isAnimating || chestOpen) return;
     setChestOpen(true);
   };
 
-  const goToIntro = useCallback(() => {
-    setPhase("intro");
-    setChestOpen(false);
-    setTargetPrizeIndex(null);
-  }, []);
+  const handleChestOpenComplete = () => {
+    setPhase("wheel");
+    // Inicia automaticamente o giro
+    setTimeout(() => {
+      playGame();
+    }, 100);
+  };
 
   const closeWin = useCallback(() => {
     setShowWin(false);
@@ -202,7 +193,13 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         smartico.dp(lastPrize.acknowledge_dp);
       } catch {}
     }
-  }, [lastPrize, smartico]);
+    
+    // Volta para a tela do baú se não houver mais tentativas
+    if (!gameState.canPlay) {
+      setPhase("chest");
+      setChestOpen(false);
+    }
+  }, [lastPrize, smartico, gameState.canPlay]);
 
   useEffect(() => {
     if (!trackRef.current || targetPrizeIndex === null || isAnimating) return;
@@ -247,16 +244,16 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
   if (gameState.isLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <div className="text-lg font-bold">Carregando jogo...</div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-black">
+        <div className="text-lg font-bold text-white">Carregando...</div>
       </div>
     );
   }
 
   if (gameState.error) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center">
-        <div className="text-lg font-bold text-red-600">{gameState.error}</div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-black">
+        <div className="text-lg font-bold text-red-400">{gameState.error}</div>
       </div>
     );
   }
@@ -264,203 +261,128 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   return (
     <div
       data-skin={skin?.id ?? "default"}
-      className={[
-        andika.className,
-        "min-h-screen w-full flex items-center justify-center p-[18px] text-slate-950",
-        "bg-[radial-gradient(900px_620px_at_20%_10%,rgba(18,194,233,.35),transparent),radial-gradient(900px_620px_at_80%_70%,rgba(196,113,237,.28),transparent),linear-gradient(135deg,#f6fbff,#fff7ff)]",
-      ].join(" ")}
+      className={[andika.className, "min-h-screen w-full relative"].join(" ")}
     >
-      <div className="w-full max-w-[980px]">
-        {/* Header */}
-        <div className="mb-3">
-          <div className="text-[22px] font-extrabold">
-            {gameState.game?.name || "Carregando…"}
-          </div>
-          <div className="mt-1 text-sm text-slate-600">
-            {gameState.game?.promo_text || "Preparando o baú"}
-          </div>
-        </div>
+      {/* FASE 1 - Baú flutuando */}
+      {phase === "chest" && (
+        <div className="absolute inset-0 bg-black/85 flex items-center justify-center p-6">
+            <PrizeCharmCurtain prizes={pool} max={9} />
 
-        {/* Main Card */}
-        <div className="overflow-hidden rounded-[18px] border border-slate-900/10 bg-white/70 shadow-[0_30px_90px_rgba(20,25,60,.18)] backdrop-blur-[10px]">
-          {/* HUD */}
-          <div className="flex items-start justify-between gap-3 border-b border-slate-900/10 p-3.5">
-            <div>
-              <div className="text-[13px] leading-[1.35] text-slate-600">
-                {phase === "intro"
-                  ? "Primeiro: aperte Jogar. Depois: abra o baú na roleta."
-                  : "Clique em Abrir Baú para girar e revelar o prêmio."}
-              </div>
-              <div className="mt-2 text-sm font-extrabold">
-                {gameState.statusMessage}
-              </div>
+          <div className="text-center">
+            {/* Baú com animação de flutuação */}
+            <div
+              className="cursor-pointer transition-transform hover:scale-105 active:scale-95"
+              onClick={handleChestClick}
+              style={{
+                animation: "float 3s ease-in-out infinite",
+              }}
+            >
+              <GiftboxChestLottie
+                path={skin?.lottiePath}
+                isOpen={chestOpen}
+                onOpenComplete={handleChestOpenComplete}
+                className="h-[200px] w-[240px] mx-auto"
+              />
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2.5">
-              <div className="text-right">
-                <div className="text-xs text-slate-600">
-                  {gameState.attemptsDisplay.label}
+            {/* Mensagem */}
+            <div className="mt-8 text-white">
+              {gameState.canPlay ? (
+                <div className="text-2xl font-bold">
+                  Toque no baú para abrir
                 </div>
-                <div
-                  className={`text-base font-black ${
-                    gameState.attemptsDisplay.valueColor || ""
-                  }`}
-                >
+              ) : gameState.countdown ? (
+                <div>
+                  <div className="text-lg font-bold mb-2">
+                    Próximo giro em:
+                  </div>
+                  <div className="text-3xl font-black text-cyan-400">
+                    {gameState.countdown}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xl font-bold text-red-400">
+                  Sem tentativas disponíveis
+                </div>
+              )}
+
+              {/* Info de tentativas */}
+              <div className="mt-6 text-sm text-white/60">
+                {gameState.attemptsDisplay.label}:{" "}
+                <span className="font-bold text-white">
                   {gameState.attemptsDisplay.value}
-                </div>
+                </span>
               </div>
-
-              <button
-                className={btnGhost}
-                onClick={() => setShowRules(true)}
-                disabled={!gameState.game || isAnimating}
-                type="button"
-              >
-                Regras
-              </button>
             </div>
           </div>
 
-          {/* Stage */}
-          <div className="min-h-[440px] p-3.5">
-            {/* FASE 1 - Intro */}
-            {phase === "intro" && (
-              <div className="flex h-full items-center justify-center">
-                <div className="w-full max-w-[520px] rounded-[18px] border border-slate-900/10 bg-white/75 p-4 text-center shadow-[0_20px_70px_rgba(20,25,60,.12)]">
-                  <div className="text-lg font-black">
-                    Um baú misterioso apareceu…
-                  </div>
-                  <div className="mt-1.5 text-[13px] text-slate-600">
-                    {gameState.canPlay ? (
-                      <>
-                        Clique em <b>Jogar</b> para revelar a roleta.
-                      </>
-                    ) : gameState.countdown ? (
-                      <>Aguarde {gameState.countdown} para o próximo giro.</>
-                    ) : (
-                      <>Você não tem tentativas disponíveis no momento.</>
-                    )}
-                  </div>
-
-                  {/* Caixa Lottie */}
-                  <div className="my-3 flex justify-center">
-                    <GiftboxChestLottie
-                      path={skin?.lottiePath}
-                      isOpen={chestOpen}
-                      onOpenComplete={() => setPhase("roll")}
-                      className="h-[140px] w-[170px]"
-                    />
-                  </div>
-                  <button
-                    className={btnPrimary + " px-4 py-3 text-[15px]"}
-                    onClick={goToRoll}
-                    disabled={
-                      isAnimating || !gameState.game || !gameState.canPlay
-                    }
-                    type="button"
-                  >
-                    {!gameState.canPlay && gameState.countdown
-                      ? `Aguarde (${gameState.countdown})`
-                      : "Jogar"}
-                  </button>
-
-                  <div className="mt-2 text-xs text-slate-600">
-                    O resultado final vem do Smartico.
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* FASE 2 - Roleta */}
-            {phase === "roll" && (
-              <div className="flex h-full items-center justify-center">
-                <div className="relative w-full max-w-190 overflow-hidden rounded-[18px] border border-slate-900/10 bg-white/80 p-3 shadow-[0_20px_70px_rgba(20,25,60,.12)]">
-                  <div className="mb-2.5">
-                    <div className="text-base font-black">Roleta do Baú</div>
-                    <div className="mt-0.5 text-xs text-slate-600">
-                      A seta no meio indica onde vai parar.
-                    </div>
-                  </div>
-
-                  {/* Seta */}
-                  <div className="absolute left-1/2 top-12 z-5 h-24 w-0.75 -translate-x-px rounded bg-[rgba(18,194,233,.55)] shadow-[0_0_18px_rgba(18,194,233,.22)]" />
-
-                  {/* Track */}
-                  <div className="relative h-[100px] overflow-hidden rounded-[14px] bg-slate-900/5 shadow-[inset_0_0_0_1px_rgba(20,25,60,.08)]">
-                    <div
-                      ref={trackRef}
-                      className="absolute left-0 top-[7px] flex gap-2.5 will-change-transform"
-                      style={{
-                        transform: `translate3d(${currentX}px, 0, 0)`,
-                      }}
-                    >
-                      {strip.map((prize, idx) => (
-                        <PrizeItem key={`${prize.id}-${idx}`} prize={prize} />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap justify-center gap-2.5">
-                    <button
-                      className={btnPrimary + " px-4 py-3 text-[15px]"}
-                      onClick={playGame}
-                      disabled={isAnimating || !gameState.canPlay}
-                      type="button"
-                    >
-                      Abrir Baú
-                    </button>
-
-                    <button
-                      className={btnGhost}
-                      onClick={goToIntro}
-                      disabled={isAnimating}
-                      type="button"
-                    >
-                      Voltar
-                    </button>
-                  </div>
-
-                  <div className="mt-2 text-center text-xs text-slate-600">
-                    A roleta é visual — o prêmio é sorteado pelo Smartico.
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* CSS para animação de flutuação */}
+          <style jsx>{`
+            @keyframes float {
+              0%,
+              100% {
+                transform: translateY(0px);
+              }
+              50% {
+                transform: translateY(-20px);
+              }
+            }
+          `}</style>
         </div>
-      </div>
+      )}
 
-      {/* Modal Regras */}
-      {showRules && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4"
-          onClick={(e) => e.target === e.currentTarget && setShowRules(false)}
-        >
-          <div className="w-full max-w-[560px] rounded-2xl border border-slate-900/10 bg-white/90 p-4 shadow-[0_25px_90px_rgba(20,25,60,.18)]">
-            <div className="mb-2.5 text-lg font-black">Regras</div>
-            <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-              {`🧰 Baú Giratório
-
-Fluxo:
-1) Você clica "Jogar"
-2) Abre a roleta e clica "Abrir Baú"
-3) O Smartico decide o prêmio (playMiniGame) e a roleta para exatamente nele.
-
-Tentativas: ${gameState.game?.max_number_of_attempts ?? 0} no total${
-                gameState.game?.description
-                  ? `\n\n(Regras do BackOffice)\n${gameState.game.description}`
-                  : ""
-              }`}
+      {/* FASE 2 - Roleta horizontal */}
+      {phase === "wheel" && (
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6">
+          <div className="w-full max-w-4xl">
+            {/* Título */}
+            <div className="text-center mb-8">
+              <div className="text-2xl font-black text-white mb-2">
+                Roleta do Baú
+              </div>
+              <div className="text-sm text-white/60">
+                {isAnimating
+                  ? "Girando..."
+                  : "A seta indica onde vai parar"}
+              </div>
             </div>
-            <div className="mt-3 flex justify-end">
-              <button
-                className={btnPrimary}
-                onClick={() => setShowRules(false)}
-                type="button"
-              >
-                Voltar
-              </button>
+
+            {/* Container da roleta */}
+            <div className="relative">
+              {/* Seta indicadora */}
+              <div className="absolute left-1/2 top-0 bottom-0 z-10 w-1 -translate-x-1/2 bg-gradient-to-b from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_rgba(34,211,238,0.6)]" />
+
+              {/* Track de prêmios */}
+              <div className="relative h-[120px] overflow-hidden rounded-2xl bg-black/40 backdrop-blur-sm border border-white/10">
+                <div
+                  ref={trackRef}
+                  className="absolute left-0 top-[17px] flex gap-3 will-change-transform"
+                  style={{
+                    transform: `translate3d(${currentX}px, 0, 0)`,
+                  }}
+                >
+                  {strip.map((prize, idx) => (
+                    <PrizeItem key={`${prize.id}-${idx}`} prize={prize} />
+                  ))}
+                </div>
+              </div>
             </div>
+
+            {/* Botão girar novamente */}
+            {!isAnimating && gameState.canPlay && (
+              <div className="mt-8 text-center">
+                <button
+                  onClick={playGame}
+                  className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold text-lg rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!gameState.canPlay || isAnimating}
+                >
+                  Girar Novamente
+                </button>
+                <div className="mt-3 text-sm text-white/60">
+                  Giros restantes: {gameState.attemptsDisplay.value}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -468,36 +390,45 @@ Tentativas: ${gameState.game?.max_number_of_attempts ?? 0} no total${
       {/* Modal Prêmio */}
       {showWin && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
           onClick={(e) => e.target === e.currentTarget && closeWin()}
         >
-          <div className="relative w-full max-w-[560px] overflow-hidden rounded-2xl border border-slate-900/10 bg-white/90 p-4 text-center shadow-[0_25px_90px_rgba(20,25,60,.18)]">
-            <div className="pointer-events-none absolute -inset-20 -z-10 opacity-45 blur-[22px] [background:conic-gradient(from_180deg_at_50%_50%,rgba(18,194,233,.18),rgba(196,113,237,.22),rgba(251,194,235,.18),rgba(18,194,233,.18))] animate-[spin_6s_linear_infinite]" />
+          <div className="relative w-full max-w-md bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-8 text-center shadow-2xl border border-white/10">
+            {/* Efeito de brilho */}
+            <div className="pointer-events-none absolute -inset-10 opacity-30 blur-3xl bg-gradient-conic from-cyan-500 via-purple-500 to-cyan-500 animate-[spin_8s_linear_infinite]" />
 
-            <div className="mb-3 text-lg font-black">
-              {lastPrize?.prize_type === "no-prize"
-                ? "Quase!"
-                : lastPrize
-                ? "Você ganhou!"
-                : "Resultado"}
-            </div>
+            <div className="relative z-10">
+              {/* Título */}
+              <div className="mb-6 text-2xl font-black text-white">
+                {lastPrize?.prize_type === "no-prize"
+                  ? "Quase! 😅"
+                  : "Parabéns! 🎉"}
+              </div>
 
-            <div className="mb-3 flex items-center justify-center gap-2.5">
+              {/* Ícone do prêmio */}
               {lastPrize?.icon && (
-                <img
-                  src={lastPrize.icon}
-                  alt={lastPrize.name}
-                  className="h-11 w-11 object-contain"
-                />
+                <div className="mb-6">
+                  <img
+                    src={lastPrize.icon}
+                    alt={lastPrize.name}
+                    className="h-20 w-20 object-contain mx-auto"
+                  />
+                </div>
               )}
-              <div className="max-w-[420px] text-sm leading-snug text-slate-600">
+
+              {/* Mensagem */}
+              <div className="mb-8 text-lg text-white/90 leading-relaxed">
                 {prizeLabel}
               </div>
-            </div>
 
-            <button className={btnPrimary} onClick={closeWin} type="button">
-              OK
-            </button>
+              {/* Botão OK */}
+              <button
+                onClick={closeWin}
+                className="px-8 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-bold rounded-xl hover:scale-105 active:scale-95 transition-transform shadow-lg"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}
