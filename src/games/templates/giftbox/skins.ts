@@ -1,15 +1,12 @@
 export const giftboxSkins = {
   classic: {
     id: "classic",
-    title: "Baú Giratório",
-    subtitle: "Abra o baú e acompanhe a roleta",
-    // você pode apontar pra imagens em /public/games/giftbox/skins/classic/...
-    assetsBase: "/games/giftbox/skins/classic"
+    assetsBase: "/games/giftbox/skins/classic",
+    lottiePath: "/games/giftbox/skins/classic/chest.json",
   },
   pink: {
     id: "pink",
-    title: "Baú Giratório (Pink)",
-    subtitle: "Mesma base, outra skin",
-    assetsBase: "/games/giftbox/skins/pink"
-  }
+    assetsBase: "/games/giftbox/skins/pink",
+    lottiePath: "/games/giftbox/skins/pink/chest.json",
+  },
 } as const;

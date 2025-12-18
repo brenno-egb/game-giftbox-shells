@@ -17,7 +17,8 @@ export default function GameHost({ game, userId, language }: any) {
     const labelKey = process.env.NEXT_PUBLIC_SMARTICO_LABEL_KEY!;
     const brandKey = process.env.NEXT_PUBLIC_SMARTICO_BRAND_KEY!;
     const scriptUrl = process.env.NEXT_PUBLIC_SMARTICO_SCRIPT_URL!;
-    const allowLocalhost = process.env.NEXT_PUBLIC_SMARTICO_ALLOW_LOCALHOST === "true";
+    const allowLocalhost =
+      process.env.NEXT_PUBLIC_SMARTICO_ALLOW_LOCALHOST === "true";
 
     if (!labelKey || !brandKey || !scriptUrl) {
       setErr("Faltam env vars NEXT_PUBLIC_SMARTICO_*");
@@ -33,7 +34,12 @@ export default function GameHost({ game, userId, language }: any) {
       // delete (window as any)._smartico;
     }
 
-    console.log("[HOST] boot start", { userId, language, allowLocalhost, scriptUrl });
+    console.log("[HOST] boot start", {
+      userId,
+      language,
+      allowLocalhost,
+      scriptUrl,
+    });
 
     bootSmartico({
       scriptUrl,
@@ -81,7 +87,13 @@ export default function GameHost({ game, userId, language }: any) {
 
   if (game.template === "giftbox") {
     const skin = giftboxSkins[game.skinId];
-    return <GiftboxGame smartico={smartico} templateId={game.templateId} skin={skin} />;
+    return (
+      <GiftboxGame
+        smartico={smartico}
+        templateId={game.templateId}
+        skin={skin}
+      />
+    );
   }
 
   return <div style={{ padding: 24 }}>Template não suportado.</div>;

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Andika } from "next/font/google";
 import { useWheelGame } from "@/games/core/hooks/useWheel";
+import GiftboxChestLottie from "./animation";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -183,10 +184,10 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     await gameState.refresh();
   }, [gameState, isAnimating, pool, strip, getStepPx, animateTo, getTargetX]);
 
-  const goToRoll = useCallback(() => {
+  const goToRoll = () => {
     if (!gameState.canPlay || !gameState.game) return;
-    setPhase("roll");
-  }, [gameState.canPlay, gameState.game]);
+    setChestOpen(true);
+  };
 
   const goToIntro = useCallback(() => {
     setPhase("intro");
@@ -296,7 +297,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2.5">
-              {/* 🎯 Usar attemptsDisplay do hook */}
               <div className="text-right">
                 <div className="text-xs text-slate-600">
                   {gameState.attemptsDisplay.label}
@@ -342,43 +342,15 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                     )}
                   </div>
 
-                  {/* Chest */}
-                  <div
-                    className={`relative mx-auto my-3 h-[140px] w-[170px] scale-[1.05] ${
-                      chestOpen ? "open" : ""
-                    }`}
-                    aria-hidden="true"
-                  >
-                    {/* Lid */}
-                    <div
-                      className={[
-                        "absolute left-0 right-0 top-0 h-[64px] rounded-[18px]",
-                        "bg-[linear-gradient(180deg,rgba(18,194,233,.20),rgba(255,255,255,.65))]",
-                        "shadow-[inset_0_0_0_1px_rgba(20,25,60,.10)]",
-                        "origin-[50%_100%] transition-transform duration-[420ms] ease-out",
-                        chestOpen
-                          ? "[transform:rotateX(62deg)]"
-                          : "[transform:rotateX(0deg)]",
-                      ].join(" ")}
+                  {/* Caixa Lottie */}
+                  <div className="my-3 flex justify-center">
+                    <GiftboxChestLottie
+                      path={skin?.lottiePath}
+                      isOpen={chestOpen}
+                      onOpenComplete={() => setPhase("roll")}
+                      className="h-[140px] w-[170px]"
                     />
-                    {/* Base */}
-                    <div className="absolute bottom-0 left-0 right-0 h-[92px] rounded-[18px] bg-[linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.65))] shadow-[inset_0_0_0_1px_rgba(20,25,60,.10)]" />
-                    {/* Lock */}
-                    <div
-                      className={`absolute bottom-[30px] left-1/2 h-[46px] w-[46px] -translate-x-1/2 rounded-[14px] shadow-[inset_0_0_0_1px_rgba(20,25,60,.10)] transition-colors ${
-                        gameState.canPlay ? "bg-slate-900/5" : "bg-red-500/10"
-                      }`}
-                    >
-                      <div
-                        className={`absolute left-1/2 top-1/2 h-[14px] w-[14px] -translate-x-1/2 -translate-y-1/2 rounded-[6px] transition-all ${
-                          gameState.canPlay
-                            ? "bg-[rgba(196,113,237,.25)] shadow-[0_0_16px_rgba(196,113,237,.18)]"
-                            : "bg-red-500/30 shadow-[0_0_16px_rgba(239,68,68,.15)]"
-                        }`}
-                      />
-                    </div>
                   </div>
-
                   <button
                     className={btnPrimary + " px-4 py-3 text-[15px]"}
                     onClick={goToRoll}
