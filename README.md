@@ -1,36 +1,36 @@
-# Giftbox game
-This is an example of custom game UI implemented on Smartico.ai gamification platform using [Public API](https://github.com/smarticoai/public-api).
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-![Exampel of the game!](/assets/demo.gif "Demo")
+## Getting Started
 
-- Demo - https://demo.smartico.ai/custom-game/game-giftbox-shells/index.html
-- More examples - https://expo.smartico.ai/widgets/intro 
+First, run the development server:
 
-
-
-To run:
-```
-npm install
+```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-The main logic of the game
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-1. call _smartico.api.getMiniGames()  - to get available games and find needed
-2. call _smartico.api.playMiniGame(123) - to play a game with specified id, as result you will get prize
-3. Visualize prize in your own way
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-You will need to adjust following variables for the real setup
-```javascript
+## Learn More
 
-// ID of your game template that is set in Smartico BackOffice
-const _saw_template_id = 690; 
-// Label & brand keys that are specific for your setup, please conact your Success Manager
-const _label_key = 'a6e7ac26-c368-4892-9380-96e7ff82cf3e-4';
-const _brand_key = 'f86271e6';
+To learn more about Next.js, take a look at the following resources:
 
-// ID and language of currently identified user
-window._smartico_user_id = 'test48054049';
-window._smartico_language = 'en'; 
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
