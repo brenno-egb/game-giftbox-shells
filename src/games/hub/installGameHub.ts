@@ -1,4 +1,4 @@
-import { getGameEntry } from "@/games/registry";
+import { getGameEntry, resolveGameRoute } from "@/games/registry";
 
 type OpenArgs = {
   key: string;
@@ -11,7 +11,7 @@ type OpenArgs = {
 type GameHubApi = {
   open: (args: OpenArgs) => { ok: true } | { ok: false; message: string };
   exists: (key: string) => boolean;
-  list: () => string[];
+  list: () => Promise<string[]>;
 };
 
 declare global {
@@ -28,13 +28,12 @@ export function installGameHub() {
       const entry = getGameEntry(key);
       if (!entry) return { ok: false, message: "Jogo não existe." };
 
-      const url = new URL(entry.route, window.location.origin);
+      const url = new URL(resolveGameRoute(entry), window.location.origin);
       if (uid) url.searchParams.set("uid", uid);
       if (lang) url.searchParams.set("lang", lang);
       if (skin) url.searchParams.set("skin", skin);
 
-      // ✅ simples e robusto: abre via URL (funciona com refresh / share / QA)
-      // se você quiser overlay depois, a gente troca o "navegar" por evento
+      // se quiser overlay depois, a gente troca o "navegar" por evento
       try {
         window.top?.location.assign(url.toString());
         return { ok: true };
@@ -49,7 +48,6 @@ export function installGameHub() {
     list: async () => Object.keys((await (import("@/games/registry"))).gamesRegistry),
   };
 
-  // instala no TOP (quando possível)
   try {
     (window.top as any).GameHub = api;
   } catch {

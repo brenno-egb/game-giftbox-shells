@@ -26,3 +26,7 @@ export function listGames() {
     defaultSkinId: g.defaultSkinId,
   }));
 }
+
+export function resolveGameRoute(entry: GameEntry) {
+  return `/games/${entry.slug}`;
+}
