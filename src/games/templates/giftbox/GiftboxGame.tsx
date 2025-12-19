@@ -4,12 +4,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Andika } from "next/font/google";
 import { useWheelGame } from "@/games/core/hooks/useWheel";
 import GiftboxChestLottie from "./animation";
-import PrizeNebula from "./PrizeNebula";
-import PrizeCharmCurtain from "./PrizeNebula";
+// import PrizeCharmCurtain from "./PrizeNebula";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
 
 const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
@@ -95,7 +95,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         const tick = (now: number) => {
           const elapsed = now - startTime;
           const progress = Math.min(elapsed / durationMs, 1);
-          const eased = easeOutCubic(progress);
+          const eased = easeOutQuint(progress);
           const newX = fromX + (toX - fromX) * eased;
 
           currentXRef.current = newX;
@@ -123,7 +123,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
     setIsAnimating(true);
 
-    // Reset estado
+    
     setTargetPrizeIndex(null);
     setLastPrize(null);
     setCurrentX(0);
@@ -141,7 +141,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
     const prizeId = result?.prize_id != null ? String(result.prize_id) : "";
     const prize = prizeId
-      ? pool.find((p) => String(p.id) === prizeId) || null
+      ? pool.find((p: { id: any; }) => String(p.id) === prizeId) || null
       : null;
 
     const startIndex = Math.floor(strip.length * 0.65);
@@ -158,13 +158,17 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
     setTargetPrizeIndex(targetIndex);
 
-    const kick = getStepPx() * 6;
+    
+    const kick = getStepPx() * 8; 
     const startX = currentXRef.current;
+    await animateTo(startX, startX - kick, 300); 
 
-    await animateTo(startX, startX - kick, 220);
-
+    
     const toX = getTargetX(targetIndex, currentXRef.current);
-    await animateTo(currentXRef.current, toX, 2400);
+    await animateTo(currentXRef.current, toX, 5000); 
+
+    
+    await animateTo(currentXRef.current, toX, 300);
 
     setLastPrize(prize);
     setShowWin(true);
@@ -180,7 +184,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
   const handleChestOpenComplete = () => {
     setPhase("wheel");
-    // Inicia automaticamente o giro
+    
     setTimeout(() => {
       playGame();
     }, 100);
@@ -193,8 +197,8 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         smartico.dp(lastPrize.acknowledge_dp);
       } catch {}
     }
+
     
-    // Volta para a tela do baú se não houver mais tentativas
     if (!gameState.canPlay) {
       setPhase("chest");
       setChestOpen(false);
@@ -266,7 +270,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       {/* FASE 1 - Baú flutuando */}
       {phase === "chest" && (
         <div className="absolute inset-0 bg-black/85 flex items-center justify-center p-6">
-            <PrizeCharmCurtain prizes={pool} max={9} />
+          {/* <PrizeCharmCurtain prizes={pool} max={9} /> */}
 
           <div className="text-center">
             {/* Baú com animação de flutuação */}
@@ -293,9 +297,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                 </div>
               ) : gameState.countdown ? (
                 <div>
-                  <div className="text-lg font-bold mb-2">
-                    Próximo giro em:
-                  </div>
+                  <div className="text-lg font-bold mb-2">Próximo giro em:</div>
                   <div className="text-3xl font-black text-cyan-400">
                     {gameState.countdown}
                   </div>
@@ -341,9 +343,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                 Roleta do Baú
               </div>
               <div className="text-sm text-white/60">
-                {isAnimating
-                  ? "Girando..."
-                  : "A seta indica onde vai parar"}
+                {isAnimating ? "Girando..." : "A seta indica onde vai parar"}
               </div>
             </div>
 

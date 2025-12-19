@@ -1,14 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { bootSmartico } from "./boot";
-import GiftboxGame from "@/games/templates/giftbox/GiftboxGame";
-import { giftboxSkins } from "@/games/templates/giftbox/skins";
+import { useEffect, useMemo, useState } from "react";
+import type { GameKey } from "@/games/registry";
+import { gamesRegistry } from "@/games/registry";
+import GameRenderer from "@/games/host/GameRenderer.client";
+import { bootSmartico, resetSmarticoBootForDev } from "@/lib/smartico/boot";
 
-export default function GameHost({ game, userId, language }: any) {
+type Props = {
+  gameKey: GameKey;
+  userId: string;
+  language: string;
+  skinId?: string;
+};
+
+export default function GameHost({ gameKey, userId, language, skinId }: Props) {
   const [smartico, setSmartico] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
   const [step, setStep] = useState<string>("idle");
+
+  const entry = gamesRegistry[gameKey];
+
+  const resolvedSkin = useMemo(() => {
+    const id = skinId ?? entry.defaultSkinId;
+    return (entry.skins as any)[id] ?? (entry.skins as any)[entry.defaultSkinId];
+  }, [entry, skinId]);
 
   useEffect(() => {
     setErr(null);
@@ -25,21 +40,9 @@ export default function GameHost({ game, userId, language }: any) {
       return;
     }
 
-    // ✅ DEV: garante que não fica preso numa promise antiga do HMR
     if (process.env.NODE_ENV === "development") {
-      (window as any).__smarticoInitPromise = undefined;
-      // opcional: remove script pra recomeçar limpo
-      document.querySelector('script[data-smartico="1"]')?.remove();
-      // não é obrigatório apagar _smartico, mas ajuda em debug
-      // delete (window as any)._smartico;
+      resetSmarticoBootForDev();
     }
-
-    console.log("[HOST] boot start", {
-      userId,
-      language,
-      allowLocalhost,
-      scriptUrl,
-    });
 
     bootSmartico({
       scriptUrl,
@@ -49,16 +52,9 @@ export default function GameHost({ game, userId, language }: any) {
       language,
       allowLocalhost,
       debug: true,
-      onStep: (s: string) => setStep(s),
+      onStep: setStep,
     })
-      .then(async (s) => {
-        console.log("[HOST] boot resolved", s);
-        const games = await s.api.getMiniGames();
-        console.log("[HOST] getMiniGames OK, count:", games?.length);
-
-        // ✅ IMPORTANTE: _smartico é function -> envolver!
-        setSmartico(() => s);
-      })
+      .then((s) => setSmartico(() => s))
       .catch((e) => {
         console.error("[HOST] boot error", e);
         setErr(e?.message ?? "Erro ao iniciar Smartico");
@@ -85,16 +81,12 @@ export default function GameHost({ game, userId, language }: any) {
     );
   }
 
-  if (game.template === "giftbox") {
-    const skin = giftboxSkins[game.skinId];
-    return (
-      <GiftboxGame
-        smartico={smartico}
-        templateId={game.templateId}
-        skin={skin}
-      />
-    );
-  }
-
-  return <div style={{ padding: 24 }}>Template não suportado.</div>;
+  return (
+    <GameRenderer
+      gameKey={gameKey}
+      smartico={smartico}
+      templateId={entry.templateId}
+      skin={resolvedSkin}
+    />
+  );
 }

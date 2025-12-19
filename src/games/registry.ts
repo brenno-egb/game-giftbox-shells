@@ -1,26 +1,28 @@
-export type GameSlug = "bau-classic" | "bau-pink";
+import { giftboxSkins } from "@/games/templates/giftbox/skins";
 
-export const GAMES: Record<GameSlug, {
-  slug: GameSlug;
-  name: string;
-  template: "giftbox";
-  templateId: number;
-  skinId: "classic" | "pink";
-}> = {
-  "bau-classic": {
-    slug: "bau-classic",
-    name: "Baú Giratório (Classic)",
-    template: "giftbox",
+export const gamesRegistry = {
+  giftbox: {
+    key: "giftbox",
+    name: "Giftbox",
+    slug: "giftbox",
     templateId: 7070,
-    skinId: "classic",
+    skins: giftboxSkins,
+    defaultSkinId: "classic",
   },
-  "bau-pink": {
-    slug: "bau-pink",
-    name: "Baú Giratório (Pink)",
-    template: "giftbox",
-    templateId: 7070,
-    skinId: "pink",
-  }
-};
+} as const;
 
-export const GAMES_LIST = Object.values(GAMES);
+export type GameKey = keyof typeof gamesRegistry;
+export type GameEntry = (typeof gamesRegistry)[GameKey];
+
+export function getGameEntry(key: string): GameEntry | null {
+  return (gamesRegistry as any)[key] ?? null;
+}
+
+export function listGames() {
+  return Object.values(gamesRegistry).map((g) => ({
+    key: g.key,
+    name: g.name,
+    slug: g.slug,
+    defaultSkinId: g.defaultSkinId,
+  }));
+}

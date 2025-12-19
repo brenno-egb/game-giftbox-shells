@@ -6,7 +6,8 @@ declare global {
     _smartico_user_id?: string | null;
     _smartico_language?: string | null;
     _smartico_allow_localhost?: boolean;
-    __smarticoInitPromise?: Promise<Smartico>;
+
+    __smarticoInitCache?: Record<string, Promise<Smartico>>;
   }
 }
 
@@ -16,17 +17,22 @@ function loadScriptOnce(src: string, debug?: boolean) {
   const log = (...a: any[]) => debug && console.log("[BOOT]", ...a);
 
   return new Promise<void>((resolve, reject) => {
-    const existing = document.querySelector(`script[data-smartico="1"]`) as HTMLScriptElement | null;
+    const existing = document.querySelector(
+      `script[data-smartico="1"]`
+    ) as HTMLScriptElement | null;
 
     if (existing) {
-      // ✅ Se já existe, só resolve quando realmente carregou
       if (existing.dataset.loaded === "1") {
         log("script already loaded");
         return resolve();
       }
       log("script exists but not loaded yet; waiting on it");
       existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Falha ao carregar smartico.js (existing tag)")), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Falha ao carregar smartico.js (existing tag)")),
+        { once: true }
+      );
       return;
     }
 
@@ -44,7 +50,12 @@ function loadScriptOnce(src: string, debug?: boolean) {
   });
 }
 
-async function waitFor(cond: () => boolean, timeoutMs: number, debug?: boolean, label?: string) {
+async function waitFor(
+  cond: () => boolean,
+  timeoutMs: number,
+  debug?: boolean,
+  label?: string
+) {
   const log = (...a: any[]) => debug && console.log("[BOOT]", ...a);
   const start = Date.now();
   let lastPrint = 0;
@@ -61,6 +72,35 @@ async function waitFor(cond: () => boolean, timeoutMs: number, debug?: boolean, 
   throw new Error(`Timeout esperando: ${label ?? "cond"}`);
 }
 
+export function resetSmarticoBootForDev() {
+  // use isso no GameHost (em dev) em vez de mexer em script/promise lá
+  try {
+    delete window.__smarticoInitCache;
+  } catch {}
+  document.querySelector('script[data-smartico="1"]')?.remove();
+  // opcional: não apaga _smartico pq às vezes pode causar estado estranho
+  // delete window._smartico;
+}
+
+function makeCacheKey(opts: {
+  scriptUrl: string;
+  labelKey: string;
+  brandKey: string;
+  userId: string;
+  language: string;
+  allowLocalhost?: boolean;
+}) {
+  // chave suficiente pra evitar “promise errada” quando muda uid/lang
+  return [
+    opts.scriptUrl,
+    opts.labelKey,
+    opts.brandKey,
+    opts.userId,
+    opts.language,
+    opts.allowLocalhost ? "lh1" : "lh0",
+  ].join("|");
+}
+
 export async function bootSmartico(opts: {
   scriptUrl: string;
   labelKey: string;
@@ -74,15 +114,27 @@ export async function bootSmartico(opts: {
   const debug = !!opts.debug;
   const step = (s: string) => {
     opts.onStep?.(s);
-    debug && console.log("[BOOT step]", s);
+    if (debug) console.log("[BOOT step]", s);
   };
 
-  if (window.__smarticoInitPromise) {
-    debug && console.log("[BOOT] using cached promise");
-    return window.__smarticoInitPromise;
+  const key = makeCacheKey(opts);
+  window.__smarticoInitCache ??= {};
+
+  // ✅ se já tem boot pra essa config, reuse
+  if (await window.__smarticoInitCache[key]) {
+    if (debug) console.log("[BOOT] using cached promise key:", key);
+    return window.__smarticoInitCache[key]!;
   }
 
-  window.__smarticoInitPromise = (async () => {
+  // ✅ se já existe smartico pronto (api ok), reaproveita (mesmo sem cache)
+  // OBS: isso assume que userId/lang não mudam na sessão (normal)
+  if (window._smartico?.api?.getMiniGames) {
+    if (debug) console.log("[BOOT] smartico already ready -> reuse instance");
+    window.__smarticoInitCache[key] = Promise.resolve(window._smartico);
+    return window._smartico;
+  }
+
+  window.__smarticoInitCache[key] = (async () => {
     step("set-globals");
     window._smartico_user_id = opts.userId;
     window._smartico_language = opts.language;
@@ -96,7 +148,6 @@ export async function bootSmartico(opts: {
     const s = window._smartico!;
 
     step("attach-listeners");
-    // listeners antes do init (não depende deles)
     try { s.on?.("init", () => debug && console.log("[BOOT] event:init")); } catch {}
     try { s.on?.("identify", () => debug && console.log("[BOOT] event:identify")); } catch {}
 
@@ -104,10 +155,14 @@ export async function bootSmartico(opts: {
     s.init(opts.labelKey, { brand_key: opts.brandKey });
 
     step("wait-api");
-    await waitFor(() => typeof s?.api?.getMiniGames === "function", 12000, debug, "s.api.getMiniGames");
+    await waitFor(
+      () => typeof s?.api?.getMiniGames === "function",
+      12000,
+      debug,
+      "s.api.getMiniGames"
+    );
 
     step("probe-getMiniGames");
-    // tenta de verdade (se der erro real, a gente mostra)
     await s.api.getMiniGames();
 
     step("suspend-ui");
@@ -118,5 +173,5 @@ export async function bootSmartico(opts: {
     return s;
   })();
 
-  return window.__smarticoInitPromise;
+  return window.__smarticoInitCache[key]!;
 }

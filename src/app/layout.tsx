@@ -2,10 +2,15 @@ import "./globals.css";
 
 export const metadata = { title: "Smartico Games Host" };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import GameHubInstaller from "./GameHubInstaller";
+
+export default function RootLayout({ children }: any) {
   return (
-    <html lang="pt-BR">
-      <body>{children}</body>
+    <html>
+      <body>
+        <GameHubInstaller />
+        {children}
+      </body>
     </html>
   );
 }
