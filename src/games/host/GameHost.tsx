@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { GameKey } from "@/games/registry";
 import { gamesRegistry } from "@/games/registry";
 import GameRenderer from "@/games/host/GameRenderer.client";
-import { bootSmartico, resetSmarticoBootForDev } from "@/lib/smartico/boot";
+import { bootSmartico } from "@/lib/smartico/boot";
 
 type Props = {
   gameKey: GameKey;
@@ -38,10 +38,6 @@ export default function GameHost({ gameKey, userId, language, skinId }: Props) {
     if (!labelKey || !brandKey || !scriptUrl) {
       setErr("Faltam env vars NEXT_PUBLIC_SMARTICO_*");
       return;
-    }
-
-    if (process.env.NODE_ENV === "development") {
-      resetSmarticoBootForDev();
     }
 
     bootSmartico({

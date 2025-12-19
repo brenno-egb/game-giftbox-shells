@@ -248,7 +248,6 @@
       height: "calc(100% - " + (inset.top + inset.bottom) + "px)",
       border: "0",
       borderRadius: "16px",
-      background: "#000",
       boxShadow: "0 20px 80px rgba(0,0,0,.5)",
     });
 

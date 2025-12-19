@@ -41,6 +41,8 @@ const PrizeItem = ({ prize }: { prize: any }) => (
 export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const gameState = useWheelGame({ smartico, templateId });
 
+  console.log(gameState);
+
   const [phase, setPhase] = useState<"chest" | "wheel">("chest");
   const [chestOpen, setChestOpen] = useState(false);
   const [targetPrizeIndex, setTargetPrizeIndex] = useState<number | null>(null);
