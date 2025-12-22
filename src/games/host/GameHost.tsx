@@ -5,6 +5,7 @@ import type { GameKey } from "@/games/registry";
 import { gamesRegistry } from "@/games/registry";
 import GameRenderer from "@/games/host/GameRenderer.client";
 import { bootSmartico } from "@/lib/smartico/boot";
+import type { BaseSkin } from "../core/types";
 
 type Props = {
   gameKey: GameKey;
@@ -20,10 +21,15 @@ export default function GameHost({ gameKey, userId, language, skinId }: Props) {
 
   const entry = gamesRegistry[gameKey];
 
-  const resolvedSkin = useMemo(() => {
+  const resolvedSkin = useMemo((): BaseSkin => {
+    const skins = entry.skins as Record<string, BaseSkin>;
     const id = skinId ?? entry.defaultSkinId;
-    return (entry.skins as any)[id] ?? (entry.skins as any)[entry.defaultSkinId];
+    return skins[id] ?? skins[entry.defaultSkinId];
   }, [entry, skinId]);
+
+  const resolvedTemplateId = useMemo(() => {
+    return resolvedSkin.templateId ?? entry.templateId;
+  }, [resolvedSkin, entry.templateId]);
 
   useEffect(() => {
     setErr(null);
@@ -81,7 +87,7 @@ export default function GameHost({ gameKey, userId, language, skinId }: Props) {
     <GameRenderer
       gameKey={gameKey}
       smartico={smartico}
-      templateId={entry.templateId}
+      templateId={resolvedTemplateId}
       skin={resolvedSkin}
     />
   );

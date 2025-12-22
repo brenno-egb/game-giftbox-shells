@@ -1,4 +1,3 @@
-// src/games/core/hooks/useMiniGame.ts
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -128,12 +127,14 @@ export function useMiniGame({
   }, [state.nextAvailableTs, refresh]);
 
   const play = useCallback(async () => {
+    console.log(state)
     if (!state.game || !state.canPlay || state.isPlaying) return null;
 
     setState((p) => ({ ...p, isPlaying: true, statusMessage: "Jogando..." }));
 
     try {
       const res = await client.play(state.game.id);
+      console.log(res)
       return res;
     } catch (e: any) {
       setState((p) => ({

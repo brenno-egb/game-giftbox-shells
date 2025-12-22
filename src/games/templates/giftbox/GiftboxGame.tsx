@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Andika } from "next/font/google";
 import { useWheelGame } from "@/games/core/hooks/useWheel";
-import GiftboxChestLottie from "./animation";
+import GiftboxChestRive from "./animation";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -22,13 +22,51 @@ const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
   </svg>
 `)}`;
 
+// Componente de Partícula
+function Particle({ delay, angle, distance, duration }: any) {
+  const x = Math.cos(angle) * distance;
+  const y = Math.sin(angle) * distance;
+
+  return (
+    <div
+      className="absolute left-1/2 top-1/2 h-2 w-2 rounded-full bg-linear-to-br from-yellow-300 via-orange-400 to-pink-500 opacity-0"
+      style={{
+        animation: `particle-burst ${duration}ms ease-out ${delay}ms forwards`,
+        "--tx": `${x}px`,
+        "--ty": `${y}px`,
+      } as any}
+    />
+  );
+}
+
+// Partículas de explosão
+function ParticleExplosion({ active }: { active: boolean }) {
+  if (!active) return null;
+
+  const particles = Array.from({ length: 24 }, (_, i) => {
+    const angle = (i / 24) * Math.PI * 2;
+    const distance = 80 + Math.random() * 60;
+    const delay = Math.random() * 100;
+    const duration = 800 + Math.random() * 400;
+    return { angle, distance, delay, duration, key: i };
+  });
+
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {particles.map((p) => (
+        <Particle key={p.key} {...p} />
+      ))}
+    </div>
+  );
+}
+
 function PrizeItem({ prize }: { prize: any }) {
   return (
-    <div className="flex h-[78px] w-[120px] flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/25 backdrop-blur-[2px] px-3 select-none">
+    <div className="flex h-19.5 w-30 flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/25 backdrop-blur-[2px] px-3 select-none">
       <img
         src={prize.icon || DEFAULT_ICON}
         alt={prize.name}
-        className="h-[30px] w-[30px] object-contain opacity-95"
+        className="h-7.5 w-7.5 object-contain opacity-95"
         decoding="async"
       />
       <div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[12px] leading-[1.1] text-white/85">
@@ -41,13 +79,17 @@ function PrizeItem({ prize }: { prize: any }) {
 export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const gameState = useWheelGame({ smartico, templateId });
 
-  const [phase, setPhase] = useState<"chest" | "wheel">("chest");
+  const [isShaking, setIsShaking] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
+  const [triggerFinal, setTriggerFinal] = useState(false);
+  const [showWheel, setShowWheel] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
   const [targetPrizeIndex, setTargetPrizeIndex] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
   const [lastPrize, setLastPrize] = useState<any>(null);
-  const [showWin, setShowWin] = useState(false);
+  const [showPrizeAnnouncement, setShowPrizeAnnouncement] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isCompactMode, setIsCompactMode] = useState(false);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -156,7 +198,14 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     await animateTo(currentXRef.current, toX, 220);
 
     setLastPrize(prize);
-    setShowWin(true);
+    
+    // Inicia a animação final do baú após o spin
+    setTimeout(() => {
+      setTriggerFinal(true);
+    }, 200);
+    
+    await new Promise(resolve => setTimeout(resolve, 400));
+    setShowPrizeAnnouncement(true);
     setIsAnimating(false);
 
     await gameState.refresh();
@@ -164,16 +213,33 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
   const handleChestClick = () => {
     if (!gameState.canPlay || isAnimating || chestOpen) return;
-    setChestOpen(true);
+    
+    setIsShaking(true);
+    setTimeout(() => {
+      setIsShaking(false);
+      setChestOpen(true);
+    }, 600);
+  };
+
+  const handleChestOpenStart = () => {
+    setShowParticles(true);
+    setTimeout(() => setShowParticles(false), 1200);
+  };
+
+  const handleChestOpenPeak = () => {
+    setShowWheel(true);
+    
+    setTimeout(() => {
+      playGame();
+    }, 100);
   };
 
   const handleChestOpenComplete = () => {
-    setPhase("wheel");
-    setTimeout(() => playGame(), 100);
+    // Mantém o baú aberto
   };
 
-  const closeWin = useCallback(() => {
-    setShowWin(false);
+  const closePrizeAnnouncement = useCallback(() => {
+    setShowPrizeAnnouncement(false);
 
     if (lastPrize?.acknowledge_dp && typeof smartico?.dp === "function") {
       try {
@@ -181,10 +247,20 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       } catch {}
     }
 
-    if (!gameState.canPlay) {
-      setPhase("chest");
-      setChestOpen(false);
-    }
+    setTriggerFinal(true);
+    setIsCompactMode(true);
+
+    setTimeout(() => {
+      if (!gameState.canPlay) {
+        setChestOpen(false);
+        setShowWheel(false);
+        setShowParticles(false);
+        setTargetPrizeIndex(null);
+        setLastPrize(null);
+        setTriggerFinal(false);
+        setIsCompactMode(false);
+      }
+    }, 1000);
   }, [lastPrize, smartico, gameState.canPlay]);
 
   useEffect(() => {
@@ -220,15 +296,15 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const prizeLabel = useMemo(() => {
     if (!lastPrize) return "Jogada concluída.";
     const msg = lastPrize.acknowledge_message ?? lastPrize.aknowledge_message;
-    if (lastPrize.prize_type === "no-prize") return msg || "Quase!";
-    return `${msg ?? "Parabéns! Você ganhou"} ${lastPrize.name ?? ""}`.trim();
+    if (lastPrize.prize_type === "no-prize") return msg || "Quase lá!";
+    return `${msg ?? "Você ganhou"} ${lastPrize.name ?? ""}`.trim();
   }, [lastPrize]);
 
   if (gameState.isLoading) {
     return (
       <div className={[andika.className, "min-h-screen w-full flex items-center justify-center"].join(" ")}>
         <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white/85 backdrop-blur-[2px]">
-          Carregando…
+          Carregando...
         </div>
       </div>
     );
@@ -244,89 +320,54 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     );
   }
 
+  const chestPath = skin?.rivePath ?? skin?.lottiePath;
+
   return (
-    <div data-skin={skin?.id ?? "default"} className={[andika.className, "min-h-screen w-full relative text-white"].join(" ")}>
-      {/* FASE 1 - Baú */}
-      {phase === "chest" && (
-        <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-6">
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={handleChestClick}
-              className="group cursor-pointer outline-none"
-              aria-label="Abrir baú"
-              style={{ animation: "float 3.2s ease-in-out infinite" }}
-              disabled={!gameState.canPlay || isAnimating || chestOpen}
-            >
-              <div className="transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[0.98]">
-                <GiftboxChestLottie
-                  path={skin?.lottiePath}
-                  isOpen={chestOpen}
-                  onOpenComplete={handleChestOpenComplete}
-                  className="h-[190px] w-[230px] mx-auto"
-                />
-              </div>
-            </button>
-
-            <div className="mt-8">
-              {gameState.canPlay ? (
-                <>
-                  <div className="text-[13px] uppercase tracking-[0.18em] text-white/55">Pronto</div>
-                  <div className="mt-2 text-xl font-bold text-white/90">Toque no baú</div>
-                </>
-              ) : gameState.countdown ? (
-                <>
-                  <div className="text-[13px] uppercase tracking-[0.18em] text-white/55">Próximo giro</div>
-                  <div className="mt-2 text-2xl font-black text-white/90 tabular-nums">{gameState.countdown}</div>
-                </>
-              ) : (
-                <div className="text-lg font-semibold text-white/70">Sem tentativas</div>
-              )}
-
-              <div className="mt-6 text-xs text-white/55">
-                {gameState.attemptsDisplay.label}:{" "}
-                <span className="font-semibold text-white/85 tabular-nums">{gameState.attemptsDisplay.value}</span>
-              </div>
-            </div>
-
-            <style jsx>{`
-              @keyframes float {
-                0%,
-                100% {
-                  transform: translateY(0px);
-                }
-                50% {
-                  transform: translateY(-14px);
-                }
-              }
-            `}</style>
-          </div>
-        </div>
+    <div data-skin={skin?.id ?? "default"} className={[andika.className, `min-h-screen w-full relative text-white overflow-hidden bg-[url(/games/giftbox/skins/emerald/bg-emerald.webp)] bg-center bg-cover bg-no-repeat`].join(" ")}>
+      
+      {/* Glow quando abre */}
+      {chestOpen && (
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 70%, rgba(255,215,0,0.15) 0%, transparent 50%)',
+            animation: 'pulse-glow 2s ease-in-out infinite'
+          }}
+        />
       )}
 
-      {/* FASE 2 - Roleta */}
-      {phase === "wheel" && (
-        <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] flex items-center justify-center p-6">
-          <div className="w-full max-w-4xl">
-            <div className="text-center mb-7">
-              <div className="text-[13px] uppercase tracking-[0.18em] text-white/55">Roleta</div>
-              <div className="mt-2 text-xl font-bold text-white/90">
-                {isAnimating ? "Girando…" : "A linha marca o resultado"}
+      {/* Container principal - Layout vertical otimizado */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3">
+        
+        {/* 1. ROLETA NO TOPO */}
+        {showWheel && (
+          <div 
+            className="w-full max-w-4xl animate-slide-up-fade shrink-0"
+            style={{
+              animation: 'slide-up-fade 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+            }}
+          >
+            <div className="text-center mb-3">
+              <div className="text-[11px] uppercase tracking-[0.2em] text-yellow-300/60 font-semibold">
+                SORTEANDO
+              </div>
+              <div className="mt-0.5 text-base font-bold text-white/90">
+                {isAnimating ? "Girando..." : "Resultado"}
               </div>
             </div>
 
             <div className="relative">
-              {/* Marcador central minimalista */}
-              <div className="absolute left-1/2 top-[-8px] z-20 -translate-x-1/2">
-                <div className="h-0 w-0 border-l-[7px] border-r-[7px] border-b-[10px] border-l-transparent border-r-transparent border-b-white/70" />
+              {/* Linha indicadora */}
+              <div className="absolute left-1/2 -top-2 z-20 -translate-x-1/2">
+                <div className="h-0 w-0 border-l-[6px] border-r-[6px] border-b-[10px] border-l-transparent border-r-transparent border-b-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
               </div>
-              <div className="absolute left-1/2 top-0 bottom-0 z-10 w-[1px] -translate-x-1/2 bg-white/40" />
+              <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-linear-to-b from-yellow-400 via-yellow-500 to-transparent opacity-60" />
 
-              {/* Track */}
-              <div className="relative h-[110px] overflow-hidden rounded-2xl border border-white/10 bg-black/25 backdrop-blur-[2px]">
+              {/* Container da roleta */}
+              <div className="relative h-27.5 overflow-hidden rounded-2xl border-2 border-yellow-500/30 bg-black/40 backdrop-blur-xs shadow-[0_0_30px_rgba(250,204,21,0.2)]">
                 <div
                   ref={trackRef}
-                  className="absolute left-0 top-[16px] flex gap-3 will-change-transform"
+                  className="absolute left-0 top-4 flex gap-3 will-change-transform"
                   style={{ transform: `translate3d(${currentX}px, 0, 0)` }}
                 >
                   {strip.map((prize, idx) => (
@@ -336,60 +377,208 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
               </div>
             </div>
 
-            {!isAnimating && gameState.canPlay && (
-              <div className="mt-8 flex flex-col items-center gap-3">
+            {/* Botão girar novamente */}
+            {!isAnimating && gameState.canPlay && !showPrizeAnnouncement && (
+              <div className="mt-4 flex flex-col items-center gap-2 animate-fade-in">
                 <button
                   onClick={playGame}
-                  className="rounded-2xl border border-white/12 bg-white/10 px-7 py-3 text-sm font-semibold text-white/90 backdrop-blur-[2px] transition hover:bg-white/12 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl border-2 border-yellow-500/40 bg-linear-to-b from-yellow-600/20 to-yellow-800/20 px-6 py-2.5 text-sm font-bold text-yellow-100 backdrop-blur-[2px] transition hover:from-yellow-600/30 hover:to-yellow-800/30 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-yellow-400/50 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(250,204,21,0.15)]"
                   disabled={!gameState.canPlay || isAnimating}
                 >
                   Girar novamente
                 </button>
-                <div className="text-xs text-white/55 tabular-nums">
-                  Giros restantes: <span className="text-white/80 font-semibold">{gameState.attemptsDisplay.value}</span>
+                <div className="text-[11px] text-white/50 tabular-nums">
+                  Giros restantes: <span className="text-yellow-300/90 font-semibold">{gameState.attemptsDisplay.value}</span>
                 </div>
               </div>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Modal Prêmio */}
-      {showWin && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4 backdrop-blur-[2px]"
-          onClick={(e) => e.target === e.currentTarget && closeWin()}
-        >
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/45 p-7 text-center shadow-[0_18px_60px_rgba(0,0,0,.55)]">
-            <div className="text-[13px] uppercase tracking-[0.18em] text-white/55">
-              {lastPrize?.prize_type === "no-prize" ? "Quase" : "Você ganhou"}
-            </div>
+        {/* 2. ANÚNCIO DE PRÊMIO - COMPACTO */}
+        {showPrizeAnnouncement && lastPrize && (
+          <div 
+            className="w-full max-w-md animate-bounce-in z-40 shrink-0"
+          >
+            <div className="rounded-2xl border border-yellow-500/30 bg-black/50 backdrop-blur-md p-3 text-center shadow-[0_0_30px_rgba(250,204,21,0.2)]">
 
-            <div className="mt-2 text-2xl font-black text-white/90">
-              {lastPrize?.prize_type === "no-prize" ? "😅" : "🎉"}
-            </div>
+              {(lastPrize?.icon || DEFAULT_ICON) && (
+                <div className="mb-2">
+                  <img
+                    src={lastPrize?.icon || DEFAULT_ICON}
+                    alt={lastPrize?.name || "Prêmio"}
+                    className="h-12 w-12 object-contain mx-auto opacity-95 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                  />
+                </div>
+              )}
 
-            {(lastPrize?.icon || DEFAULT_ICON) && (
-              <div className="mt-5">
-                <img
-                  src={lastPrize?.icon || DEFAULT_ICON}
-                  alt={lastPrize?.name || "Prêmio"}
-                  className="h-16 w-16 object-contain mx-auto opacity-95"
-                />
+              <div className="text-[13px] leading-snug text-white/90 font-semibold mb-2">
+                {prizeLabel}
               </div>
-            )}
 
-            <div className="mt-5 text-[15px] leading-relaxed text-white/85">{prizeLabel}</div>
-
-            <button
-              onClick={closeWin}
-              className="mt-7 inline-flex items-center justify-center rounded-2xl border border-white/12 bg-white/10 px-6 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-[2px] transition hover:bg-white/12 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/30"
-            >
-              OK
-            </button>
+              <button
+                onClick={closePrizeAnnouncement}
+                className="inline-flex items-center justify-center rounded-xl border-2 border-yellow-500/40 bg-linear-to-b from-yellow-600/20 to-yellow-800/20 px-5 py-2 text-xs font-bold text-yellow-100 backdrop-blur-[2px] transition hover:from-yellow-600/30 hover:to-yellow-800/30 active:scale-[0.98] focus-visible:outline focus-visible:outline-yellow-400/50 shadow-[0_0_20px_rgba(250,204,21,0.15)]"
+              >
+                Continuar
+              </button>
+            </div>
           </div>
+        )}
+
+        {/* 3. BAÚ EMBAIXO - TAMANHO VARIÁVEL */}
+        <div className={`relative z-30 shrink-0 transition-all duration-500 ${isCompactMode ? 'scale-[0.67]' : 'scale-100'}`}>
+          <button
+            type="button"
+            onClick={handleChestClick}
+            className={`group cursor-pointer outline-none transition-transform duration-200 ${
+              isShaking ? 'animate-shake' : ''
+            }`}
+            aria-label="Abrir baú"
+            disabled={!gameState.canPlay || isAnimating || chestOpen}
+            style={{
+              animation: !chestOpen && !isShaking ? 'float 3.2s ease-in-out infinite' : undefined,
+              transform: chestOpen ? 'scale(1.05)' : undefined,
+            }}
+          >
+            <div className={`transition-all duration-300 ${!chestOpen ? 'group-hover:scale-[1.05] group-active:scale-[0.97]' : ''}`}>
+              <GiftboxChestRive
+                path={chestPath}
+                isOpen={chestOpen}
+                triggerFinal={triggerFinal}
+                onOpenStart={handleChestOpenStart}
+                onOpenPeak={handleChestOpenPeak}
+                onOpenComplete={handleChestOpenComplete}
+                className="h-60.5 w-60.5 mx-auto"
+              />
+            </div>
+          </button>
+
+          {/* Partículas de explosão */}
+          <ParticleExplosion active={showParticles} />
+
+          {/* Texto abaixo do baú - só quando não tem roleta */}
+          {!showWheel && (
+            <div className="mt-4 text-center">
+              {gameState.canPlay ? (
+                <>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/50 font-semibold">
+                    {isShaking ? 'PREPARANDO' : 'PRONTO'}
+                  </div>
+                  <div className="mt-1.5 text-lg font-bold text-white/90 animate-fade-in text-shadow-lg text-shadow-black">
+                    Toque no baú
+                  </div>
+                </>
+              ) : gameState.countdown ? (
+                <>
+                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/50 font-semibold">PRÓXIMO GIRO</div>
+                  <div className="mt-1.5 text-xl font-black text-white/90 tabular-nums">{gameState.countdown}</div>
+                </>
+              ) : (
+                <div className="text-base font-semibold text-white/70">Sem tentativas</div>
+              )}
+
+              <div className="mt-12 text-[15px] text-white/50">
+                {gameState.attemptsDisplay.label}:{" "}
+                <span className="font-semibold text-white/85 tabular-nums">{gameState.attemptsDisplay.value}</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-14px); }
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0) rotate(0deg); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px) rotate(-2deg); }
+          20%, 40%, 60%, 80% { transform: translateX(8px) rotate(2deg); }
+        }
+        
+        @keyframes pulse-glow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        
+        @keyframes slide-up-fade {
+          from {
+            opacity: 0;
+            transform: translateY(40px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @keyframes fade-in {
+          from { scale: 1 }
+          to { scale: 1.2 }
+        }
+        
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes bounce-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        @keyframes particle-burst {
+          0% {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(var(--tx), var(--ty)) scale(0);
+          }
+        }
+        
+        .animate-shake {
+          animation: shake 0.6s ease-in-out;
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 1s infinite alternate;
+        }
+        
+        .animate-scale-in {
+          animation: scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .animate-bounce-in {
+          animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .animate-slide-up-fade {
+          animation: slide-up-fade 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+      `}</style>
     </div>
   );
 }

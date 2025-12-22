@@ -107,6 +107,9 @@ export function createSmarticoClient(smartico: any) {
   ): Promise<LoadStateResult> {
     const [games, info] = await Promise.all([getMiniGames(opts), getPublicProps()]);
 
+    console.log(games)
+    console.log(info)
+
     const game =
       games?.find((g: any) => String(g.id) === String(templateId)) ?? null;
 

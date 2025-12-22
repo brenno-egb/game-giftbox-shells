@@ -12,6 +12,7 @@ export default async function GamePage({ params, searchParams }: PageProps) {
   const sp = await searchParams;
 
   const entry = getGameEntry(slug);
+  console.log(entry)
   if (!entry) return notFound();
 
   const uidRaw = sp.uid;
@@ -20,7 +21,12 @@ export default async function GamePage({ params, searchParams }: PageProps) {
 
   const userId = Array.isArray(uidRaw) ? uidRaw[0] : (uidRaw ?? "test-user");
   const language = Array.isArray(langRaw) ? langRaw[0] : (langRaw ?? "pt");
-  const skinId = Array.isArray(skinRaw) ? skinRaw[0] : undefined;
+  const skinId = Array.isArray(skinRaw)
+  ? skinRaw[0]
+  : typeof skinRaw === "string"
+    ? skinRaw
+    : undefined;
+
 
   return (
     <GameHost

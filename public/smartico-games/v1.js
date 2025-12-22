@@ -1,4 +1,4 @@
-/* smartico-games v1 */
+/* smartico-games v1 - Mobile Fix */
 (function () {
   "use strict";
 
@@ -79,7 +79,8 @@
 
     ui: {
       mode: "overlay", // overlay | popup
-      overlayInset: { top: 60, right: 16, bottom: 16, left: 16 },
+      mobileWidth: 414, // largura do iframe no desktop (como um celular)
+      mobileHeight: "100%", // altura do iframe no desktop
       iframeAllow:
         "fullscreen; autoplay; clipboard-read; clipboard-write; payment; web-share",
     },
@@ -199,27 +200,21 @@
     overlay = doc.createElement("div");
     overlay.id = OVERLAY_ID;
 
-    var inset = config.ui.overlayInset || {
-      top: 60,
-      right: 16,
-      bottom: 16,
-      left: 16,
-    };
-
+    // Overlay sem backdrop-filter, totalmente transparente
     Object.assign(overlay.style, {
       position: "fixed",
       inset: "0",
-      zIndex: 2147483647,
-      background: "rgba(0,0,0,.75)",
+      zIndex: "2147483647",
       display: "none",
-      backdropFilter: "blur(6px)",
+      backgroundColor: "transparent",
+      overflow: "hidden",
     });
 
     var close = doc.createElement("button");
     close.id = BTN_ID;
     close.textContent = "✕";
     Object.assign(close.style, {
-      position: "absolute",
+      position: "fixed",
       top: "12px",
       right: "12px",
       width: "44px",
@@ -228,8 +223,10 @@
       border: "0",
       cursor: "pointer",
       fontSize: "20px",
-      fontWeight: 900,
+      fontWeight: "900",
       background: "rgba(255,255,255,.9)",
+      zIndex: "2147483648", // Sempre acima do iframe
+      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
     });
     close.onclick = function () {
       API.hide();
@@ -238,17 +235,68 @@
     var frame = doc.createElement("iframe");
     frame.id = IFRAME_ID;
 
+    var mobileWidth = config.ui.mobileWidth || 414;
+    var mobileHeight = config.ui.mobileHeight || "100%";
+
+    // Estilos base do iframe
     Object.assign(frame.style, {
-      position: "absolute",
-      top: inset.top + "px",
-      right: inset.right + "px",
-      bottom: inset.bottom + "px",
-      left: inset.left + "px",
-      width: "calc(100% - " + (inset.left + inset.right) + "px)",
-      height: "calc(100% - " + (inset.top + inset.bottom) + "px)",
+      position: "fixed", // Mudado de absolute para fixed
       border: "0",
-      borderRadius: "16px",
-      boxShadow: "0 20px 80px rgba(0,0,0,.5)",
+      borderRadius: "0",
+      boxShadow: "none",
+      backgroundColor: "transparent",
+      zIndex: "2147483647", // Mesmo z-index do overlay
+    });
+
+    // Media query via JavaScript
+    function applyResponsiveStyles() {
+      var isMobile = window.innerWidth <= 768;
+      
+      if (isMobile) {
+        // No mobile: tela cheia sem margens
+        Object.assign(frame.style, {
+          top: "0",
+          left: "0",
+          width: "100vw",
+          height: "100vh",
+          maxWidth: "100vw",
+          maxHeight: "100vh",
+          transform: "none",
+        });
+        
+        // Ajusta botão no mobile
+        Object.assign(close.style, {
+          top: "8px",
+          right: "8px",
+        });
+      } else {
+        // No desktop: tamanho mobile centralizado
+        Object.assign(frame.style, {
+          top: "0",
+          left: "50%",
+          width: mobileWidth + "px",
+          height: mobileHeight,
+          maxWidth: mobileWidth + "px",
+          maxHeight: "100vh",
+          transform: "translateX(-50%)",
+        });
+        
+        // Ajusta botão no desktop (ao lado do iframe)
+        Object.assign(close.style, {
+          top: "12px",
+          right: "calc(50% - " + (mobileWidth / 2 + 56) + "px)", // 56px = margem + largura do botão
+        });
+      }
+    }
+
+    // Aplica estilos inicialmente
+    applyResponsiveStyles();
+
+    // Reaplica quando a janela é redimensionada
+    var resizeTimeout;
+    window.addEventListener("resize", function() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(applyResponsiveStyles, 100);
     });
 
     frame.setAttribute("allow", config.ui.iframeAllow || "");
@@ -257,9 +305,9 @@
       log("iframe loaded:", frame.src);
     });
 
-    overlay.appendChild(close);
     overlay.appendChild(frame);
     doc.body.appendChild(overlay);
+    doc.body.appendChild(close); // Botão fora do overlay
 
     log("overlay created in", hostWin === window.top ? "window.top" : "window");
     return { hostWin: hostWin, doc: doc, overlay: overlay };
@@ -268,11 +316,24 @@
   function showOverlay(url) {
     var o = ensureOverlay();
     var doc = o.doc;
+    var hostWin = o.hostWin;
     var overlay = o.overlay;
     var frame = doc.getElementById(IFRAME_ID);
+    var close = doc.getElementById(BTN_ID);
 
     overlay.style.display = "block";
+    if (close) close.style.display = "block";
+    
+    // Previne scroll no body
     doc.body.style.overflow = "hidden";
+    doc.documentElement.style.overflow = "hidden";
+    
+    // Fix para mobile - previne bounce/scroll
+    if (window.innerWidth <= 768) {
+      doc.body.style.position = "fixed";
+      doc.body.style.width = "100%";
+      doc.body.style.height = "100%";
+    }
 
     // Set src depois de mostrar ajuda em alguns casos de layout/CSP
     frame.src = url;
@@ -286,10 +347,18 @@
 
     var overlay = doc.getElementById(OVERLAY_ID);
     var frame = doc.getElementById(IFRAME_ID);
+    var close = doc.getElementById(BTN_ID);
 
     if (overlay) overlay.style.display = "none";
+    if (close) close.style.display = "none";
     if (frame) frame.src = "about:blank";
+    
+    // Restaura scroll no body
     doc.body.style.overflow = "";
+    doc.documentElement.style.overflow = "";
+    doc.body.style.position = "";
+    doc.body.style.width = "";
+    doc.body.style.height = "";
 
     emit("hide", {});
   }
