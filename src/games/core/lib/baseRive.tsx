@@ -75,7 +75,5 @@ export default function BaseRive({
     else rive.pause();
   }, [rive, play]);
 
-  // ⚠️ IMPORTANTE: o canvas depende do tamanho do container.
-  // Dê width/height via style/className ou wrapper.
   return <RiveComponent className={className} style={style} />;
 }
