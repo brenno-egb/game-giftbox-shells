@@ -7,7 +7,7 @@ export const gamesRegistry = {
     slug: "giftbox",
     templateId: 7070,
     skins: giftboxSkins,
-    defaultSkinId: "classic",
+    defaultSkinId: "bronze",
   },
 } as const;
 

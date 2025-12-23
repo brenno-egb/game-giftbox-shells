@@ -37,7 +37,7 @@
 
   function safeNum(v, fallback) {
     var n = typeof v === "number" ? v : Number(v);
-    return Number.isFinite(n) ? n : (fallback || 0);
+    return Number.isFinite(n) ? n : fallback || 0;
   }
 
   function enc(s) {
@@ -251,7 +251,7 @@
     // Media query via JavaScript
     function applyResponsiveStyles() {
       var isMobile = window.innerWidth <= 768;
-      
+
       if (isMobile) {
         // No mobile: tela cheia sem margens
         Object.assign(frame.style, {
@@ -263,7 +263,7 @@
           maxHeight: "100vh",
           transform: "none",
         });
-        
+
         // Ajusta botão no mobile
         Object.assign(close.style, {
           top: "8px",
@@ -280,7 +280,7 @@
           maxHeight: "100vh",
           transform: "translateX(-50%)",
         });
-        
+
         // Ajusta botão no desktop (ao lado do iframe)
         Object.assign(close.style, {
           top: "12px",
@@ -294,9 +294,26 @@
 
     // Reaplica quando a janela é redimensionada
     var resizeTimeout;
-    window.addEventListener("resize", function() {
+    window.addEventListener("resize", function () {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(applyResponsiveStyles, 100);
+    });
+
+    window.addEventListener("message", function (ev) {
+      var d = ev && ev.data;
+      if (!d || d.type !== "SMARTICO_GAMES_OPEN_URL") return;
+      if (!d.url) return;
+
+      // segurança mínima: só http/https
+      try {
+        var u = new URL(String(d.url));
+        if (u.protocol !== "http:" && u.protocol !== "https:") return;
+      } catch (e) {
+        return;
+      }
+
+      // redirect na mesma aba (mantém histórico / botão voltar funciona)
+      window.location.assign(String(d.url));
     });
 
     frame.setAttribute("allow", config.ui.iframeAllow || "");
@@ -323,11 +340,11 @@
 
     overlay.style.display = "block";
     if (close) close.style.display = "block";
-    
+
     // Previne scroll no body
     doc.body.style.overflow = "hidden";
     doc.documentElement.style.overflow = "hidden";
-    
+
     // Fix para mobile - previne bounce/scroll
     if (window.innerWidth <= 768) {
       doc.body.style.position = "fixed";
@@ -352,7 +369,7 @@
     if (overlay) overlay.style.display = "none";
     if (close) close.style.display = "none";
     if (frame) frame.src = "about:blank";
-    
+
     // Restaura scroll no body
     doc.body.style.overflow = "";
     doc.documentElement.style.overflow = "";
@@ -376,7 +393,14 @@
     var lang = opts.lang || getLang();
     var skin = opts.skin;
 
-    var url = baseUrl + "/games/" + enc(slug) + "?uid=" + enc(uid) + "&lang=" + enc(lang);
+    var url =
+      baseUrl +
+      "/games/" +
+      enc(slug) +
+      "?uid=" +
+      enc(uid) +
+      "&lang=" +
+      enc(lang);
     if (skin) url += "&skin=" + enc(skin);
     return url;
   }
@@ -396,7 +420,10 @@
     if ((config.ui.mode || "overlay") === "popup") {
       // popup pode ser bloqueado se não for click do usuário
       var w = window.open(url, "_blank", "noopener,noreferrer");
-      if (!w) warn("Popup bloqueado. Use ui.mode='overlay' ou chame em clique do usuário.");
+      if (!w)
+        warn(
+          "Popup bloqueado. Use ui.mode='overlay' ou chame em clique do usuário."
+        );
       emit("open", { url: url, mode: "popup" });
       return;
     }
@@ -424,9 +451,11 @@
 
   function getMappedItemIds() {
     var map = config.routesByItemId || {};
-    return Object.keys(map).map(function (k) {
-      return safeNum(k, 0);
-    }).filter(Boolean);
+    return Object.keys(map)
+      .map(function (k) {
+        return safeNum(k, 0);
+      })
+      .filter(Boolean);
   }
 
   function openFromPurchase(itemId, purchaseItem) {
@@ -436,9 +465,18 @@
     var uid = getUid();
     var lang = getLang();
 
-    log("✅ purchase detected => open", { itemId: itemId, route: route, uid: uid, lang: lang });
+    log("✅ purchase detected => open", {
+      itemId: itemId,
+      route: route,
+      uid: uid,
+      lang: lang,
+    });
 
-    emit("purchase", { itemId: itemId, purchaseItem: purchaseItem, route: route });
+    emit("purchase", {
+      itemId: itemId,
+      purchaseItem: purchaseItem,
+      route: route,
+    });
 
     open(route.slug, { skin: route.skin, uid: uid, lang: lang });
   }
@@ -455,10 +493,13 @@
     var fn = findPurchasedFn(api);
     if (!fn) {
       watching = false;
-      throw new Error("Não achei função de 'purchased store items' na Smartico API.");
+      throw new Error(
+        "Não achei função de 'purchased store items' na Smartico API."
+      );
     }
 
-    var itemIds = opts.itemIds && opts.itemIds.length ? opts.itemIds : getMappedItemIds();
+    var itemIds =
+      opts.itemIds && opts.itemIds.length ? opts.itemIds : getMappedItemIds();
     if (!itemIds.length) {
       warn("watchPurchases: nenhum itemId configurado em routesByItemId.");
     }
@@ -470,13 +511,19 @@
         itemIds.forEach(function (id) {
           lastSeenByItemId[id] = maxPurchaseTsForItem(initial, id) || 0;
         });
-        log("baseline set from initial fetch:", JSON.parse(JSON.stringify(lastSeenByItemId)));
+        log(
+          "baseline set from initial fetch:",
+          JSON.parse(JSON.stringify(lastSeenByItemId))
+        );
       } else {
         log("baseline: initial fetch did not return array (ok)");
       }
     } catch (e) {
       // Se falhar baseline, seguimos mesmo assim
-      warn("baseline fetch failed (continuing):", e && e.message ? e.message : e);
+      warn(
+        "baseline fetch failed (continuing):",
+        e && e.message ? e.message : e
+      );
     }
 
     // 2) Arma onUpdate
@@ -495,7 +542,8 @@
 
         if (maxTs && maxTs > prev) {
           // trava para não abrir N vezes (lista pode vir repetida)
-          openLockUntil = nowMs() + safeNum(config.watcher.openCooldownMs, 2000);
+          openLockUntil =
+            nowMs() + safeNum(config.watcher.openCooldownMs, 2000);
           lastSeenByItemId[itemId] = maxTs;
 
           // pega o item mais recente desse itemId
@@ -581,7 +629,10 @@
     if (config.watcher && config.watcher.autoStart) {
       // Se Smartico ainda não estiver pronto, o watchPurchases espera
       API.watchPurchases().catch(function (e) {
-        errLog("autoStart watchPurchases failed:", e && e.message ? e.message : e);
+        errLog(
+          "autoStart watchPurchases failed:",
+          e && e.message ? e.message : e
+        );
       });
     }
   } catch (e) {

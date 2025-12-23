@@ -1,29 +1,23 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef } from "react";
-import {
-  useRive,
-  Layout,
-  Fit,
-  Alignment,
-  type UseRiveParameters,
-} from "@rive-app/react-canvas";
+import { useRive, Layout, Fit, Alignment } from "@rive-app/react-canvas";
 
 export type RiveInstance = import("@rive-app/canvas").Rive;
 
+type RiveAnimations = string | string[];
+type RiveStateMachines = string | string[];
+type RiveOnStateChange = (event: any) => void;
+
 type Props = {
-  /** caminho do .riv (ex: "/assets/games/giftbox/chest.riv") */
   path: string;
 
-  /** se você usar animation timelines ao invés de state machine */
-  animations?: UseRiveParameters["animations"];
+  animations?: RiveAnimations;
 
-  /** recomendado no seu caso (state machine com entry/isOpen/final) */
-  stateMachines?: UseRiveParameters["stateMachines"];
+  stateMachines?: RiveStateMachines;
 
   artboard?: string;
 
-  /** equivalente ao seu "play" */
   play?: boolean;
 
   className?: string;
@@ -31,8 +25,7 @@ type Props = {
 
   onReady?: (inst: RiveInstance) => void;
 
-  /** proxy útil se você quiser observar mudanças de estado externamente */
-  onStateChange?: UseRiveParameters["onStateChange"];
+  onStateChange?: RiveOnStateChange;
 };
 
 export default function BaseRive({
@@ -53,15 +46,21 @@ export default function BaseRive({
     []
   );
 
-  const { rive, RiveComponent } = useRive({
-    src: path,
-    artboard,
-    animations,
-    stateMachines,
-    autoplay: true,
-    layout,
-    onStateChange,
-  });
+  const params = useMemo(
+    () =>
+      ({
+        src: path,
+        artboard,
+        animations,
+        stateMachines,
+        autoplay: true,
+        layout,
+        ...(onStateChange ? { onStateChange } : {}),
+      } as any),
+    [path, artboard, animations, stateMachines, layout, onStateChange]
+  );
+
+  const { rive, RiveComponent } = useRive(params);
 
   useEffect(() => {
     if (!rive || readyOnceRef.current) return;

@@ -10,6 +10,9 @@ import React, {
 import { Andika } from "next/font/google";
 import { useWheelGame } from "@/games/core/hooks/useWheel";
 import GiftboxChestRive from "./animation";
+import { runPrizeAcknowledge } from "@/games/core/prize/acknowledge";
+import { hostOpenUrl } from "@/games/core/prize/hostBridge";
+
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -30,7 +33,7 @@ const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
 
 function PrizeItem({ prize }: { prize: any }) {
   return (
-    <div className="flex h-25 w-25 sm:h-19.5 sm:w-30 flex-col items-center justify-center gap-1.5 rounded-2xl border border-white/12 bg-black/35 backdrop-blur-[2px] px-2.5 select-none">
+    <div className="flex h-25 w-25 sm:h-19.5 sm:w-30 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-black/35 backdrop-blur-[2px] px-2.5 select-none">
       <img
         src={prize.icon || DEFAULT_ICON}
         alt={prize.name}
@@ -168,14 +171,11 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     const kick = getStepPx() * 12;
     const startX = currentXRef.current;
 
-    // await animateTo(startX, startX - kick, 10);
     const toX = getTargetX(targetIndex, currentXRef.current);
     await animateTo(currentXRef.current, toX, 11000);
-    // await animateTo(currentXRef.current, toX, 10);
 
     setLastPrize(prize);
 
-    // Inicia a animação final do baú após o spin
     setTimeout(() => {
       setTriggerFinal(true);
     }, 200);
@@ -197,10 +197,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     }, 600);
   };
 
-  const handleChestOpenStart = () => {
-    // setShowParticles(true);
-    // setTimeout(() => setShowParticles(false), 1200);
-  };
+  const handleChestOpenStart = () => {};
 
   const handleChestOpenPeak = () => {
     setShowWheel(true);
@@ -213,10 +210,18 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const closePrizeAnnouncement = useCallback(() => {
     setShowPrizeAnnouncement(false);
 
-    if (lastPrize?.acknowledge_dp && typeof smartico?.dp === "function") {
-      try {
-        smartico.dp(lastPrize.acknowledge_dp);
-      } catch {}
+    // if (lastPrize?.acknowledge_dp && typeof smartico?.dp === "function") {
+    //   try {
+    //     smartico.dp(lastPrize.acknowledge_dp);
+    //   } catch {}
+    // }
+
+    if (lastPrize) {
+      runPrizeAcknowledge({
+        prize: lastPrize,
+        smartico,
+        hostOpenUrl,
+      });
     }
 
     setTriggerFinal(true);
@@ -226,7 +231,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       if (!gameState.canPlay) {
         setChestOpen(false);
         setShowWheel(false);
-        // setShowParticles(false);
+
         setTargetPrizeIndex(null);
         setLastPrize(null);
         setTriggerFinal(false);
@@ -363,8 +368,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
               <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-linear-to-b from-white/60 via-white/40 to-transparent opacity-60" />
 
               {/* Container da roleta */}
-              <div className="relative h-31.5 sm:h-27.5 overflow-hidden rounded-2xl border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
-                {/* fade nas bordas (ajuda a “ler” o carrossel no mobile) */}
+              <div className="relative h-31.5 sm:h-27.5 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
                 <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-linear-to-r from-black/60 to-transparent" />
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-black/60 to-transparent" />
 
@@ -404,7 +408,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         {/* 2. ANÚNCIO DE PRÊMIO - COMPACTO */}
         {showPrizeAnnouncement && lastPrize && (
           <div className="w-full max-w-md animate-bounce-in z-40 shrink-0">
-            <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-black/50 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.25)]">
+            <div className="relative overflow-hidden rounded-lg border border-white/15 bg-black/50 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.25)]">
               {/* fundo sutil */}
               <div
                 className="absolute inset-0 pointer-events-none"
@@ -434,7 +438,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                 </div>
 
                 {/* Coluna direita - texto + ações */}
-                <div className="flex flex-1 flex-col justify-between p-4 text-left">
+                <div className="flex flex-1 flex-col justify-between p-1 pl-3 text-left">
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-semibold">
                       prêmio
