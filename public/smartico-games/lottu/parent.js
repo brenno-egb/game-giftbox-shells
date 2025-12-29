@@ -1,5 +1,5 @@
 window.__SMARTICO_GAMES__ = {
-  baseUrl: "http://localhost:3000",
+  baseUrl: "https://game-giftbox-shells.vercel.app",
   debug: true,
 
   routesByItemId: {

@@ -8,11 +8,9 @@ import React, {
   useMemo,
 } from "react";
 import { Andika } from "next/font/google";
+import { runPrizeAcknowledge, HostBridge } from "@/games/core/prize";
 import { useWheelGame } from "@/games/core/hooks/useWheel";
 import GiftboxChestRive from "./animation";
-import { runPrizeAcknowledge } from "@/games/core/prize/acknowledge";
-import { hostOpenUrl } from "@/games/core/prize/hostBridge";
-
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -216,13 +214,14 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     //   } catch {}
     // }
 
-    if (lastPrize) {
-      runPrizeAcknowledge({
-        prize: lastPrize,
+    runPrizeAcknowledge(
+      lastPrize,
+      {
         smartico,
-        hostOpenUrl,
-      });
-    }
+        redirect: (url, mode) => HostBridge.redirect(url, mode),
+      },
+      { redirectMode: "assign" } // ou "replace" se quiser não voltar no back
+    );
 
     setTriggerFinal(true);
     setIsCompactMode(true);

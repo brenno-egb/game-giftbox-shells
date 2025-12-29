@@ -1,50 +1,60 @@
-type Ack =
+import type { RedirectMode } from "./hostBridge";
+
+export type PrizeLike = { acknowledge_dp?: unknown };
+
+export type AckIntent =
   | { kind: "none" }
-  | { kind: "url"; url: string }
-  | { kind: "dp"; payload: any };
+  | { kind: "redirect"; url: URL; mode: RedirectMode }
+  | { kind: "dp"; payload: unknown };
 
-function isHttpUrl(v: any) {
+function asHttpUrl(v: unknown): URL | null {
+  if (typeof v !== "string" || !v) return null;
   try {
-    const u = new URL(String(v));
-    return u.protocol === "http:" || u.protocol === "https:";
+    const u = new URL(v);
+    if (u.protocol === "http:" || u.protocol === "https:") return u;
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-export function resolvePrizeAcknowledge(prize: any): Ack {
-  const v = prize?.acknowledge_dp;
-  if (!v) return { kind: "none" };
+export function resolvePrizeAcknowledge(
+  prize: PrizeLike | null | undefined,
+  opts?: { redirectMode?: RedirectMode }
+): AckIntent {
+  const raw = prize?.acknowledge_dp;
+  if (raw == null || raw === "") return { kind: "none" };
 
-  if (isHttpUrl(v)) return { kind: "url", url: String(v) };
+  const url = asHttpUrl(raw);
+  if (url) {
+    return { kind: "redirect", url, mode: opts?.redirectMode ?? "assign" };
+  }
 
-  return { kind: "dp", payload: v };
+  return { kind: "dp", payload: raw };
 }
 
-export function runPrizeAcknowledge(opts: {
-  prize: any;
-  smartico?: any;
+export type AckDeps = {
+  smartico?: { dp?: (payload: unknown) => void };
+  redirect?: (url: string, mode: RedirectMode) => void;
+};
 
-  hostOpenUrl?: (url: string) => void;
-}) {
-  const ack = resolvePrizeAcknowledge(opts.prize);
+export function runPrizeAcknowledge(
+  prize: PrizeLike | null | undefined,
+  deps: AckDeps,
+  opts?: { redirectMode?: RedirectMode }
+): AckIntent {
+  const intent = resolvePrizeAcknowledge(prize, opts);
 
-  if (ack.kind === "none") return ack;
+  if (intent.kind === "none") return intent;
 
-  if (ack.kind === "url") {
-    if (opts.hostOpenUrl) {
-      opts.hostOpenUrl(ack.url);
-    } else {
-      window.open(ack.url, "_blank", "noopener,noreferrer");
-    }
-    return ack;
+  if (intent.kind === "redirect") {
+    deps.redirect?.(intent.url.toString(), intent.mode);
+    return intent;
   }
 
-  if (typeof opts.smartico?.dp === "function") {
-    try {
-      opts.smartico.dp(ack.payload);
-    } catch {}
-  }
+  try {
+    deps.smartico?.dp?.(intent.payload);
+  } catch {}
 
-  return ack;
+  return intent;
 }

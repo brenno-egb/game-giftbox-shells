@@ -1,9 +1,17 @@
-/* smartico-games v1 - Mobile Fix */
+/* smartico-games v1.1 - Mobile Fix + Messaging Router (redirect same-tab) */
 (function () {
   "use strict";
 
   // Evita duplicar se o script for carregado 2x
   if (window.SmarticoGames && window.SmarticoGames.version) return;
+
+  // ---------------------------
+  // Constants / IDs
+  // ---------------------------
+  var OVERLAY_ID = "__smartico_games_overlay";
+  var IFRAME_ID = "__smartico_games_iframe";
+  var BTN_ID = "__smartico_games_close_btn";
+  var MSG_INSTALLED = "__smartico_games_msg_installed__";
 
   // ---------------------------
   // Utils
@@ -56,6 +64,14 @@
     return canAccessTop() ? window.top : window;
   }
 
+  function originOf(url) {
+    try {
+      return new URL(String(url)).origin;
+    } catch (e) {
+      return "";
+    }
+  }
+
   // ---------------------------
   // Default config
   // ---------------------------
@@ -88,6 +104,12 @@
     watcher: {
       autoStart: false,
       openCooldownMs: 2000,
+    },
+
+    // Messaging
+    messaging: {
+      // Em prod: mantenha false/undefined. Em debug, pode setar true.
+      allowAnyOrigin: false,
     },
   };
 
@@ -184,12 +206,110 @@
   }
 
   // ---------------------------
+  // Messaging (postMessage router)
+  // ---------------------------
+  function isAllowedOrigin(evOrigin) {
+    var allowAny =
+      !!(config.messaging && config.messaging.allowAnyOrigin) && !!config.debug;
+
+    if (allowAny) return true;
+
+    var allowed = originOf(config.baseUrl);
+    if (!allowed) return false;
+    return evOrigin === allowed;
+  }
+
+  function createMessageRouter(hostWin) {
+    var handlers = {};
+
+    function onMsg(type, fn) {
+      handlers[type] = handlers[type] || [];
+      handlers[type].push(fn);
+      return function offMsg() {
+        handlers[type] = (handlers[type] || []).filter(function (x) {
+          return x !== fn;
+        });
+      };
+    }
+
+    function handle(ev) {
+      var msg = ev && ev.data;
+      if (!msg || typeof msg !== "object") return;
+
+      var t = msg.t;
+      if (typeof t !== "string") return;
+      if (t.indexOf("SG:") !== 0) return;
+
+      // ✅ origin check
+      if (!isAllowedOrigin(ev.origin)) {
+        warn("Blocked message from origin:", ev.origin, t);
+        return;
+      }
+
+      // ✅ source check: aceita só do iframe do overlay (quando existir)
+      try {
+        var frame = hostWin.document.getElementById(IFRAME_ID);
+        if (frame && frame.contentWindow && ev.source !== frame.contentWindow) {
+          warn("Blocked message: source != overlay iframe");
+          return;
+        }
+      } catch (e) {}
+
+      var list = handlers[t] || [];
+      for (var i = 0; i < list.length; i++) {
+        try {
+          list[i](msg.p, ev);
+        } catch (e) {
+          errLog("msg handler error:", t, e);
+        }
+      }
+    }
+
+    return { on: onMsg, handle: handle };
+  }
+
+  // Note: chamamos installMessagingOnce() mais abaixo, depois que hideOverlay existe.
+  var _msgRouter = null;
+
+  function installMessagingOnce() {
+    var hostWin = getHostWindow();
+    if (hostWin[MSG_INSTALLED]) return;
+    hostWin[MSG_INSTALLED] = true;
+
+    _msgRouter = createMessageRouter(hostWin);
+
+    // SG:REDIRECT => redirect same-tab
+    _msgRouter.on("SG:REDIRECT", function (p) {
+      if (!p || !p.url) return;
+
+      // segurança mínima: só http/https
+      var u;
+      try {
+        u = new URL(String(p.url));
+        if (u.protocol !== "http:" && u.protocol !== "https:") return;
+      } catch (e) {
+        return;
+      }
+
+      // opcional: se quiser fechar overlay antes do redirect:
+      // hideOverlay();
+
+      if (String(p.mode) === "replace") hostWin.location.replace(u.toString());
+      else hostWin.location.assign(u.toString());
+    });
+
+    // SG:HIDE_OVERLAY => fecha overlay
+    _msgRouter.on("SG:HIDE_OVERLAY", function () {
+      hideOverlay();
+    });
+
+    hostWin.addEventListener("message", _msgRouter.handle);
+    log("messaging installed");
+  }
+
+  // ---------------------------
   // Overlay UI
   // ---------------------------
-  var OVERLAY_ID = "__smartico_games_overlay";
-  var IFRAME_ID = "__smartico_games_iframe";
-  var BTN_ID = "__smartico_games_close_btn";
-
   function ensureOverlay() {
     var hostWin = getHostWindow();
     var doc = hostWin.document;
@@ -240,20 +360,19 @@
 
     // Estilos base do iframe
     Object.assign(frame.style, {
-      position: "fixed", // Mudado de absolute para fixed
+      position: "fixed",
       border: "0",
       borderRadius: "0",
       boxShadow: "none",
       backgroundColor: "transparent",
-      zIndex: "2147483647", // Mesmo z-index do overlay
+      zIndex: "2147483647",
     });
 
-    // Media query via JavaScript
+    // Responsivo via JS
     function applyResponsiveStyles() {
-      var isMobile = window.innerWidth <= 768;
+      var isMobile = hostWin.innerWidth <= 768;
 
       if (isMobile) {
-        // No mobile: tela cheia sem margens
         Object.assign(frame.style, {
           top: "0",
           left: "0",
@@ -263,14 +382,11 @@
           maxHeight: "100vh",
           transform: "none",
         });
-
-        // Ajusta botão no mobile
         Object.assign(close.style, {
           top: "8px",
           right: "8px",
         });
       } else {
-        // No desktop: tamanho mobile centralizado
         Object.assign(frame.style, {
           top: "0",
           left: "50%",
@@ -280,40 +396,19 @@
           maxHeight: "100vh",
           transform: "translateX(-50%)",
         });
-
-        // Ajusta botão no desktop (ao lado do iframe)
         Object.assign(close.style, {
           top: "12px",
-          right: "calc(50% - " + (mobileWidth / 2 + 56) + "px)", // 56px = margem + largura do botão
+          right: "calc(50% - " + (mobileWidth / 2 + 56) + "px)",
         });
       }
     }
 
-    // Aplica estilos inicialmente
     applyResponsiveStyles();
 
-    // Reaplica quando a janela é redimensionada
     var resizeTimeout;
-    window.addEventListener("resize", function () {
+    hostWin.addEventListener("resize", function () {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(applyResponsiveStyles, 100);
-    });
-
-    window.addEventListener("message", function (ev) {
-      var d = ev && ev.data;
-      if (!d || d.type !== "SMARTICO_GAMES_OPEN_URL") return;
-      if (!d.url) return;
-
-      // segurança mínima: só http/https
-      try {
-        var u = new URL(String(d.url));
-        if (u.protocol !== "http:" && u.protocol !== "https:") return;
-      } catch (e) {
-        return;
-      }
-
-      // redirect na mesma aba (mantém histórico / botão voltar funciona)
-      window.location.assign(String(d.url));
     });
 
     frame.setAttribute("allow", config.ui.iframeAllow || "");
@@ -324,7 +419,7 @@
 
     overlay.appendChild(frame);
     doc.body.appendChild(overlay);
-    doc.body.appendChild(close); // Botão fora do overlay
+    doc.body.appendChild(close);
 
     log("overlay created in", hostWin === window.top ? "window.top" : "window");
     return { hostWin: hostWin, doc: doc, overlay: overlay };
@@ -333,7 +428,6 @@
   function showOverlay(url) {
     var o = ensureOverlay();
     var doc = o.doc;
-    var hostWin = o.hostWin;
     var overlay = o.overlay;
     var frame = doc.getElementById(IFRAME_ID);
     var close = doc.getElementById(BTN_ID);
@@ -346,13 +440,12 @@
     doc.documentElement.style.overflow = "hidden";
 
     // Fix para mobile - previne bounce/scroll
-    if (window.innerWidth <= 768) {
+    if (o.hostWin.innerWidth <= 768) {
       doc.body.style.position = "fixed";
       doc.body.style.width = "100%";
       doc.body.style.height = "100%";
     }
 
-    // Set src depois de mostrar ajuda em alguns casos de layout/CSP
     frame.src = url;
 
     emit("open", { url: url });
@@ -380,6 +473,13 @@
     emit("hide", {});
   }
 
+  // ✅ instala messaging agora que hideOverlay existe
+  try {
+    installMessagingOnce();
+  } catch (e) {
+    errLog("messaging install failed:", e);
+  }
+
   // ---------------------------
   // Open game
   // ---------------------------
@@ -401,6 +501,7 @@
       enc(uid) +
       "&lang=" +
       enc(lang);
+
     if (skin) url += "&skin=" + enc(skin);
     return url;
   }
@@ -519,7 +620,6 @@
         log("baseline: initial fetch did not return array (ok)");
       }
     } catch (e) {
-      // Se falhar baseline, seguimos mesmo assim
       warn(
         "baseline fetch failed (continuing):",
         e && e.message ? e.message : e
@@ -533,7 +633,6 @@
       var t = nowMs();
       if (t < openLockUntil) return;
 
-      // Debug
       log("purchased update len:", (items || []).length);
 
       itemIds.forEach(function (itemId) {
@@ -541,9 +640,7 @@
         var maxTs = maxPurchaseTsForItem(items, itemId);
 
         if (maxTs && maxTs > prev) {
-          // trava para não abrir N vezes (lista pode vir repetida)
-          openLockUntil =
-            nowMs() + safeNum(config.watcher.openCooldownMs, 2000);
+          openLockUntil = nowMs() + safeNum(config.watcher.openCooldownMs, 2000);
           lastSeenByItemId[itemId] = maxTs;
 
           // pega o item mais recente desse itemId
@@ -562,10 +659,8 @@
       });
     }
 
-    // Muitos endpoints registram watcher via opts.onUpdate
     try {
       var res = await fn.call(api, { onUpdate: onUpdate });
-      // Alguns retornam array imediatamente
       if (Array.isArray(res)) onUpdate(res);
     } catch (e2) {
       watching = false;
@@ -580,14 +675,13 @@
     watching = false;
     emit("stop", {});
     log("watchPurchases stopped (best-effort).");
-    // Obs: Smartico pode não oferecer unsubscribe do onUpdate, então a gente só ignora updates via flag.
   }
 
   // ---------------------------
   // Public API
   // ---------------------------
   var API = {
-    version: "1.0.0",
+    version: "1.1.0",
 
     setConfig: function (partial) {
       config = deepMerge(config, partial || {});
@@ -627,7 +721,6 @@
   // AutoStart
   try {
     if (config.watcher && config.watcher.autoStart) {
-      // Se Smartico ainda não estiver pronto, o watchPurchases espera
       API.watchPurchases().catch(function (e) {
         errLog(
           "autoStart watchPurchases failed:",
