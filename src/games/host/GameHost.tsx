@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { GameKey } from "@/games/registry";
 import { gamesRegistry } from "@/games/registry";
 import GameRenderer from "@/games/host/GameRenderer.client";
-import { bootSmartico } from "@/lib/smartico/boot";
+import { bootSmartico } from "@/sdk/smartico/infra/boot";
 import type { BaseSkin } from "../core/types";
 
 type Props = {

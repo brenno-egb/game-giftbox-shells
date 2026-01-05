@@ -8,9 +8,10 @@ import React, {
   useMemo,
 } from "react";
 import { Andika } from "next/font/google";
-import { runPrizeAcknowledge, HostBridge } from "@/games/core/prize";
-import { useWheelGame } from "@/games/core/hooks/useWheel";
+import { useWheelGame } from "@/sdk/smartico";
 import GiftboxChestRive from "./animation";
+import { runPrizeAcknowledge } from "@/sdk/smartico/domain/acknowledge";
+import { HostBridge } from "@/sdk/smartico/messaging/hostBridge";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -29,16 +30,41 @@ const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
   </svg>
 `)}`;
 
-function PrizeItem({ prize }: { prize: any }) {
+function CompactPrizeItem({ prize }: { prize: any }) {
   return (
-    <div className="flex h-25 w-25 sm:h-19.5 sm:w-30 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/12 bg-black/35 backdrop-blur-[2px] px-2.5 select-none">
+    <div className="flex flex-col items-center gap-1">
+      <div className="w-10 h-10">
+        <img
+          src={prize.icon || DEFAULT_ICON}
+          alt={prize.name}
+          className="h-full w-full object-contain opacity-90"
+          decoding="async"
+          draggable={false}
+        />
+      </div>
+
+      <span className="text-xs text-center opacity-80 truncate w-full">
+        {prize.name || "Item"}
+      </span>
+    </div>
+  );
+}
+
+// Item da roleta (com nome)
+function PrizeItem({ prize, isTarget }: { prize: any; isTarget?: boolean }) {
+  return (
+    <div
+      className={`flex h-full w-[120px] shrink-0 flex-col items-center justify-center gap-2 px-2 transition-all ${
+        isTarget ? "scale-105" : ""
+      }`}
+    >
       <img
         src={prize.icon || DEFAULT_ICON}
         alt={prize.name}
-        className="h-15 w-15 sm:h-7.5 sm:w-7.5 object-contain opacity-95"
+        className="h-20 w-20 object-contain"
         decoding="async"
       />
-      <div className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-[11px] sm:text-[12px] leading-[1.1] text-white/85">
+      <div className="text-[11px] text-white/85 text-center leading-tight max-w-full overflow-hidden text-ellipsis">
         {prize.name || "Item"}
       </div>
     </div>
@@ -77,10 +103,19 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     return Array.from({ length: repeats }, () => pool).flat();
   }, [poolKey, pool.length]);
 
+  const showPossiblePrizes =
+    pool.length > 0 &&
+    !chestOpen &&
+    !showWheel &&
+    !isShaking &&
+    !isAnimating &&
+    !showPrizeAnnouncement;
+
+
   const getStepPx = useCallback(() => {
-    if (!trackRef.current) return 140;
+    if (!trackRef.current) return 120;
     const items = trackRef.current.children;
-    if (items.length < 2) return 140;
+    if (items.length < 2) return 120;
     const a = items[0] as HTMLElement;
     const b = items[1] as HTMLElement;
     return b.offsetLeft - a.offsetLeft;
@@ -166,9 +201,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
     setTargetPrizeIndex(targetIndex);
 
-    const kick = getStepPx() * 12;
-    const startX = currentXRef.current;
-
     const toX = getTargetX(targetIndex, currentXRef.current);
     await animateTo(currentXRef.current, toX, 11000);
 
@@ -208,20 +240,16 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const closePrizeAnnouncement = useCallback(() => {
     setShowPrizeAnnouncement(false);
 
-    // if (lastPrize?.acknowledge_dp && typeof smartico?.dp === "function") {
-    //   try {
-    //     smartico.dp(lastPrize.acknowledge_dp);
-    //   } catch {}
-    // }
-
-    runPrizeAcknowledge(
-      lastPrize,
-      {
-        smartico,
-        redirect: (url, mode) => HostBridge.redirect(url, mode),
-      },
-      { redirectMode: "assign" } // ou "replace" se quiser não voltar no back
-    );
+    if (lastPrize) {
+      runPrizeAcknowledge(
+        lastPrize,
+        {
+          smartico,
+          redirect: (url, mode) => HostBridge.redirect(url, mode),
+        },
+        { redirectMode: "assign" }
+      );
+    }
 
     setTriggerFinal(true);
     setIsCompactMode(true);
@@ -280,10 +308,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   if (gameState.isLoading) {
     return (
       <div
-        className={[
-          andika.className,
-          "min-h-screen w-full flex items-center justify-center",
-        ].join(" ")}
+        className={`${andika.className} min-h-screen w-full flex items-center justify-center`}
       >
         <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white/85 backdrop-blur-[2px]">
           Carregando...
@@ -295,10 +320,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   if (gameState.error) {
     return (
       <div
-        className={[
-          andika.className,
-          "min-h-screen w-full flex items-center justify-center",
-        ].join(" ")}
+        className={`${andika.className} min-h-screen w-full flex items-center justify-center`}
       >
         <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-red-300 backdrop-blur-[2px]">
           {gameState.error}
@@ -322,10 +344,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     <div
       data-skin={skin?.id ?? "default"}
       style={rootStyle}
-      className={[
-        andika.className,
-        "min-h-screen w-full relative text-white overflow-hidden bg-center bg-cover bg-no-repeat",
-      ].join(" ")}
+      className={`${andika.className} min-h-screen w-full relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
     >
       {/* Glow quando abre */}
       {chestOpen && (
@@ -339,9 +358,22 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         />
       )}
 
+      {/* POSSÍVEIS PRÊMIOS - SÓ NA TELA INICIAL */}
+      {showPossiblePrizes && (
+        <div className="absolute top-0 left-0 right-0 z-10 pt-4 pb-2">
+          <div className="flex gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [-webkit-overflow-scrolling:touch]">
+            {pool.slice(0, 6).map((p: any, i: number) => (
+              <div key={String(p.id) + i} className="shrink-0 w-24 snap-start">
+                <CompactPrizeItem prize={p} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Container principal - Layout vertical otimizado */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3">
-        {/* 1. ROLETA NO TOPO */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3 pt-24">
+        {/* ROLETA NO CENTRO */}
         {showWheel && (
           <div
             className="w-full max-w-4xl animate-slide-up-fade shrink-0"
@@ -360,24 +392,32 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             </div>
 
             <div className="relative">
-              {/* Linha indicadora */}
-              <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2">
-                <img src="/games/giftbox/pointer.webp" className="h-10 w-7" />
+              {/* Pointer indicador */}
+              <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2">
+                <img
+                  src="/games/giftbox/pointer.webp"
+                  alt="Pointer"
+                  className="h-10 w-7"
+                />
               </div>
               <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-linear-to-b from-white/60 via-white/40 to-transparent opacity-60" />
 
               {/* Container da roleta */}
-              <div className="relative h-31.5 sm:h-27.5 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-linear-to-r from-black/60 to-transparent" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-black/60 to-transparent" />
+              <div className="relative h-36 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-linear-to-r from-black/60 to-transparent z-10" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-black/60 to-transparent z-10" />
 
                 <div
                   ref={trackRef}
-                  className="absolute left-0 top-3 sm:top-4 flex gap-2.5 sm:gap-3 will-change-transform"
+                  className="absolute left-0 top-0 flex items-center h-full will-change-transform"
                   style={{ transform: `translate3d(${currentX}px, 0, 0)` }}
                 >
                   {strip.map((prize, idx) => (
-                    <PrizeItem key={`${prize.id}-${idx}`} prize={prize} />
+                    <PrizeItem
+                      key={`${prize.id}-${idx}`}
+                      prize={prize}
+                      isTarget={idx === targetPrizeIndex}
+                    />
                   ))}
                 </div>
               </div>
@@ -394,7 +434,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                   Girar novamente
                 </button>
                 <div className="text-[11px] text-white/60 tabular-nums">
-                  Giros restantes:{" "}
+                  Tentativas restantes:{" "}
                   <span className="text-white/90 font-semibold">
                     {gameState.attemptsDisplay.value}
                   </span>
@@ -404,11 +444,10 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           </div>
         )}
 
-        {/* 2. ANÚNCIO DE PRÊMIO - COMPACTO */}
+        {/* ANÚNCIO DE PRÊMIO - OVERLAY */}
         {showPrizeAnnouncement && lastPrize && (
           <div className="w-full max-w-md animate-bounce-in z-40 shrink-0">
             <div className="relative overflow-hidden rounded-lg border border-white/15 bg-black/50 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.25)]">
-              {/* fundo sutil */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -432,11 +471,9 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                     />
                   </div>
 
-                  {/* divisor */}
                   <div className="absolute right-0 top-3 bottom-3 w-px bg-white/10" />
                 </div>
 
-                {/* Coluna direita - texto + ações */}
                 <div className="flex flex-1 flex-col justify-between p-1 pl-3 text-left">
                   <div>
                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-semibold">
@@ -453,9 +490,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="text-[11px] text-white/45 tabular-nums">
-                      {/* opcional: dá pra por tentativas aqui se quiser */}
-                    </div>
+                    <div className="text-[11px] text-white/45 tabular-nums"></div>
 
                     <button
                       onClick={closePrizeAnnouncement}
@@ -470,10 +505,10 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           </div>
         )}
 
-        {/* 3. BAÚ EMBAIXO - TAMANHO VARIÁVEL */}
+        {/* BAÚ EMBAIXO */}
         <div
           className={`relative z-30 shrink-0 transition-all duration-500 ${
-            isCompactMode ? "scale-100" : "scale-100"
+            isCompactMode ? "scale-90" : "scale-100"
           }`}
         >
           <button
@@ -635,17 +670,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           100% {
             opacity: 1;
             transform: scale(1);
-          }
-        }
-
-        @keyframes particle-burst {
-          0% {
-            opacity: 1;
-            transform: translate(0, 0) scale(1);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(var(--tx), var(--ty)) scale(0);
           }
         }
 

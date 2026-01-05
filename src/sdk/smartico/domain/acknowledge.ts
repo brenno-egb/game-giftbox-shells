@@ -1,6 +1,6 @@
-import type { RedirectMode } from "./hostBridge";
+import type { PrizeLike } from "./domain.type";
 
-export type PrizeLike = { acknowledge_dp?: unknown };
+export type RedirectMode = "assign" | "replace";
 
 export type AckIntent =
   | { kind: "none" }
@@ -18,6 +18,9 @@ function asHttpUrl(v: unknown): URL | null {
   }
 }
 
+/**
+ * Resolve o tipo de acknowledge de um prêmio (puro)
+ */
 export function resolvePrizeAcknowledge(
   prize: PrizeLike | null | undefined,
   opts?: { redirectMode?: RedirectMode }
@@ -38,6 +41,9 @@ export type AckDeps = {
   redirect?: (url: string, mode: RedirectMode) => void;
 };
 
+/**
+ * Executa o acknowledge de um prêmio (com side-effects)
+ */
 export function runPrizeAcknowledge(
   prize: PrizeLike | null | undefined,
   deps: AckDeps,
