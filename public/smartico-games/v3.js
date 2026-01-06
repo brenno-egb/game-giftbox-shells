@@ -1,4 +1,4 @@
-/* smartico-games v1.1-fab - localStorage + postMessage Inteligente */
+/* smartico-games v1.1-fab-FINAL - Resolve problema compra com localStorage */
 (function () {
   "use strict";
 
@@ -76,6 +76,7 @@
     debug: false,
     routesByItemId: {},
     templateIds: [],
+    templateIdByItemId: {}, // ✅ Mapeia itemId → templateId
     user: {
       getUserId: function () {
         return window._smartico_user_id;
@@ -102,7 +103,6 @@
       enabled: true,
       position: "bottom-right",
       text: "",
-      cacheExpiryMs: 35000, // 35s (cache Smartico)
     },
   };
 
@@ -220,33 +220,37 @@
       }
     },
 
-    // Atualiza cache de um jogo
-    update: function (templateId, attempts, fromAPI) {
+    update: function (templateId, attempts, source) {
       var cache = this.get();
       var key = String(templateId);
 
       if (attempts > 0) {
         cache[key] = {
           attempts: attempts,
-          lastSync: fromAPI ? nowMs() : (cache[key] || {}).lastSync || 0,
-          source: fromAPI ? "api" : "postmessage",
+          lastSync: nowMs(),
+          source: source || "unknown",
         };
       } else {
         delete cache[key];
       }
 
       this.set(cache);
-      log(
-        "✅ Cache updated:",
-        templateId,
-        "→",
-        attempts,
-        "attempts",
-        fromAPI ? "(from API)" : "(from postMessage)"
-      );
+      log("✅ Cache updated:", templateId, "→", attempts, "attempts (" + source + ")");
     },
 
-    // Decrementa tentativa (quando recebe postMessage)
+    // ✅ Incrementa quando detecta compra
+    increment: function (templateId) {
+      var cache = this.get();
+      var key = String(templateId);
+      var current = cache[key];
+      var newAttempts = current ? current.attempts + 1 : 1;
+
+      this.update(templateId, newAttempts, "purchase");
+      log("🛒 Purchase detected, incremented:", templateId, "→", newAttempts);
+      return newAttempts;
+    },
+
+    // ✅ Decrementa quando joga
     decrement: function (templateId) {
       var cache = this.get();
       var key = String(templateId);
@@ -258,11 +262,35 @@
       }
 
       var newAttempts = current.attempts - 1;
-      this.update(templateId, newAttempts, false);
+      this.update(templateId, newAttempts, "postmessage");
       return newAttempts;
     },
 
-    // Pega primeiro jogo disponível
+    // ✅ Sync com API (só atualiza se API tiver mais)
+    syncFromAPI: function (templateId, apiAttempts) {
+      var cache = this.get();
+      var key = String(templateId);
+      var current = cache[key];
+
+      // Se não tem cache, aceita API
+      if (!current) {
+        this.update(templateId, apiAttempts, "api");
+        return apiAttempts;
+      }
+
+      // Se API tem mais, atualiza
+      if (apiAttempts > current.attempts) {
+        log("📥 API has more attempts, updating:", current.attempts, "→", apiAttempts);
+        this.update(templateId, apiAttempts, "api");
+        return apiAttempts;
+      }
+
+      // Senão, mantém cache (mais confiável)
+      log("✅ Cache has more attempts than API, keeping cache:", current.attempts, "(API:", apiAttempts + ")");
+      log("   (This is normal after purchase - API has 30s cache delay)");
+      return current.attempts;
+    },
+
     getFirstAvailable: function () {
       var cache = this.get();
       var templateIds = config.templateIds || [];
@@ -274,7 +302,6 @@
         var cached = cache[key];
 
         if (cached && cached.attempts > 0) {
-          // Encontra itemId correspondente
           var itemId = null;
           for (var id in routesByItemId) {
             itemId = id;
@@ -288,7 +315,6 @@
               slug: routesByItemId[itemId].slug,
               skin: routesByItemId[itemId].skin,
               attempts: cached.attempts,
-              lastSync: cached.lastSync,
               source: cached.source,
             };
           }
@@ -298,82 +324,11 @@
       return null;
     },
 
-    // Verifica se cache expirou
-    isExpired: function (templateId) {
-      var cache = this.get();
-      var key = String(templateId);
-      var cached = cache[key];
-
-      if (!cached || !cached.lastSync) return true;
-
-      var age = nowMs() - cached.lastSync;
-      var expiry = safeNum(config.fab.cacheExpiryMs, 35000);
-
-      return age > expiry;
-    },
-
     clear: function () {
       this.set({});
       log("✅ Cache cleared");
     },
   };
-
-  // ---------------------------
-  // ✅ SYNC com Smartico API
-  // ---------------------------
-  async function syncWithAPI(force) {
-    try {
-      var smartico = getSmartico();
-      if (!smartico || !smartico.api) {
-        warn("Smartico API not available");
-        return false;
-      }
-
-      var templateIds = config.templateIds || [];
-      if (!templateIds.length) {
-        log("⚠️ templateIds vazio");
-        return false;
-      }
-
-      // Se não for force, verifica se precisa sync
-      if (!force) {
-        var currentGame = GameCache.getFirstAvailable();
-        if (currentGame && !GameCache.isExpired(currentGame.templateId)) {
-          log("✅ Cache válido, skip sync");
-          return false;
-        }
-      }
-
-      log("🔄 Syncing with Smartico API...");
-      var games = await smartico.api.getMiniGames();
-
-      if (!Array.isArray(games)) {
-        warn("getMiniGames() didn't return array");
-        return false;
-      }
-
-      var synced = 0;
-      for (var i = 0; i < games.length; i++) {
-        var game = games[i];
-        var templateId = safeNum(game.id, 0);
-
-        if (templateIds.indexOf(templateId) === -1) continue;
-
-        var attempts = safeNum(game.spin_count, 0);
-        GameCache.update(templateId, attempts, true);
-        synced++;
-
-        log("📥 Synced:", game.name || templateId, "→", attempts, "attempts");
-      }
-
-      log("✅ Sync completed:", synced, "games");
-      updateFAB();
-      return true;
-    } catch (err) {
-      warn("Sync failed:", err);
-      return false;
-    }
-  }
 
   // ---------------------------
   // ✅ FAB
@@ -428,18 +383,6 @@
       }
     };
 
-    // Double click = force refresh
-    var lastClick = 0;
-    fab.ondblclick = function (e) {
-      e.preventDefault();
-      var now = nowMs();
-      if (now - lastClick < 500) {
-        log("🔄 Double-click detected, forcing sync...");
-        syncWithAPI(true);
-      }
-      lastClick = now;
-    };
-
     doc.body.appendChild(fab);
     return fab;
   }
@@ -453,20 +396,42 @@
     if (game && game.attempts > 0) {
       fab.style.display = "flex";
       log("✅ FAB shown:", game.slug, "with", game.attempts, "attempts");
-
-      // Info no tooltip (opcional)
-      var age = nowMs() - game.lastSync;
-      var ageText = Math.floor(age / 1000) + "s ago";
-      fab.title =
-        game.attempts +
-        " tentativas (" +
-        game.source +
-        ", " +
-        ageText +
-        ")\nDouble-click para atualizar";
     } else {
       fab.style.display = "none";
       log("✅ FAB hidden - no games available");
+    }
+  }
+
+  // ✅ Sync com API
+  async function syncWithAPI() {
+    try {
+      var smartico = getSmartico();
+      if (!smartico || !smartico.api) return;
+
+      var games = await smartico.api.getMiniGames();
+      if (!Array.isArray(games)) return;
+
+      var templateIds = config.templateIds || [];
+      if (!templateIds.length) return;
+
+      log("🔄 Syncing with API...");
+
+      var synced = 0;
+      for (var i = 0; i < games.length; i++) {
+        var game = games[i];
+        var templateId = safeNum(game.id, 0);
+
+        if (templateIds.indexOf(templateId) === -1) continue;
+
+        var apiAttempts = safeNum(game.spin_count, 0);
+        GameCache.syncFromAPI(templateId, apiAttempts);
+        synced++;
+      }
+
+      log("✅ Sync completed:", synced, "games");
+      updateFAB();
+    } catch (err) {
+      warn("Sync error:", err);
     }
   }
 
@@ -557,21 +522,10 @@
 
       log("✅ Spin completed for template:", p.templateId);
 
-      // Decrementa no cache (INSTANTÂNEO!)
       var remaining = GameCache.decrement(p.templateId);
-
       emit("spinCompleted", { templateId: p.templateId, remaining: remaining });
 
-      // Atualiza FAB imediatamente
       updateFAB();
-
-      // Se cache expirou, force sync
-      if (GameCache.isExpired(p.templateId)) {
-        log("⏰ Cache expirado, syncing...");
-        setTimeout(function () {
-          syncWithAPI(true);
-        }, 1000);
-      }
     });
 
     hostWin.addEventListener("message", _msgRouter.handle);
@@ -725,6 +679,11 @@
     doc.body.style.width = "";
     doc.body.style.height = "";
 
+    // ✅ Atualiza FAB ao fechar (se ainda tiver tentativas, aparece!)
+    setTimeout(function() {
+      updateFAB();
+    }, 100);
+
     emit("hide", {});
   }
 
@@ -803,7 +762,29 @@
     var route = (config.routesByItemId || {})[String(itemId)];
     if (!route || !route.slug) return;
 
-    log("✅ purchase detected => open", { itemId: itemId, route: route });
+    // ✅ INTELIGENTE: Descobre templateId (configurado ou fallback)
+    var templateId = (config.templateIdByItemId || {})[String(itemId)];
+    
+    // Fallback: se não configurou templateIdByItemId, usa primeiro da lista
+    if (!templateId) {
+      var templateIds = config.templateIds || [];
+      if (templateIds.length > 0) {
+        templateId = templateIds[0];
+        log("⚠️ templateIdByItemId não configurado, usando fallback:", templateId);
+      }
+    }
+
+    if (templateId) {
+      log("🛒 Purchase detected! Incrementing templateId:", templateId);
+      GameCache.increment(templateId);
+      updateFAB();
+      log("✅ localStorage updated, FAB should appear now");
+    } else {
+      warn("❌ Não consegui descobrir templateId para itemId:", itemId);
+      warn("Configure templateIdByItemId ou templateIds!");
+    }
+
+    log("✅ purchase detected => opening game", { itemId: itemId, route: route });
 
     emit("purchase", {
       itemId: itemId,
@@ -891,7 +872,7 @@
   // Public API
   // ---------------------------
   var API = {
-    version: "1.1-fab-smart",
+    version: "1.1-fab-final",
 
     setConfig: function (partial) {
       config = deepMerge(config, partial || {});
@@ -918,17 +899,14 @@
       return stop();
     },
 
-    // ✅ Force sync (ignora cache)
     refresh: function () {
-      return syncWithAPI(true);
+      return syncWithAPI();
     },
 
-    // ✅ Ver cache
     getCache: function () {
       return GameCache.get();
     },
 
-    // ✅ Limpar cache
     clearCache: function () {
       GameCache.clear();
       updateFAB();
@@ -940,7 +918,7 @@
 
   window.SmarticoGames = API;
 
-  log("ready v1.1-fab-smart");
+  log("ready v1.1-fab-final");
 
   // Init
   (async function () {
@@ -949,7 +927,7 @@
 
       // ✅ Sync inicial se FAB habilitado
       if (config.fab && config.fab.enabled) {
-        await syncWithAPI(false);
+        await syncWithAPI();
         updateFAB();
       }
 

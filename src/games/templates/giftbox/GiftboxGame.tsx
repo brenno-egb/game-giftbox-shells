@@ -11,7 +11,8 @@ import { Andika } from "next/font/google";
 import { useWheelGame } from "@/sdk/smartico";
 import GiftboxChestRive from "./animation";
 import { runPrizeAcknowledge } from "@/sdk/smartico/domain/acknowledge";
-import { HostBridge } from "@/sdk/smartico/messaging/hostBridge";
+import { HostBridge, PrizeBridge } from "@/sdk/smartico";
+import { InfiniteAutoScrollStrip } from "./ScrollablePrizes";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -50,7 +51,6 @@ function CompactPrizeItem({ prize }: { prize: any }) {
   );
 }
 
-// Item da roleta (com nome)
 function PrizeItem({ prize, isTarget }: { prize: any; isTarget?: boolean }) {
   return (
     <div
@@ -85,6 +85,12 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
 
+  // ✅ Prize metadata do URL (FAB persistente)
+  const [prizeMetadata, setPrizeMetadata] = useState<{
+    itemId: string | null;
+    purchaseTs: string | null;
+  }>({ itemId: null, purchaseTs: null });
+
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const currentXRef = useRef<number>(0);
@@ -111,6 +117,28 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     !isAnimating &&
     !showPrizeAnnouncement;
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const itemId = params.get("itemId");
+    const purchaseTs = params.get("purchaseTs");
+
+    if (itemId && purchaseTs) {
+      setPrizeMetadata({ itemId, purchaseTs });
+      console.log("✅ Prize metadata loaded:", { itemId, purchaseTs });
+    }
+  }, []);
+
+  const notifyPrizeConsumed = useCallback(() => {
+    if (!prizeMetadata.itemId || !prizeMetadata.purchaseTs) {
+      console.warn("⚠️ No prize metadata to consume");
+      return;
+    }
+
+    PrizeBridge.notifyPrizeConsumed(
+      prizeMetadata.itemId,
+      prizeMetadata.purchaseTs
+    );
+  }, [prizeMetadata]);
 
   const getStepPx = useCallback(() => {
     if (!trackRef.current) return 120;
@@ -182,6 +210,19 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       return;
     }
 
+    try {
+    window.parent.postMessage(
+      {
+        t: "SG:SPIN_COMPLETED",
+        p: { templateId },
+      },
+      "*"
+    );
+    console.log("[GiftboxGame] Spin completed notification sent:", templateId);
+  } catch (e) {
+    console.error("[GiftboxGame] Failed to send spin notification:", e);
+  }
+
     const prizeId = result?.prize_id != null ? String(result.prize_id) : "";
     const prize = prizeId
       ? pool.find((p: any) => String(p.id) === prizeId) || null
@@ -197,6 +238,9 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           break;
         }
       }
+
+      notifyPrizeConsumed();
+      console.log('notificado')
     }
 
     setTargetPrizeIndex(targetIndex);
@@ -215,7 +259,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     setIsAnimating(false);
 
     await gameState.refresh();
-  }, [gameState, isAnimating, pool, strip, getStepPx, animateTo, getTargetX]);
+  }, [gameState, isAnimating, pool, strip, getStepPx, animateTo, getTargetX, templateId]);
 
   const handleChestClick = () => {
     if (!gameState.canPlay || isAnimating || chestOpen) return;
@@ -249,6 +293,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
         },
         { redirectMode: "assign" }
       );
+
     }
 
     setTriggerFinal(true);
@@ -361,13 +406,12 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       {/* POSSÍVEIS PRÊMIOS - SÓ NA TELA INICIAL */}
       {showPossiblePrizes && (
         <div className="absolute top-0 left-0 right-0 z-10 pt-4 pb-2">
-          <div className="flex gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [-webkit-overflow-scrolling:touch]">
-            {pool.slice(0, 6).map((p: any, i: number) => (
-              <div key={String(p.id) + i} className="shrink-0 w-24 snap-start">
-                <CompactPrizeItem prize={p} />
-              </div>
-            ))}
-          </div>
+          <InfiniteAutoScrollStrip
+            pool={pool}
+            take={6}
+            durationSec={10}
+            renderItem={(p) => <CompactPrizeItem prize={p} />}
+          />
         </div>
       )}
 
@@ -400,12 +444,12 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                   className="h-10 w-7"
                 />
               </div>
-              <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-linear-to-b from-white/60 via-white/40 to-transparent opacity-60" />
+              <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-gradient-to-b from-white/60 via-white/40 to-transparent opacity-60" />
 
               {/* Container da roleta */}
               <div className="relative h-36 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-linear-to-r from-black/60 to-transparent z-10" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-black/60 to-transparent z-10" />
+                <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-black/60 to-transparent z-10" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-black/60 to-transparent z-10" />
 
                 <div
                   ref={trackRef}
