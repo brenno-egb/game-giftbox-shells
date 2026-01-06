@@ -5,6 +5,7 @@ export const giftboxSkins = {
     id: "gold",
     assetsBase: "/games/giftbox/skins/gold",
     rivePath: "/games/giftbox/skins/gold/chest-gold.riv",
+    templateId: 7282,
     background: "bg-gold.webp",
     backgroundColor: "#07080c",
     theme: {
@@ -21,7 +22,7 @@ export const giftboxSkins = {
     id: "bronze",
     assetsBase: "/games/giftbox/skins/bronze",
     rivePath: "/games/giftbox/skins/bronze/chest-bronze.riv",
-    templateId: 7265,
+    templateId: 7257,
     background: "bg-bronze.webp",
     backgroundColor: "#07080c",
     theme: {
@@ -38,6 +39,7 @@ export const giftboxSkins = {
     id: "silver",
     assetsBase: "/games/giftbox/skins/silver",
     rivePath: "/games/giftbox/skins/silver/chest-silver.riv",
+    templateId: 7279,
     background: "bg-silver.webp",
     backgroundColor: "#07080c",
     theme: {
@@ -54,7 +56,7 @@ export const giftboxSkins = {
     id: "diamond",
     assetsBase: "/games/giftbox/skins/diamond",
     rivePath: "/games/giftbox/skins/diamond/chest-diamond.riv",
-    templateId: 7070,
+    templateId: 7284,
     background: "bg-diamond.webp",
     backgroundColor: "#05070b",
     theme: {
@@ -71,7 +73,7 @@ export const giftboxSkins = {
     id: "black-diamond",
     assetsBase: "/games/giftbox/skins/black-diamond",
     rivePath: "/games/giftbox/skins/black-diamond/chest-black-diamond.riv",
-    templateId: 7070,
+    templateId: 7285,
     background: "bg-black-diamond.webp",
     backgroundColor: "#030409",
     theme: {
@@ -88,7 +90,7 @@ export const giftboxSkins = {
     id: "emerald",
     assetsBase: "/games/giftbox/skins/emerald",
     rivePath: "/games/giftbox/skins/emerald/chest-emerald.riv",
-    templateId: 7070,
+    templateId: 7283,
     background: "bg-emerald.webp",
     backgroundColor: "#04080a",
     theme: {
