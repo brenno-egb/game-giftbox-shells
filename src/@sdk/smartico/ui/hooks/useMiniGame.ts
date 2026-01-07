@@ -40,6 +40,7 @@ export function useMiniGame({
   templateId: number | string;
   onTemplatesUpdate?: (items: MiniGameTemplate[]) => void;
 }) {
+
   // Cria transport e stores (memoizados)
   const transport = useMemo(
     () => createSmarticoTransport(smartico, false),

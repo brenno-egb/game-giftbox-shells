@@ -16,7 +16,6 @@ export function useWheelGame({
   templateId: number | string;
 }) {
   const base = useMiniGame({ smartico, templateId });
-
   const attemptsDisplay = useMemo(
     () => getAttemptsDisplay(base.game, base.playerInfo, base.countdown),
     [base.game, base.playerInfo, base.countdown]

@@ -68,6 +68,16 @@ export class SmarticoTransport implements Transport {
       this.logger.error("dp failed", err);
     }
   }
+
+  async getStoreItems(): Promise<any[]> {
+    this.logger.debug("getStoreItems");
+    return await this.smartico.api.getStoreItems();
+  }
+
+  async getUserProfile(): Promise<any> {
+    this.logger.debug("getUserProfile");
+    return await this.smartico.api.getUserProfile();
+  }
 }
 
 /**

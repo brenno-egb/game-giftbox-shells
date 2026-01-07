@@ -46,3 +46,49 @@ export type HistoryParams = {
   offset?: number;
   templateId?: number;
 };
+
+/**
+ * Tipos relacionados aos baús e itens da loja
+ */
+
+export type StoreItem = {
+  id: number;
+  name: string;
+  description?: string;
+  purchase_type: "points" | "diamonds" | "gems";
+  price: number;
+  image?: string;
+  type: string;
+  pool?: number;
+  can_buy: boolean;
+  active_till_date?: number;
+  ribbon?: string;
+  category_ids?: number[];
+  custom_data?: Record<string, any>;
+  priority?: number;
+};
+
+export type UserProfile = {
+  user_id: number;
+  public_username?: string;
+  avatar_url?: string;
+  avatar_id?: string;
+  
+  // Pontos e moedas
+  ach_points_balance: number;
+  ach_points_ever: number;
+  ach_diamonds_balance: number;
+  ach_gems_balance: number;
+  
+  // Level
+  ach_level_current?: string;
+  ach_level_current_id?: number;
+  
+  // Outros
+  core_user_language?: string;
+  core_wallet_currency?: string;
+  user_country?: string;
+  core_registration_date?: number;
+  core_inbox_unread_count?: number;
+  core_is_test_account?: boolean;
+};

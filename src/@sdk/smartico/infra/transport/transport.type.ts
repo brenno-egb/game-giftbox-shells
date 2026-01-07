@@ -41,4 +41,14 @@ export interface Transport {
    * Envia data point personalizado
    */
   dp(payload: any): void;
+
+  /**
+   * Busca itens da loja (baús, etc)
+   */
+  getStoreItems(): Promise<any[]>;
+
+  /**
+   * Busca perfil completo do usuário
+   */
+  getUserProfile(): Promise<any>;
 }

@@ -8,10 +8,10 @@ import React, {
   useMemo,
 } from "react";
 import { Andika } from "next/font/google";
-import { useWheelGame } from "@/sdk/smartico";
+import { useWheelGame } from "@/@sdk/smartico";
 import GiftboxChestRive from "./animation";
-import { runPrizeAcknowledge } from "@/sdk/smartico/domain/acknowledge";
-import { HostBridge } from "@/sdk/smartico/messaging/hostBridge";
+import { runPrizeAcknowledge } from "@/@sdk/smartico/domain/acknowledge";
+import { HostBridge } from "@/@sdk/smartico/messaging/hostBridge";
 
 const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -110,7 +110,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     !isShaking &&
     !isAnimating &&
     !showPrizeAnnouncement;
-
 
   const getStepPx = useCallback(() => {
     if (!trackRef.current) return 120;
