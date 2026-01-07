@@ -4,9 +4,8 @@ import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
 import { useChestHall } from "@/games/templates/giftbox/chest/useChestHall";
 import { useSearchParams } from "next/navigation";
 import UserProfileHeader from "@/components/games/giftbox/UserProfile";
-import ChestCard from "@/components/games/giftbox/ChestCard";
-import PurchaseButton from "@/components/games/giftbox/PurchaseButton";
-import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
+import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
+import ChestShop from "@/components/games/giftbox/ChestShop";
 
 export default function HallPage() {
   const searchParams = useSearchParams();
@@ -64,22 +63,11 @@ export default function HallPage() {
     );
   }
 
-  return <HallContent />;
+  return <HallContent uid={uid} lang={lang} />;
 }
 
-function HallContent() {
+function HallContent({ uid, lang }: { uid: string; lang: string }) {
   const hall = useChestHall();
-
-  const handleChestClick = (chest: ChestItem) => {
-    if (chest.hasAttempts && chest.templateId) {
-      const params = new URLSearchParams(window.location.search);
-      const uid = params.get("uid") || "test-user";
-      const lang = params.get("lang") || "pt";
-      window.location.href = `/games/giftbox?uid=${uid}&lang=${lang}`;
-    } else if (chest.canAfford) {
-      window.location.href = "https://www.lottu.bet.br/gamification/store";
-    }
-  };
 
   // Loading
   if (hall.isLoading) {
@@ -113,84 +101,50 @@ function HallContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-white">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-16 pb-32">
+        {/* Header com perfil */}
         <UserProfileHeader profile={hall.profile} />
 
+        {/* Título Principal */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-400 via-purple-400 to-amber-400 bg-clip-text text-transparent">
             Hall dos Baús
           </h1>
           <p className="text-gray-400">
             {hall.hasAvailable
-              ? "Você tem baús disponíveis para abrir!"
+              ? "Abra seus baús disponíveis ou compre mais na loja!"
               : "Compre baús para começar a jogar"}
           </p>
         </div>
 
-        {hall.available.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-amber-400 flex items-center gap-2">
-              <span>✨</span>
-              <span>Disponíveis</span>
-              <span className="bg-amber-500 text-black text-sm px-2 py-1 rounded-full">
-                {hall.available.length}
-              </span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hall.available.map((chest) => (
-                <ChestCard
-                  key={chest.id}
-                  chest={chest}
-                  onClick={handleChestClick}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Carrossel - APENAS games, uid, lang */}
+        <section>
+          <ChestCarousel 
+            games={hall.games}
+            uid={uid} 
+            lang={lang} 
+          />
+        </section>
 
-        {hall.purchasable.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-emerald-400 flex items-center gap-2">
-              <span>🛒</span>
-              <span>Você pode comprar</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hall.purchasable.map((chest) => (
-                <ChestCard
-                  key={chest.id}
-                  chest={chest}
-                  onClick={handleChestClick}
-                />
-              ))}
-            </div>
+        {/* Divisor */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-800"></div>
           </div>
-        )}
-
-        {hall.locked.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-gray-400 flex items-center gap-2">
-              <span>🔒</span>
-              <span>Bloqueados</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hall.locked.map((chest) => (
-                <ChestCard key={chest.id} chest={chest} />
-              ))}
-            </div>
+          <div className="relative flex justify-center">
+            <span className="bg-slate-950 px-6 text-gray-500 text-sm">
+              ou explore a loja
+            </span>
           </div>
-        )}
+        </div>
 
-        {hall.chests.length === 0 && (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">📦</div>
-            <h2 className="text-2xl font-bold mb-2">Nenhum baú disponível</h2>
-            <p className="text-gray-400">
-              Visite a loja para comprar seus primeiros baús!
-            </p>
-          </div>
-        )}
-
-        <PurchaseButton hasAvailable={hall.hasAvailable} />
+        {/* Loja Completa - usa chests + games */}
+        <section>
+          <ChestShop 
+            chests={hall.chests}
+            games={hall.games}
+          />
+        </section>
       </div>
     </div>
   );
