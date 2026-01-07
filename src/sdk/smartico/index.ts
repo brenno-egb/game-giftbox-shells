@@ -35,7 +35,6 @@ export {
   type RedirectPayload,
 } from "./messaging/message.type";
 export { HostBridge } from "./messaging/hostBridge";
-export { PrizeBridge } from "./messaging/prizeBridge";
 
 // UI Hooks
 export { useMiniGame } from "./ui/hooks/useMiniGame";

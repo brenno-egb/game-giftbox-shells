@@ -1,15 +1,17 @@
-/* smartico-games v1.1-fab - localStorage + postMessage Inteligente */
+/* smartico-games v1.1 - Mobile Fix + Messaging Router (redirect same-tab) */
 (function () {
   "use strict";
 
+  // Evita duplicar se o script for carregado 2x
   if (window.SmarticoGames && window.SmarticoGames.version) return;
 
+  // ---------------------------
+  // Constants / IDs
+  // ---------------------------
   var OVERLAY_ID = "__smartico_games_overlay";
   var IFRAME_ID = "__smartico_games_iframe";
   var BTN_ID = "__smartico_games_close_btn";
-  var FAB_ID = "__smartico_games_fab";
   var MSG_INSTALLED = "__smartico_games_msg_installed__";
-  var STORAGE_KEY = "__smartico_games_cache__";
 
   // ---------------------------
   // Utils
@@ -21,11 +23,13 @@
   function deepMerge(target, src) {
     var out = target ? Object.assign({}, target) : {};
     if (!isObj(src)) return out;
+
     Object.keys(src).forEach(function (k) {
       var v = src[k];
       if (isObj(v) && isObj(out[k])) out[k] = deepMerge(out[k], v);
       else out[k] = v;
     });
+
     return out;
   }
 
@@ -72,10 +76,14 @@
   // Default config
   // ---------------------------
   var DEFAULT_CONFIG = {
-    baseUrl: "",
+    baseUrl: "", // obrigatorio (https em prod)
+
     debug: false,
-    routesByItemId: {},
-    templateIds: [],
+
+    routesByItemId: {
+      // 6136: { slug:"giftbox", skin:"classic" }
+    },
+
     user: {
       getUserId: function () {
         return window._smartico_user_id;
@@ -84,25 +92,24 @@
         return window._smartico_language || "pt";
       },
     },
+
     ui: {
-      mode: "overlay",
-      mobileWidth: 414,
-      mobileHeight: "100%",
+      mode: "overlay", // overlay | popup
+      mobileWidth: 414, // largura do iframe no desktop (como um celular)
+      mobileHeight: "100%", // altura do iframe no desktop
       iframeAllow:
         "fullscreen; autoplay; clipboard-read; clipboard-write; payment; web-share",
     },
+
     watcher: {
       autoStart: false,
       openCooldownMs: 2000,
     },
+
+    // Messaging
     messaging: {
+      // Em prod: mantenha false/undefined. Em debug, pode setar true.
       allowAnyOrigin: false,
-    },
-    fab: {
-      enabled: true,
-      position: "bottom-right",
-      text: "",
-      cacheExpiryMs: 35000, // 35s (cache Smartico)
     },
   };
 
@@ -128,7 +135,7 @@
   }
 
   // ---------------------------
-  // Event emitter
+  // Tiny event emitter
   // ---------------------------
   var listeners = {};
   function on(event, fn) {
@@ -199,284 +206,14 @@
   }
 
   // ---------------------------
-  // ✅ CACHE localStorage Inteligente
-  // ---------------------------
-  var GameCache = {
-    get: function () {
-      try {
-        var data = localStorage.getItem(STORAGE_KEY);
-        return data ? JSON.parse(data) : {};
-      } catch (e) {
-        return {};
-      }
-    },
-
-    set: function (cache) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-
-    // Atualiza cache de um jogo
-    update: function (templateId, attempts, fromAPI) {
-      var cache = this.get();
-      var key = String(templateId);
-
-      if (attempts > 0) {
-        cache[key] = {
-          attempts: attempts,
-          lastSync: fromAPI ? nowMs() : (cache[key] || {}).lastSync || 0,
-          source: fromAPI ? "api" : "postmessage",
-        };
-      } else {
-        delete cache[key];
-      }
-
-      this.set(cache);
-      log(
-        "✅ Cache updated:",
-        templateId,
-        "→",
-        attempts,
-        "attempts",
-        fromAPI ? "(from API)" : "(from postMessage)"
-      );
-    },
-
-    // Decrementa tentativa (quando recebe postMessage)
-    decrement: function (templateId) {
-      var cache = this.get();
-      var key = String(templateId);
-      var current = cache[key];
-
-      if (!current || current.attempts <= 0) {
-        log("⚠️ No attempts to decrement for:", templateId);
-        return 0;
-      }
-
-      var newAttempts = current.attempts - 1;
-      this.update(templateId, newAttempts, false);
-      return newAttempts;
-    },
-
-    // Pega primeiro jogo disponível
-    getFirstAvailable: function () {
-      var cache = this.get();
-      var templateIds = config.templateIds || [];
-      var routesByItemId = config.routesByItemId || {};
-
-      for (var i = 0; i < templateIds.length; i++) {
-        var templateId = templateIds[i];
-        var key = String(templateId);
-        var cached = cache[key];
-
-        if (cached && cached.attempts > 0) {
-          // Encontra itemId correspondente
-          var itemId = null;
-          for (var id in routesByItemId) {
-            itemId = id;
-            break;
-          }
-
-          if (itemId) {
-            return {
-              templateId: templateId,
-              itemId: itemId,
-              slug: routesByItemId[itemId].slug,
-              skin: routesByItemId[itemId].skin,
-              attempts: cached.attempts,
-              lastSync: cached.lastSync,
-              source: cached.source,
-            };
-          }
-        }
-      }
-
-      return null;
-    },
-
-    // Verifica se cache expirou
-    isExpired: function (templateId) {
-      var cache = this.get();
-      var key = String(templateId);
-      var cached = cache[key];
-
-      if (!cached || !cached.lastSync) return true;
-
-      var age = nowMs() - cached.lastSync;
-      var expiry = safeNum(config.fab.cacheExpiryMs, 35000);
-
-      return age > expiry;
-    },
-
-    clear: function () {
-      this.set({});
-      log("✅ Cache cleared");
-    },
-  };
-
-  // ---------------------------
-  // ✅ SYNC com Smartico API
-  // ---------------------------
-  async function syncWithAPI(force) {
-    try {
-      var smartico = getSmartico();
-      if (!smartico || !smartico.api) {
-        warn("Smartico API not available");
-        return false;
-      }
-
-      var templateIds = config.templateIds || [];
-      if (!templateIds.length) {
-        log("⚠️ templateIds vazio");
-        return false;
-      }
-
-      // Se não for force, verifica se precisa sync
-      if (!force) {
-        var currentGame = GameCache.getFirstAvailable();
-        if (currentGame && !GameCache.isExpired(currentGame.templateId)) {
-          log("✅ Cache válido, skip sync");
-          return false;
-        }
-      }
-
-      log("🔄 Syncing with Smartico API...");
-      var games = await smartico.api.getMiniGames();
-
-      if (!Array.isArray(games)) {
-        warn("getMiniGames() didn't return array");
-        return false;
-      }
-
-      var synced = 0;
-      for (var i = 0; i < games.length; i++) {
-        var game = games[i];
-        var templateId = safeNum(game.id, 0);
-
-        if (templateIds.indexOf(templateId) === -1) continue;
-
-        var attempts = safeNum(game.spin_count, 0);
-        GameCache.update(templateId, attempts, true);
-        synced++;
-
-        log("📥 Synced:", game.name || templateId, "→", attempts, "attempts");
-      }
-
-      log("✅ Sync completed:", synced, "games");
-      updateFAB();
-      return true;
-    } catch (err) {
-      warn("Sync failed:", err);
-      return false;
-    }
-  }
-
-  // ---------------------------
-  // ✅ FAB
-  // ---------------------------
-  function createFAB() {
-    var hostWin = getHostWindow();
-    var doc = hostWin.document;
-
-    var fab = doc.getElementById(FAB_ID);
-    if (fab) return fab;
-
-    fab = doc.createElement("button");
-    fab.id = FAB_ID;
-    fab.innerHTML =
-      '<div style="position:relative; display:flex; justify-content: center; align-items: center;">' +
-      '<img src="https://skullandbonestools.de/api/imagesservice?src=items%2FahPakTreasureChest&width=256" style="width: 46px; aspect-ratio: 1"/>' +
-      '<span style="position: absolute; top: -8px; right: -6px; background: #e11e1e; border-radius: 100%; padding: 9px;"></span>' +
-      "</div>";
-
-    var baseStyle = {
-      position: "fixed",
-      bottom: "100px",
-      right: "20px",
-      zIndex: "2147483646",
-      display: "none",
-      alignItems: "center",
-      padding: "6px 6px",
-      borderRadius: "100%",
-      border: "solid #c69810 2px",
-      cursor: "pointer",
-      background: "none",
-      color: "white",
-      transition: "all 0.3s ease",
-    };
-
-    Object.assign(fab.style, baseStyle);
-
-    fab.onmouseover = function () {
-      fab.style.transform = "scale(1.05)";
-    };
-    fab.onmouseout = function () {
-      fab.style.transform = "scale(1)";
-    };
-
-    fab.onclick = function () {
-      var game = GameCache.getFirstAvailable();
-      if (!game) return;
-
-      var route = (config.routesByItemId || {})[game.itemId];
-      if (route) {
-        open(route.slug, { skin: route.skin });
-      }
-    };
-
-    // Double click = force refresh
-    var lastClick = 0;
-    fab.ondblclick = function (e) {
-      e.preventDefault();
-      var now = nowMs();
-      if (now - lastClick < 500) {
-        log("🔄 Double-click detected, forcing sync...");
-        syncWithAPI(true);
-      }
-      lastClick = now;
-    };
-
-    doc.body.appendChild(fab);
-    return fab;
-  }
-
-  function updateFAB() {
-    if (!config.fab || !config.fab.enabled) return;
-
-    var fab = createFAB();
-    var game = GameCache.getFirstAvailable();
-
-    if (game && game.attempts > 0) {
-      fab.style.display = "flex";
-      log("✅ FAB shown:", game.slug, "with", game.attempts, "attempts");
-
-      // Info no tooltip (opcional)
-      var age = nowMs() - game.lastSync;
-      var ageText = Math.floor(age / 1000) + "s ago";
-      fab.title =
-        game.attempts +
-        " tentativas (" +
-        game.source +
-        ", " +
-        ageText +
-        ")\nDouble-click para atualizar";
-    } else {
-      fab.style.display = "none";
-      log("✅ FAB hidden - no games available");
-    }
-  }
-
-  // ---------------------------
-  // Messaging
+  // Messaging (postMessage router)
   // ---------------------------
   function isAllowedOrigin(evOrigin) {
     var allowAny =
       !!(config.messaging && config.messaging.allowAnyOrigin) && !!config.debug;
+
     if (allowAny) return true;
+
     var allowed = originOf(config.baseUrl);
     if (!allowed) return false;
     return evOrigin === allowed;
@@ -484,6 +221,7 @@
 
   function createMessageRouter(hostWin) {
     var handlers = {};
+
     function onMsg(type, fn) {
       handlers[type] = handlers[type] || [];
       handlers[type].push(fn);
@@ -493,16 +231,22 @@
         });
       };
     }
+
     function handle(ev) {
       var msg = ev && ev.data;
       if (!msg || typeof msg !== "object") return;
+
       var t = msg.t;
       if (typeof t !== "string") return;
       if (t.indexOf("SG:") !== 0) return;
+
+      // ✅ origin check
       if (!isAllowedOrigin(ev.origin)) {
         warn("Blocked message from origin:", ev.origin, t);
         return;
       }
+
+      // ✅ source check: aceita só do iframe do overlay (quando existir)
       try {
         var frame = hostWin.document.getElementById(IFRAME_ID);
         if (frame && frame.contentWindow && ev.source !== frame.contentWindow) {
@@ -510,6 +254,7 @@
           return;
         }
       } catch (e) {}
+
       var list = handlers[t] || [];
       for (var i = 0; i < list.length; i++) {
         try {
@@ -519,9 +264,11 @@
         }
       }
     }
+
     return { on: onMsg, handle: handle };
   }
 
+  // Note: chamamos installMessagingOnce() mais abaixo, depois que hideOverlay existe.
   var _msgRouter = null;
 
   function installMessagingOnce() {
@@ -531,8 +278,11 @@
 
     _msgRouter = createMessageRouter(hostWin);
 
+    // SG:REDIRECT => redirect same-tab
     _msgRouter.on("SG:REDIRECT", function (p) {
       if (!p || !p.url) return;
+
+      // segurança mínima: só http/https
       var u;
       try {
         u = new URL(String(p.url));
@@ -540,38 +290,17 @@
       } catch (e) {
         return;
       }
+
+      // opcional: se quiser fechar overlay antes do redirect:
+      // hideOverlay();
+
       if (String(p.mode) === "replace") hostWin.location.replace(u.toString());
       else hostWin.location.assign(u.toString());
     });
 
+    // SG:HIDE_OVERLAY => fecha overlay
     _msgRouter.on("SG:HIDE_OVERLAY", function () {
       hideOverlay();
-    });
-
-    // ✅ SPIN_COMPLETED - Decrementa localStorage
-    _msgRouter.on("SG:SPIN_COMPLETED", function (p) {
-      if (!p || !p.templateId) {
-        log("⚠️ SG:SPIN_COMPLETED sem templateId");
-        return;
-      }
-
-      log("✅ Spin completed for template:", p.templateId);
-
-      // Decrementa no cache (INSTANTÂNEO!)
-      var remaining = GameCache.decrement(p.templateId);
-
-      emit("spinCompleted", { templateId: p.templateId, remaining: remaining });
-
-      // Atualiza FAB imediatamente
-      updateFAB();
-
-      // Se cache expirou, force sync
-      if (GameCache.isExpired(p.templateId)) {
-        log("⏰ Cache expirado, syncing...");
-        setTimeout(function () {
-          syncWithAPI(true);
-        }, 1000);
-      }
     });
 
     hostWin.addEventListener("message", _msgRouter.handle);
@@ -591,6 +320,7 @@
     overlay = doc.createElement("div");
     overlay.id = OVERLAY_ID;
 
+    // Overlay sem backdrop-filter, totalmente transparente
     Object.assign(overlay.style, {
       position: "fixed",
       inset: "0",
@@ -615,7 +345,7 @@
       fontSize: "20px",
       fontWeight: "900",
       background: "rgba(255,255,255,.9)",
-      zIndex: "2147483648",
+      zIndex: "2147483648", // Sempre acima do iframe
       boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
     });
     close.onclick = function () {
@@ -628,6 +358,7 @@
     var mobileWidth = config.ui.mobileWidth || 414;
     var mobileHeight = config.ui.mobileHeight || "100%";
 
+    // Estilos base do iframe
     Object.assign(frame.style, {
       position: "fixed",
       border: "0",
@@ -637,8 +368,10 @@
       zIndex: "2147483647",
     });
 
+    // Responsivo via JS
     function applyResponsiveStyles() {
       var isMobile = hostWin.innerWidth <= 768;
+
       if (isMobile) {
         Object.assign(frame.style, {
           top: "0",
@@ -649,7 +382,10 @@
           maxHeight: "100vh",
           transform: "none",
         });
-        Object.assign(close.style, { top: "8px", right: "8px" });
+        Object.assign(close.style, {
+          top: "8px",
+          right: "8px",
+        });
       } else {
         Object.assign(frame.style, {
           top: "0",
@@ -677,10 +413,15 @@
 
     frame.setAttribute("allow", config.ui.iframeAllow || "");
 
+    frame.addEventListener("load", function () {
+      log("iframe loaded:", frame.src);
+    });
+
     overlay.appendChild(frame);
     doc.body.appendChild(overlay);
     doc.body.appendChild(close);
 
+    log("overlay created in", hostWin === window.top ? "window.top" : "window");
     return { hostWin: hostWin, doc: doc, overlay: overlay };
   }
 
@@ -694,9 +435,11 @@
     overlay.style.display = "block";
     if (close) close.style.display = "block";
 
+    // Previne scroll no body
     doc.body.style.overflow = "hidden";
     doc.documentElement.style.overflow = "hidden";
 
+    // Fix para mobile - previne bounce/scroll
     if (o.hostWin.innerWidth <= 768) {
       doc.body.style.position = "fixed";
       doc.body.style.width = "100%";
@@ -704,6 +447,7 @@
     }
 
     frame.src = url;
+
     emit("open", { url: url });
   }
 
@@ -719,6 +463,7 @@
     if (close) close.style.display = "none";
     if (frame) frame.src = "about:blank";
 
+    // Restaura scroll no body
     doc.body.style.overflow = "";
     doc.documentElement.style.overflow = "";
     doc.body.style.position = "";
@@ -728,6 +473,7 @@
     emit("hide", {});
   }
 
+  // ✅ instala messaging agora que hideOverlay existe
   try {
     installMessagingOnce();
   } catch (e) {
@@ -739,6 +485,7 @@
   // ---------------------------
   function buildGameUrl(slug, opts) {
     opts = opts || {};
+
     var baseUrl = (config.baseUrl || "").replace(/\/$/, "");
     if (!baseUrl) throw new Error("config.baseUrl não definido.");
 
@@ -762,9 +509,22 @@
   function open(slug, opts) {
     var url = buildGameUrl(slug, opts);
 
+    // Mixed content check (https page + http iframe = bloqueado)
+    try {
+      var pageIsHttps = location.protocol === "https:";
+      var urlIsHttp = /^http:\/\//i.test(url);
+      if (pageIsHttps && urlIsHttp) {
+        warn("Mixed content: página HTTPS não pode iframar URL HTTP:", url);
+      }
+    } catch (e) {}
+
     if ((config.ui.mode || "overlay") === "popup") {
+      // popup pode ser bloqueado se não for click do usuário
       var w = window.open(url, "_blank", "noopener,noreferrer");
-      if (!w) warn("Popup bloqueado");
+      if (!w)
+        warn(
+          "Popup bloqueado. Use ui.mode='overlay' ou chame em clique do usuário."
+        );
       emit("open", { url: url, mode: "popup" });
       return;
     }
@@ -773,11 +533,11 @@
   }
 
   // ---------------------------
-  // Purchases watcher
+  // Purchases watcher (fix primeira compra)
   // ---------------------------
   var watching = false;
   var openLockUntil = 0;
-  var lastSeenByItemId = {};
+  var lastSeenByItemId = {}; // { [itemId]: purchase_ts_max }
 
   function maxPurchaseTsForItem(items, itemId) {
     var maxTs = 0;
@@ -803,7 +563,15 @@
     var route = (config.routesByItemId || {})[String(itemId)];
     if (!route || !route.slug) return;
 
-    log("✅ purchase detected => open", { itemId: itemId, route: route });
+    var uid = getUid();
+    var lang = getLang();
+
+    log("✅ purchase detected => open", {
+      itemId: itemId,
+      route: route,
+      uid: uid,
+      lang: lang,
+    });
 
     emit("purchase", {
       itemId: itemId,
@@ -811,7 +579,7 @@
       route: route,
     });
 
-    open(route.slug, { skin: route.skin });
+    open(route.slug, { skin: route.skin, uid: uid, lang: lang });
   }
 
   async function watchPurchases(opts) {
@@ -826,35 +594,56 @@
     var fn = findPurchasedFn(api);
     if (!fn) {
       watching = false;
-      throw new Error("Não achei função de 'purchased store items'");
+      throw new Error(
+        "Não achei função de 'purchased store items' na Smartico API."
+      );
     }
 
     var itemIds =
       opts.itemIds && opts.itemIds.length ? opts.itemIds : getMappedItemIds();
+    if (!itemIds.length) {
+      warn("watchPurchases: nenhum itemId configurado em routesByItemId.");
+    }
 
+    // 1) Baseline inicial (para não ignorar a PRIMEIRA compra)
     try {
       var initial = await fn.call(api, {});
       if (Array.isArray(initial)) {
         itemIds.forEach(function (id) {
           lastSeenByItemId[id] = maxPurchaseTsForItem(initial, id) || 0;
         });
+        log(
+          "baseline set from initial fetch:",
+          JSON.parse(JSON.stringify(lastSeenByItemId))
+        );
+      } else {
+        log("baseline: initial fetch did not return array (ok)");
       }
-    } catch (e) {}
+    } catch (e) {
+      warn(
+        "baseline fetch failed (continuing):",
+        e && e.message ? e.message : e
+      );
+    }
 
+    // 2) Arma onUpdate
     function onUpdate(items) {
       if (!watching) return;
+
       var t = nowMs();
       if (t < openLockUntil) return;
+
+      log("purchased update len:", (items || []).length);
 
       itemIds.forEach(function (itemId) {
         var prev = safeNum(lastSeenByItemId[itemId], 0);
         var maxTs = maxPurchaseTsForItem(items, itemId);
 
         if (maxTs && maxTs > prev) {
-          openLockUntil =
-            nowMs() + safeNum(config.watcher.openCooldownMs, 2000);
+          openLockUntil = nowMs() + safeNum(config.watcher.openCooldownMs, 2000);
           lastSeenByItemId[itemId] = maxTs;
 
+          // pega o item mais recente desse itemId
           var newest = null;
           for (var i = 0; i < items.length; i++) {
             var it = items[i];
@@ -878,23 +667,25 @@
       throw e2;
     }
 
-    log("watchPurchases armed");
+    log("watchPurchases armed", { itemIds: itemIds });
     emit("watch", { itemIds: itemIds });
   }
 
   function stop() {
     watching = false;
     emit("stop", {});
+    log("watchPurchases stopped (best-effort).");
   }
 
   // ---------------------------
   // Public API
   // ---------------------------
   var API = {
-    version: "1.1-fab-smart",
+    version: "1.1.0",
 
     setConfig: function (partial) {
       config = deepMerge(config, partial || {});
+      log("config updated:", config);
       return config;
     },
 
@@ -918,49 +709,26 @@
       return stop();
     },
 
-    // ✅ Force sync (ignora cache)
-    refresh: function () {
-      return syncWithAPI(true);
-    },
-
-    // ✅ Ver cache
-    getCache: function () {
-      return GameCache.get();
-    },
-
-    // ✅ Limpar cache
-    clearCache: function () {
-      GameCache.clear();
-      updateFAB();
-    },
-
     on: on,
     off: off,
   };
 
+  // Expose
   window.SmarticoGames = API;
 
-  log("ready v1.1-fab-smart");
+  log("ready", API.version, "config:", config);
 
-  // Init
-  (async function () {
-    try {
-      var smartico = await waitForSmartico(12000);
-
-      // ✅ Sync inicial se FAB habilitado
-      if (config.fab && config.fab.enabled) {
-        await syncWithAPI(false);
-        updateFAB();
-      }
-
-      // AutoStart watcher
-      if (config.watcher && config.watcher.autoStart) {
-        API.watchPurchases().catch(function (e) {
-          errLog("autoStart failed:", e);
-        });
-      }
-    } catch (e) {
-      errLog("init error:", e);
+  // AutoStart
+  try {
+    if (config.watcher && config.watcher.autoStart) {
+      API.watchPurchases().catch(function (e) {
+        errLog(
+          "autoStart watchPurchases failed:",
+          e && e.message ? e.message : e
+        );
+      });
     }
-  })();
+  } catch (e) {
+    errLog("autoStart error:", e);
+  }
 })();
