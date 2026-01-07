@@ -1,7 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
+import { createSmarticoTransport } from "@/@sdk/smartico";
+import { createStoreItemsStore } from "@/@sdk/smartico/services/storeItemsStore";
+import { createUserProfileStore } from "@/@sdk/smartico/services/userProfileStore";
+import { createMiniGamesStore } from "@/@sdk/smartico";
 import { UserProfile } from "@/@sdk/smartico";
 import { filterChests, enrichChestsWithGameData, categorizeChests, hasAnyAvailableChest } from "@/games/templates/giftbox/chest/chest.rules";
 import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
@@ -23,10 +27,31 @@ type State = {
 
 /**
  * Hook para o Hall dos Baús
- * Usa stores do Context + espera storesReady
+ * Boot completo garante que setup interno já completou
  */
 export function useChestHall() {
-  const { storeItemsStore, userProfileStore, miniGamesStore, storesReady } = useSmartico();
+  const { smartico } = useSmartico();
+
+  // Cria transport e stores localmente
+  const transport = useMemo(
+    () => smartico ? createSmarticoTransport(smartico, false) : null,
+    [smartico]
+  );
+
+  const storeItemsStore = useMemo(
+    () => transport ? createStoreItemsStore(transport, false) : null,
+    [transport]
+  );
+
+  const userProfileStore = useMemo(
+    () => transport ? createUserProfileStore(transport, false) : null,
+    [transport]
+  );
+
+  const miniGamesStore = useMemo(
+    () => transport ? createMiniGamesStore(transport, false) : null,
+    [transport]
+  );
 
   const [state, setState] = useState<State>({
     chests: [],
@@ -40,7 +65,6 @@ export function useChestHall() {
     error: null,
   });
 
-  // Computa estado derivado
   const computeState = useCallback(
     (
       storeItems: any[],
@@ -62,77 +86,18 @@ export function useChestHall() {
     []
   );
 
-  // Subscribe nas stores (SÓ quando storesReady)
-  useEffect(() => {
-    if (!storeItemsStore || !userProfileStore || !miniGamesStore || !storesReady) {
-      console.log("⏳ [useChestHall] Waiting for stores to be ready...", {
-        storeItemsStore: !!storeItemsStore,
-        userProfileStore: !!userProfileStore,
-        miniGamesStore: !!miniGamesStore,
-        storesReady,
-      });
-      return;
-    }
-
-    console.log("✅ [useChestHall] Stores ready, subscribing...");
-
-    // Pega snapshots iniciais (já foram carregados pelo Provider!)
-    const items = storeItemsStore.getSnapshot();
-    const profile = userProfileStore.getSnapshot();
-    const games = miniGamesStore.getSnapshot();
-    console.log(profile)
-    console.log("📊 [useChestHall] Initial snapshots:", {
-      items: items.length,
-      profile: profile ? "✅" : "❌",
-      games: games.length,
-    });
-
-    // Computa estado inicial
-    const initialState = computeState(items, games, profile);
-    setState((prev) => ({ ...prev, ...initialState, isLoading: false }));
-
-    // Subscribe para atualizações futuras
-    const unsubItems = storeItemsStore.subscribe((items: any[]) => {
-      const games = miniGamesStore.getSnapshot();
-      const profile = userProfileStore.getSnapshot();
-      const newState = computeState(items, games, profile);
-      setState((prev) => ({ ...prev, ...newState, isLoading: false }));
-    });
-
-    const unsubProfile = userProfileStore.subscribe((profile: any) => {
-      const items = storeItemsStore.getSnapshot();
-      const games = miniGamesStore.getSnapshot();
-      const newState = computeState(items, games, profile);
-      setState((prev) => ({ ...prev, ...newState, isLoading: false }));
-    });
-
-    const unsubGames = miniGamesStore.subscribe((games: MiniGameTemplate[]) => {
-      const items = storeItemsStore.getSnapshot();
-      const profile = userProfileStore.getSnapshot();
-      const newState = computeState(items, games, profile);
-      setState((prev) => ({ ...prev, ...newState, isLoading: false }));
-    });
-
-    return () => {
-      unsubItems();
-      unsubProfile();
-      unsubGames();
-    };
-  }, [storeItemsStore, userProfileStore, miniGamesStore, storesReady, computeState]);
-
-  // Refresh manual
   const refresh = useCallback(async () => {
     if (!storeItemsStore || !userProfileStore || !miniGamesStore) {
-      setState((p) => ({ ...p, error: "Stores não inicializadas" }));
       return;
     }
 
     try {
       setState((p) => ({ ...p, isLoading: true, error: null }));
 
+      // Chama em paralelo - boot já garantiu que setup completou
       const [items, profile, games] = await Promise.all([
-        storeItemsStore.fetch(true),
-        userProfileStore.fetch(true),
+        storeItemsStore.fetch(),
+        userProfileStore.fetch(),
         miniGamesStore.refresh(),
       ]);
 
@@ -151,6 +116,30 @@ export function useChestHall() {
       }));
     }
   }, [storeItemsStore, userProfileStore, miniGamesStore, computeState]);
+
+  // Load inicial
+  useEffect(() => {
+    if (!smartico) return;
+    
+    let mounted = true;
+
+    (async () => {
+      try {
+        await refresh();
+      } catch (e: any) {
+        if (!mounted) return;
+        setState((p) => ({
+          ...p,
+          isLoading: false,
+          error: e?.message ?? "Erro ao carregar",
+        }));
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [smartico, refresh]);
 
   return {
     ...state,

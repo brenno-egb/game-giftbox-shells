@@ -5,26 +5,25 @@ import { createLogger } from "../logger";
 type Listener = (items: StoreItem[]) => void;
 
 /**
- * Store para itens da loja (baús, etc)
+ * Store para itens da loja
+ * Smartico faz cache de 30s - sempre chama API
+ * Mantém lastResult apenas para getSnapshot (acesso síncrono)
  */
 export class StoreItemsStore {
   private transport: Transport;
   private logger: ReturnType<typeof createLogger>;
-
-  private cache: StoreItem[] | null = null;
   private listeners = new Set<Listener>();
-  private isFetching = false;
+  private lastResult: StoreItem[] = [];
 
   constructor(transport: Transport, debug = false) {
     this.transport = transport;
     this.logger = createLogger("smartico:storeItemsStore", debug);
   }
 
-  private notifyListeners() {
-    const snapshot = this.cache ?? [];
+  private notifyListeners(items: StoreItem[]) {
     this.listeners.forEach((fn) => {
       try {
-        fn(snapshot);
+        fn(items);
       } catch (err) {
         this.logger.error("listener error", err);
       }
@@ -33,59 +32,36 @@ export class StoreItemsStore {
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
-
-    if (this.cache !== null) {
+    
+    if (this.lastResult.length > 0) {
       try {
-        listener(this.cache);
+        listener(this.lastResult);
       } catch (err) {
         this.logger.error("listener error on subscribe", err);
       }
     }
-
+    
     return () => {
       this.listeners.delete(listener);
     };
   }
 
   getSnapshot(): StoreItem[] {
-    return this.cache ?? [];
+    return this.lastResult;
   }
 
-  async fetch(forceRefresh = false): Promise<StoreItem[]> {
-    if (!forceRefresh && this.cache !== null) {
-      this.logger.debug("using cached store items");
-      return this.cache;
-    }
-
-    if (this.isFetching) {
-      this.logger.debug("fetch already in progress");
-      return this.cache ?? [];
-    }
-
+  async fetch(): Promise<StoreItem[]> {
     this.logger.debug("fetching store items");
-    this.isFetching = true;
-
+    
     try {
       const items = await this.transport.getStoreItems();
-      this.cache = items;
-      this.notifyListeners();
+      this.lastResult = items;
+      this.notifyListeners(items);
       return items;
     } catch (err) {
       this.logger.error("fetch failed", err);
       throw err;
-    } finally {
-      this.isFetching = false;
     }
-  }
-
-  async refresh(): Promise<StoreItem[]> {
-    return this.fetch(true);
-  }
-
-  clear() {
-    this.logger.debug("clearing cache");
-    this.cache = null;
-    this.notifyListeners();
   }
 }
 

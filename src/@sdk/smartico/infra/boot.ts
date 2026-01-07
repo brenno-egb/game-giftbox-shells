@@ -1,5 +1,3 @@
-import { createLogger } from "../logger";
-
 type Smartico = any;
 
 declare global {
@@ -8,9 +6,12 @@ declare global {
     _smartico_user_id?: string | null;
     _smartico_language?: string | null;
     _smartico_allow_localhost?: boolean;
+
     __smarticoBootPromise?: Promise<Smartico>;
   }
 }
+
+/* ---------------------------------- utils --------------------------------- */
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -56,6 +57,39 @@ async function waitFor(cond: () => boolean, timeoutMs: number, label: string) {
   throw new Error(`Timeout esperando: ${label}`);
 }
 
+/**
+ * Aguarda setup interno completar tentando chamar getUserProfile()
+ */
+async function waitForInternalSetup(s: Smartico, timeoutMs: number) {
+  const start = Date.now();
+  
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const profile = await s.api.getUserProfile();
+      
+      // Valida se profile tem dados essenciais (setup completou)
+      if (profile && typeof profile === 'object') {
+        const hasUserId = typeof profile.user_id === 'number';
+        const hasUsername = typeof profile.public_username === 'string';
+        const hasPoints = typeof profile.ach_points_balance === 'number';
+        
+        if (hasUserId || hasUsername || hasPoints) {
+          // Setup completou! ✅
+          return;
+        }
+      }
+    } catch (err) {
+      // Continua tentando
+    }
+    
+    await sleep(100);
+  }
+  
+  throw new Error('Timeout esperando setup interno da Smartico');
+}
+
+/* ---------------------------------- boot ---------------------------------- */
+
 export type BootOptions = {
   scriptUrl: string;
   labelKey: string;
@@ -67,21 +101,16 @@ export type BootOptions = {
   onStep?: (s: string) => void;
 };
 
-/**
- * Faz o boot do Smartico no iframe
- * Garante que só existe um boot por vez (singleton)
- */
 export async function bootSmartico(opts: BootOptions): Promise<Smartico> {
-  const logger = createLogger("smartico:boot", opts.debug);
-
+  const debug = !!opts.debug;
   const step = (s: string) => {
     opts.onStep?.(s);
-    logger.debug(s);
+    if (debug) console.log("[SMARTICO BOOT]", s);
   };
 
   // Evita boots concorrentes
   if (window.__smarticoBootPromise) {
-    logger.debug("reuse existing boot");
+    if (debug) console.log("[SMARTICO BOOT] reuse existing boot");
     return window.__smarticoBootPromise;
   }
 
@@ -108,6 +137,10 @@ export async function bootSmartico(opts: BootOptions): Promise<Smartico> {
       12000,
       "s.api.getMiniGames"
     );
+
+    // ✅ NOVO: Aguarda setup interno completar
+    step("wait-internal-setup");
+    await waitForInternalSetup(s, 12000);
 
     step("suspend-ui");
     try {

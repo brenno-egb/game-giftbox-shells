@@ -10,7 +10,7 @@ import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
 
 export default function HallPage() {
   const searchParams = useSearchParams();
-  const { isReady, storesReady, error: smarticoError } = useSmartico();
+  const { isReady, error: smarticoError } = useSmartico();
   
   const uid = searchParams.get("uid");
   const lang = searchParams.get("lang");
@@ -64,19 +64,6 @@ export default function HallPage() {
     );
   }
 
-  // ✅ NOVO: Aguarda stores carregarem dados iniciais
-  if (!storesReady) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold mb-4">Carregando dados...</div>
-          <div className="animate-spin w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
-          <div className="mt-4 text-sm text-white/60">Aguarde...</div>
-        </div>
-      </div>
-    );
-  }
-
   return <HallContent />;
 }
 
@@ -94,7 +81,7 @@ function HallContent() {
     }
   };
 
-  // Loading dos baús (diferente do loading de stores!)
+  // Loading
   if (hall.isLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -106,7 +93,7 @@ function HallContent() {
     );
   }
 
-  // Erro ao carregar baús
+  // Erro
   if (hall.error) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">

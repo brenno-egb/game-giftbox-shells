@@ -5,26 +5,25 @@ import { createLogger } from "../logger";
 type Listener = (profile: UserProfile | null) => void;
 
 /**
- * Store para perfil completo do usuário
+ * Store para perfil do usuário
+ * Smartico faz cache de 30s - sempre chama API
+ * Mantém lastResult apenas para getSnapshot (acesso síncrono)
  */
 export class UserProfileStore {
   private transport: Transport;
   private logger: ReturnType<typeof createLogger>;
-
-  private cache: UserProfile | null = null;
   private listeners = new Set<Listener>();
-  private isFetching = false;
+  private lastResult: UserProfile | null = null;
 
   constructor(transport: Transport, debug = false) {
     this.transport = transport;
     this.logger = createLogger("smartico:userProfileStore", debug);
   }
 
-  private notifyListeners() {
-    const snapshot = this.cache;
+  private notifyListeners(profile: UserProfile | null) {
     this.listeners.forEach((fn) => {
       try {
-        fn(snapshot);
+        fn(profile);
       } catch (err) {
         this.logger.error("listener error", err);
       }
@@ -33,59 +32,36 @@ export class UserProfileStore {
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
-
-    if (this.cache !== null) {
+    
+    if (this.lastResult !== null) {
       try {
-        listener(this.cache);
+        listener(this.lastResult);
       } catch (err) {
         this.logger.error("listener error on subscribe", err);
       }
     }
-
+    
     return () => {
       this.listeners.delete(listener);
     };
   }
 
   getSnapshot(): UserProfile | null {
-    return this.cache;
+    return this.lastResult;
   }
 
-  async fetch(forceRefresh = false): Promise<UserProfile | null> {
-    if (!forceRefresh && this.cache !== null) {
-      this.logger.debug("using cached profile");
-      return this.cache;
-    }
-
-    if (this.isFetching) {
-      this.logger.debug("fetch already in progress");
-      return this.cache;
-    }
-
+  async fetch(): Promise<UserProfile | null> {
     this.logger.debug("fetching user profile");
-    this.isFetching = true;
-
+    
     try {
       const profile = await this.transport.getUserProfile();
-      this.cache = profile;
-      this.notifyListeners();
+      this.lastResult = profile;
+      this.notifyListeners(profile);
       return profile;
     } catch (err) {
       this.logger.error("fetch failed", err);
       throw err;
-    } finally {
-      this.isFetching = false;
     }
-  }
-
-  async refresh(): Promise<UserProfile | null> {
-    return this.fetch(true);
-  }
-
-  clear() {
-    this.logger.debug("clearing cache");
-    this.cache = null;
-    this.notifyListeners();
   }
 }
 
