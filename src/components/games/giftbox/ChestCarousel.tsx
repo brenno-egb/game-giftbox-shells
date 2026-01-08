@@ -196,17 +196,17 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+
+      {/* 2. PALCO DO CARROSSEL */}
+      <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
       {/* 1. HEADER (Contador) */}
-      <div className="absolute -top-6 right-13 flex flex-col items-center z-20 animate-slideDown rotate-20">
-        <div className="">
+      <div className="absolute w-[65%] flex justify-end -top-6 z-20 animate-slideDown">
+        <div className="w-8  rotate-20">
           <div className="bg-[#7a5e00] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-black">
             {chests.length}
           </div>
         </div>
       </div>
-
-      {/* 2. PALCO DO CARROSSEL */}
-      <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
         {chests.map((chest, i) => {
           const length = chests.length;
 
@@ -233,7 +233,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
       </div>
 
       {/* 3. CONTROLES */}
-      <div className="flex items-center justify-center gap-4 md:gap-8 z-30 w-full px-4">
+      <div className="flex items-center justify-center gap-4 z-30 w-full px-4">
         {/* Botão Anterior */}
         {chests.length > 1 ? (
           <JuicyButton
@@ -257,7 +257,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             </svg>
           </JuicyButton>
         ) : (
-          <div className="w-14 h-14 hidden md:block" />
+          <div className="w-14 h-14 hidden" />
         )}
 
         {/* Botão ABRIR */}
@@ -267,7 +267,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             onClick={() =>
               (window.location.href = getGameUrl(activeChest.skinId, uid, lang))
             }
-            className="px-8 md:px-16 py-6 text-2xl! min-w-50 relative z-10"
+            className="px-8 py-6 text-2xl! min-w-50 relative z-10"
           >
             <span
               className="text-white font-black"
@@ -298,7 +298,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             </svg>
           </JuicyButton>
         ) : (
-          <div className="w-14 h-14 hidden md:block" />
+          <div className="w-14 h-14 hidden" />
         )}
       </div>
 

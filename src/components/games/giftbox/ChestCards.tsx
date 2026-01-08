@@ -191,7 +191,7 @@ export const ChestCardWide = ({
     >
       <div
         className={`
-           relative flex flex-row items-center p-2 md:p-4 rounded-xl shadow-lg overflow-hidden h-full 
+           relative flex flex-row items-center p-2 rounded-xl shadow-lg overflow-hidden h-full 
            transition-transform duration-200 active:scale-95 
            ${!isLocked ? "cursor-pointer hover:-translate-y-1 hover:shadow-xl" : ""}
         `}

@@ -12,7 +12,7 @@ export default function LoadingScreen({
   backgroundImage = "/games/giftbox/background.avif" 
 }: Props) {
   return (
-    <div className="fixed inset-0 z-999 flex flex-col justify-end pb-16 md:pb-24 bg-[#162955] overflow-hidden font-sans">
+    <div className="fixed inset-0 z-999 flex flex-col justify-end pb-16 bg-[#162955] overflow-hidden font-sans">
       
       {/* === WALLPAPER DE FUNDO === */}
       <div className="absolute inset-0 z-0">
@@ -28,7 +28,7 @@ export default function LoadingScreen({
         
         {/* Texto da Mensagem */}
         <div className="flex justify-between items-end">
-          <h2 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-widest drop-shadow-[0_2px_0_rgba(0,0,0,0.8)]"
+          <h2 className="text-2xl font-black text-white uppercase italic tracking-widest drop-shadow-[0_2px_0_rgba(0,0,0,0.8)]"
               style={{ WebkitTextStroke: "1px black" }}>
             {message}
           </h2>

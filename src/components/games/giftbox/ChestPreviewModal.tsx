@@ -45,7 +45,7 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 20 }}
         transition={{ type: "spring", bounce: 0.4 }}
-        className="relative w-full max-w-sm md:max-w-md rounded-[20px] overflow-hidden flex flex-col"
+        className="relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col"
         style={{
           backgroundImage: `
             linear-gradient(${theme.panelBg || '#242424'}, ${theme.panelBg || '#242424'}), 

@@ -370,7 +370,7 @@ export default function GiftboxGame({
 
         {/* ROLETA */}
         {showWheel && (
-          <div className="w-full max-w-4xl animate-slide-up-fade shrink-0">
+          <div className="w-full max-w-4xl animate-slide-up-fade shrink-0 z-50">
             {/* Header da roleta */}
             <div className="text-center mb-3">
               <div className="mt-0.5 text-2xl font-black text-white uppercase"
