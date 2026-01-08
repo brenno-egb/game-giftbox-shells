@@ -18,7 +18,7 @@ export default function LoadingScreen({
       <div className="absolute inset-0 z-0">
         <div 
           className="absolute inset-0 bg-cover bg-center transition-all duration-1000 scale-105 animate-[pulse_10s_ease-in-out_infinite]"
-          style={{ backgroundImage: `url(${backgroundImage})` }}    
+          style={{ backgroundImage: `url(${backgroundImage})`, backgroundPosition: 'top' }}    
         />
         <div className="absolute inset-0 bg-linear-to-t from-[#000000] via-[#0c1833]/70 to-transparent" />
       </div>

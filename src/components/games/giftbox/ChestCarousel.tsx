@@ -26,7 +26,8 @@ const JuicyButton = ({
 }: JuicyButtonProps) => {
   const styles = {
     green: "bg-[#00d000] border-[#007c00] text-white shadow-[0_6px_0_#005900]",
-    yellow: "bg-[#ffc800] border-[#B5862F] text-white shadow-[0_6px_0_#00000070,0_10px_0_#00000031]",
+    yellow:
+      "bg-[#ffc800] border-[#B5862F] text-white shadow-[0_6px_0_#00000070,0_10px_0_#00000031]",
     blue: "bg-[#338aff] border-[#004bbd] text-white shadow-[0_6px_0_#003380]",
   };
 
@@ -49,8 +50,8 @@ const JuicyButton = ({
       }}
       {...props}
     >
-      <div className="absolute w-full h-2 top-0 left-0 bg-[#ffd23f]"/>
-      <div className="absolute w-full h-2 bottom-0 left-0 bg-[#C4A023]"/>
+      <div className="absolute w-full h-2 top-0 left-0 bg-[#ffd23f]" />
+      <div className="absolute w-full h-2 bottom-0 left-0 bg-[#C4A023]" />
       {/* <div className="absolute top-1 left-2 right-2 h-1/3 bg-white/20 rounded-t-xl pointer-events-none" /> */}
       <div className="flex items-center justify-center gap-2 relative z-10 -skew-x-4">
         {children}
@@ -108,14 +109,16 @@ const ChestCard = ({
 
       {/* Container Principal do Card */}
       <div
-        className={`relative w-full h-full rounded-[24px] border-[6px] overflow-hidden ${styles.border} ${styles.shadow}`}
+        className={`relative w-full h-full rounded-3xl border-[6px] overflow-hidden ${styles.border} ${styles.shadow}`}
       >
-
         {/* Título do Jogo */}
         <div className="absolute top-5 inset-x-0 text-center z-20 px-4">
           <h3
-            className="text-white font-black uppercase text-xl leading-tight drop-shadow-md"
-            style={{ WebkitTextStroke: "1px black" }}
+            className="text-white font-black uppercase text-2xl italic leading-tight drop-shadow-md"
+            style={{
+              textShadow: "2px 2px 0 black",
+              WebkitTextStroke: "1px black",
+            }}
           >
             {item.game.name}
           </h3>
@@ -162,7 +165,7 @@ type Props = {
   lang: string;
 };
 
-export default function SupercellChestCarousel({ games, uid, lang }: Props) {
+export default function ChestCarousel({ games, uid, lang }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   // Filtra e prepara os dados
@@ -248,8 +251,18 @@ export default function SupercellChestCarousel({ games, uid, lang }: Props) {
             className="max-w-14 flex items-center justify-center shrink-0"
             title="Anterior"
           >
-            <svg width="30" height="43" viewBox="0 0 30 43" fill="none" xmlns="http://www.w3.org/2000/svg" className="-rotate-180">
-              <path d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z" fill="black"/>
+            <svg
+              width="30"
+              height="43"
+              viewBox="0 0 30 43"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="-rotate-180"
+            >
+              <path
+                d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z"
+                fill="black"
+              />
             </svg>
           </JuicyButton>
         ) : (
@@ -267,7 +280,6 @@ export default function SupercellChestCarousel({ games, uid, lang }: Props) {
             className="px-8 md:px-16 py-6 text-2xl! min-w-50 relative z-10"
           >
             <span
-            
               className="text-white font-black"
               style={{
                 textShadow: "2px 2px 0 black",
@@ -287,8 +299,17 @@ export default function SupercellChestCarousel({ games, uid, lang }: Props) {
             className="max-w-14 flex items-center justify-center shrink-0"
             title="Próximo"
           >
-            <svg width="30" height="43" viewBox="0 0 30 43" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z" fill="black"/>
+            <svg
+              width="30"
+              height="43"
+              viewBox="0 0 30 43"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z"
+                fill="black"
+              />
             </svg>
           </JuicyButton>
         ) : (

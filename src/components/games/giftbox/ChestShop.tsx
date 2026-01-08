@@ -33,13 +33,7 @@ export default function ChestShop({ chests, games }: Props) {
       {/* Título */}
       <div className="relative text-center mb-8">
         <div className="inline-block relative">
-          <h2
-            className="text-3xl font-black text-white uppercase italic drop-shadow-[0_4px_0_rgba(0,0,0,0.5)]"
-            style={{ WebkitTextStroke: "1.5px black" }}
-          >
-            Ofertas Especiais
-          </h2>
-          <div className="absolute -right-8 -top-4 rotate-12 text-4xl animate-bounce">💎</div>
+          <img src="/games/giftbox/assets/shop-title.png" />
         </div>
       </div>
 
@@ -68,13 +62,13 @@ export default function ChestShop({ chests, games }: Props) {
               name={chest.name}
               ribbon={chest.ribbon}
               imageInner={chest.image}
-              imageBackground={imageUrl}
+              imageBackground={imageUrl ?? undefined}
               backgroundColor={skin?.backgroundColor || "#352554"}
               priceLabel={chest.price}
               currencyType={chest.purchase_type}
               spinsAvailable={spins}
               status={status}
-              chest={chest} // ← Passa chest para pegar skin dentro
+              chest={chest}
               onClick={() => setSelectedChest(chest)}
               onActionClick={(e: any) => {
                 e.stopPropagation();

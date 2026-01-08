@@ -7,13 +7,13 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { Andika } from "next/font/google";
+import { Rubik } from "next/font/google";
 import { useWheelGame } from "@/@sdk/smartico";
 import GiftboxChestRive from "./animation";
 import { runPrizeAcknowledge } from "@/@sdk/smartico/domain/acknowledge";
 import { HostBridge } from "@/@sdk/smartico/messaging/hostBridge";
 
-const andika = Andika({ subsets: ["latin"], weight: ["400", "700"] });
+const rubik = Rubik({ subsets: ["latin"], weight: ["400", "700"] });
 
 const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
 
@@ -307,7 +307,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   if (gameState.isLoading) {
     return (
       <div
-        className={`${andika.className} min-h-screen w-full flex items-center justify-center`}
+        className={`${rubik.className} min-h-screen w-full flex items-center justify-center`}
       >
         <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white/85 backdrop-blur-[2px]">
           Carregando...
@@ -319,7 +319,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
   if (gameState.error) {
     return (
       <div
-        className={`${andika.className} min-h-screen w-full flex items-center justify-center`}
+        className={`${rubik.className} min-h-screen w-full flex items-center justify-center`}
       >
         <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-red-300 backdrop-blur-[2px]">
           {gameState.error}
@@ -343,7 +343,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     <div
       data-skin={skin?.id ?? "default"}
       style={rootStyle}
-      className={`${andika.className} min-h-screen w-full relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
+      className={`${rubik.className} min-h-screen w-full relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
     >
       {/* Glow quando abre */}
       {chestOpen && (
@@ -355,19 +355,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             animation: "pulse-glow 2s ease-in-out infinite",
           }}
         />
-      )}
-
-      {/* POSSÍVEIS PRÊMIOS - SÓ NA TELA INICIAL */}
-      {showPossiblePrizes && (
-        <div className="absolute top-0 left-0 right-0 z-10 pt-4 pb-2">
-          <div className="flex gap-3 overflow-x-auto scroll-smooth px-4 pb-2 [-webkit-overflow-scrolling:touch]">
-            {pool.slice(0, 6).map((p: any, i: number) => (
-              <div key={String(p.id) + i} className="shrink-0 w-24 snap-start">
-                <CompactPrizeItem prize={p} />
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* Container principal - Layout vertical otimizado */}
@@ -550,10 +537,13 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             <div className="mt-4 text-center">
               {gameState.canPlay ? (
                 <>
-                  <div className="text-[11px] uppercase tracking-[0.2em] text-white/60 font-semibold">
-                    {isShaking ? "PREPARANDO" : "PRONTO"}
-                  </div>
-                  <div className="mt-1.5 text-lg font-bold text-white/90 animate-fade-in">
+                  <div
+                    className="mt-1.5 text-2xl font-black text-white/90 animate-fade-in uppercase"
+                    style={{
+                      textShadow: "2px 2px 0 black",
+                      WebkitTextStroke: "1px black",
+                    }}
+                  >
                     Toque no baú
                   </div>
                 </>

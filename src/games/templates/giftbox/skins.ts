@@ -12,7 +12,7 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-gold.png",
     backgroundColor: "#07080c",
     theme: {
-      panelBorder: "#E1FF00"
+      panelBorder: "#FFAE00"
     }
   },
 
@@ -23,7 +23,7 @@ export const giftboxSkins = {
     rivePath: "/games/giftbox/skins/bronze/chest-bronze.riv",
     templateId: 7257,
     storeId: 6136,
-    background: "bg-bronze.webp",
+    background: "bg-bronze.avif",
     backgroundStore: "bg-store-bronze.png",
     backgroundColor: "#703F29",
     theme: {
@@ -62,7 +62,7 @@ export const giftboxSkins = {
       accentSoft: "rgba(139,233,255,.72)", // Opcional, se usar em outro lugar
       accentGlow: "rgba(139,233,255,.20)",
       panelBg: "rgba(0,0,0,.52)",
-      panelBorder: "rgba(255,255,255,.12)",
+      panelBorder: "#4B4EFF",
     },
   },
 
@@ -82,7 +82,7 @@ export const giftboxSkins = {
       accentSoft: "rgba(199,166,255,.70)",
       accentGlow: "black",
       panelBg: "rgba(0,0,0,.58)",
-      panelBorder: "rgba(255,255,255,.10)",
+      panelBorder: "#4D4D4D",
     },
   },
 

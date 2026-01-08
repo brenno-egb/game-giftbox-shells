@@ -6,13 +6,13 @@ import Image from "next/image";
 // --- ÍCONES SVG (Ajustados para ficarem nítidos em tamanho menor) ---
 const GameIcons = {
   Coin: () => (
-    <img src="/games/giftbox/assets/coin.png" className="w-full h-full object-contain" />
+    <img src="/games/giftbox/assets/currency/coin.png" className="w-full h-full object-contain" />
   ),
   Diamond: () => (
-    <img src="/games/giftbox/assets/key_gold.png" className="w-full h-full object-contain scale-190" />
+    <img src="/games/giftbox/assets/currency/key_gold.png" className="w-full h-full object-contain scale-190" />
   ),
   Gem: () => (
-    <img src="/games/giftbox/assets/key_emerald.png" className="w-full h-full object-contain scale-200" />
+    <img src="/games/giftbox/assets/currency/key_emerald.png" className="w-full h-full object-contain scale-200" />
   ),
 };
 

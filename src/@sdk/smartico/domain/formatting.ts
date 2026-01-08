@@ -54,10 +54,11 @@ export function getAttemptsDisplay(
 
   if (buyin === "spins") {
     const remaining = safeNumber(game.spin_count, 0);
-    const maxAttempts = safeNumber(game.max_number_of_attempts, 0);
+    // const maxAttempts = safeNumber(game.max_number_of_attempts, 0);
     return {
       label: "Tentativas",
-      value: maxAttempts > 0 ? `${remaining} / ${maxAttempts}` : remaining,
+      // value: maxAttempts > 0 ? `${remaining} / ${maxAttempts}` : remaining,
+      value: remaining,
       valueColor: remaining === 0 ? "text-red-600" : "",
     };
   }

@@ -7,7 +7,7 @@ import { Rubik } from "next/font/google";
 
 // Componentes do Jogo
 import UserProfileHeader from "@/components/games/giftbox/UserProfile";
-import SupercellChestCarousel from "@/components/games/giftbox/ChestCarousel";
+import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
 import ChestShop from "@/components/games/giftbox/ChestShop";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
 
@@ -91,7 +91,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
   return (
     <div
       className={[
-        "min-h-screen bg-[#15191F] selection:bg-[#ffc800] selection:text-black overflow-x-hidden",
+        "flex justify-center min-h-screen bg-[#15191F] selection:bg-[#ffc800] selection:text-black overflow-x-hidden",
         rubik.className,
       ].join(" ")}
     >
@@ -99,7 +99,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
 
       {/* Conteúdo Principal */}
-      <div className="relative max-w-7xl p-4 md:p-6 pb-32">
+      <div className="relative p-4 pb-32">
         {/* Header do Jogador */}
         <section className="relative z-20 mb-2">
           <UserProfileHeader profile={hall.profile} level={hall.level} />
@@ -119,7 +119,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
 
         {/* --- INVENTÁRIO (Carrossel 3D) --- */}
         <section className="relative z-10">
-          <SupercellChestCarousel games={hall.games} uid={uid} lang={lang} />
+          <ChestCarousel games={hall.games} uid={uid} lang={lang} />
         </section>
 
         {/* Divisor Decorativo */}
@@ -130,7 +130,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
         </div>
 
         {/* --- LOJA (Grid de Ofertas) --- */}
-        <section className="relative z-10">
+        <section className="relative z-10 mt-12">
           <ChestShop chests={hall.chests} games={hall.games} />
         </section>
       </div>
