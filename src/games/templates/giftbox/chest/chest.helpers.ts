@@ -79,3 +79,48 @@ export function getSkinByTemplateId(templateId: number) {
     (skin) => Number(skin.templateId) === Number(templateId)
   );
 }
+
+/**
+ * Obtém imagem do baú para o Shop
+ * Prioriza: skin.backgroundStore > chest.image > null
+ */
+export function getChestShopImage(chest: ChestItem): string | null {
+  const skin = getSkinByChest(chest);
+  if (skin?.backgroundStore) {
+    return `${skin.assetsBase}/${skin.backgroundStore}`;
+  }
+  return chest.image || null;
+}
+
+/**
+ * Ordem de exibição dos baús na loja
+ * bronze → silver → gold → emerald → diamond → black diamond
+ */
+const CHEST_ORDER = [
+  'bronze',
+  'silver', 
+  'gold',
+  'emerald',
+  'diamond',
+  'black-diamond'
+] as const;
+
+/**
+ * Ordena chests pela ordem desejada
+ * bronze > silver > gold > emerald > diamond > black diamond
+ */
+export function sortChestsByOrder(chests: ChestItem[]): ChestItem[] {
+  return [...chests].sort((a, b) => {
+    const skinA = getSkinByChest(a);
+    const skinB = getSkinByChest(b);
+    
+    const orderA = skinA ? CHEST_ORDER.indexOf(skinA.id as any) : 999;
+    const orderB = skinB ? CHEST_ORDER.indexOf(skinB.id as any) : 999;
+    
+    // Se não encontrou, mantém ordem original
+    if (orderA === -1) return 1;
+    if (orderB === -1) return -1;
+    
+    return orderA - orderB;
+  });
+}
