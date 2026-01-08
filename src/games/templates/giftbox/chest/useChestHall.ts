@@ -5,8 +5,9 @@ import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
 import { createSmarticoTransport } from "@/@sdk/smartico";
 import { createStoreItemsStore } from "@/@sdk/smartico/services/storeItemsStore";
 import { createUserProfileStore } from "@/@sdk/smartico/services/userProfileStore";
+import { createUserLevelStore } from "@/@sdk/smartico/services/userLevelStore";
 import { createMiniGamesStore } from "@/@sdk/smartico";
-import { UserProfile } from "@/@sdk/smartico";
+import { UserProfile, UserLevel } from "@/@sdk/smartico";
 import { filterChests, enrichChestsWithGameData, categorizeChests, hasAnyAvailableChest } from "@/games/templates/giftbox/chest/chest.rules";
 import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
@@ -18,6 +19,7 @@ type State = {
   locked: ChestItem[];
 
   profile: UserProfile | null;
+  level: UserLevel | null;
   games: MiniGameTemplate[];
 
   hasAvailable: boolean;
@@ -48,6 +50,11 @@ export function useChestHall() {
     [transport]
   );
 
+  const userLevelStore = useMemo(
+    () => transport ? createUserLevelStore(transport, false) : null,
+    [transport]
+  );
+
   const miniGamesStore = useMemo(
     () => transport ? createMiniGamesStore(transport, false) : null,
     [transport]
@@ -59,6 +66,7 @@ export function useChestHall() {
     purchasable: [],
     locked: [],
     profile: null,
+    level: null,
     games: [],
     hasAvailable: false,
     isLoading: true,
@@ -69,7 +77,8 @@ export function useChestHall() {
     (
       storeItems: any[],
       games: MiniGameTemplate[],
-      profile: UserProfile | null
+      profile: UserProfile | null,
+      level: UserLevel | null
     ) => {
       const chests = filterChests(storeItems);
       const enrichedChests = enrichChestsWithGameData(chests, games, profile);
@@ -79,6 +88,7 @@ export function useChestHall() {
         chests: enrichedChests,
         ...categorized,
         profile,
+        level,
         games,
         hasAvailable: hasAnyAvailableChest(enrichedChests),
       };
@@ -87,7 +97,7 @@ export function useChestHall() {
   );
 
   const refresh = useCallback(async () => {
-    if (!storeItemsStore || !userProfileStore || !miniGamesStore) {
+    if (!storeItemsStore || !userProfileStore || !userLevelStore || !miniGamesStore) {
       return;
     }
 
@@ -95,13 +105,14 @@ export function useChestHall() {
       setState((p) => ({ ...p, isLoading: true, error: null }));
 
       // Chama em paralelo - boot já garantiu que setup completou
-      const [items, profile, games] = await Promise.all([
+      const [items, profile, level, games] = await Promise.all([
         storeItemsStore.fetch(),
         userProfileStore.fetch(),
+        userLevelStore.fetch(),
         miniGamesStore.refresh(),
       ]);
 
-      const newState = computeState(items, games, profile);
+      const newState = computeState(items, games, profile, level);
 
       setState((prev) => ({
         ...prev,
@@ -115,7 +126,7 @@ export function useChestHall() {
         error: e?.message ?? "Erro ao carregar dados",
       }));
     }
-  }, [storeItemsStore, userProfileStore, miniGamesStore, computeState]);
+  }, [storeItemsStore, userProfileStore, userLevelStore, miniGamesStore, computeState]);
 
   // Load inicial
   useEffect(() => {

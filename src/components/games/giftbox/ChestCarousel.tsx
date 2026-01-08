@@ -2,29 +2,159 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
+
+// Ajuste os imports conforme seu caminho real
 import { giftboxSkins } from "@/games/templates/giftbox/skins";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
-import { getGameUrl, getGameSpins } from "@/games/templates/giftbox/chest/chest.helpers";
+import {
+  getGameUrl,
+  getGameSpins,
+} from "@/games/templates/giftbox/chest/chest.helpers";
 
-// --- Ícones Customizados (Estilo Chunky) ---
-const Icons = {
-  ArrowLeft: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 drop-shadow-md">
-      <path d="M16 19l-7-7 7-7" className="stroke-white stroke-[4]" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  ArrowRight: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 drop-shadow-md">
-      <path d="M8 5l7 7-7 7" className="stroke-white stroke-[4]" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  Key: () => (
-    <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 animate-pulse">
-      <path d="M21 2l-2 5M21 2l-5 2M21 2l-9 9a4 4 0 00-1.8 1.1L2 20.3a1 1 0 00.3 1.4l1.3 1 1 1.3a1 1 0 001.4.3l8.2-8.2A4 4 0 0015.3 14" className="stroke-yellow-300 stroke-[3]" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="16" cy="8" r="2" className="fill-yellow-300" />
-    </svg>
-  )
+// --- SUB-COMPONENTES DE UI ---
+
+interface JuicyButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "green" | "yellow" | "blue";
+}
+
+const JuicyButton = ({
+  children,
+  className = "",
+  variant = "green",
+  ...props
+}: JuicyButtonProps) => {
+  const styles = {
+    green: "bg-[#00d000] border-[#007c00] text-white shadow-[0_6px_0_#005900]",
+    yellow: "bg-[#ffc800] border-[#B5862F] text-white shadow-[0_6px_0_#00000070,0_10px_0_#00000031]",
+    blue: "bg-[#338aff] border-[#004bbd] text-white shadow-[0_6px_0_#003380]",
+  };
+
+  return (
+    <button
+      className={`
+        relative px-6 py-3 border-2 skew-x-4
+        font-black text-xl uppercase tracking-wide transition-all select-none
+        hover:scale-105 hover:brightness-110 
+        active:scale-95 active:translate-y-[4px] active:shadow-none
+        disabled:opacity-50 disabled:grayscale
+        ${styles[variant]} 
+        ${className}
+      `}
+      style={{
+        textShadow:
+          variant === "yellow"
+            ? "0 1px 0 rgba(255,255,255,0.4)"
+            : "0 2px 0 rgba(0,0,0,0.3)",
+      }}
+      {...props}
+    >
+      <div className="absolute w-full h-2 top-0 left-0 bg-[#ffd23f]"/>
+      <div className="absolute w-full h-2 bottom-0 left-0 bg-[#C4A023]"/>
+      {/* <div className="absolute top-1 left-2 right-2 h-1/3 bg-white/20 rounded-t-xl pointer-events-none" /> */}
+      <div className="flex items-center justify-center gap-2 relative z-10 -skew-x-4">
+        {children}
+      </div>
+    </button>
+  );
 };
+
+// --- CARD DO BAÚ (Isolado para limpeza) ---
+
+const ChestCard = ({
+  item,
+  visualOffset,
+  isActive,
+}: {
+  item: any;
+  visualOffset: number;
+  isActive: boolean;
+}) => {
+  // Configuração visual baseada na posição (Centro vs Laterais)
+  const styles = isActive
+    ? {
+        transform: `translateX(0) scale(1) rotateY(0deg)`,
+        opacity: 1,
+        zIndex: 50,
+        filter: "brightness(1)",
+        border: "border-none",
+        shadow: "shadow-none",
+      }
+    : {
+        transform: `translateX(${visualOffset * 200}px) scale(0.75) rotateY(${
+          visualOffset * -20
+        }deg)`,
+        opacity: 0.5,
+        zIndex: 10,
+        filter: "brightness(0.5) blur(1px) grayscale(0.6)",
+        border: "border-[#4a4a4a]",
+        shadow: "shadow-2xl",
+      };
+
+  return (
+    <div
+      className="absolute top-0 left-0 right-0 mx-auto w-70 h-90 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
+      style={{
+        transform: styles.transform,
+        opacity: styles.opacity,
+        zIndex: styles.zIndex,
+        filter: styles.filter,
+      }}
+    >
+      {/* Sombra de chão (Apenas no ativo) */}
+      {isActive && (
+        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[80%] h-6 bg-black/40 blur-xl rounded-[100%]" />
+      )}
+
+      {/* Container Principal do Card */}
+      <div
+        className={`relative w-full h-full rounded-[24px] border-[6px] overflow-hidden ${styles.border} ${styles.shadow}`}
+      >
+
+        {/* Título do Jogo */}
+        <div className="absolute top-5 inset-x-0 text-center z-20 px-4">
+          <h3
+            className="text-white font-black uppercase text-xl leading-tight drop-shadow-md"
+            style={{ WebkitTextStroke: "1px black" }}
+          >
+            {item.game.name}
+          </h3>
+        </div>
+
+        {/* Imagem do Baú */}
+        <div className="absolute inset-0 flex items-center justify-center z-10 p-8 pt-12">
+          <div
+            className={`relative w-full h-full ${
+              isActive ? "animate-[float_4s_ease-in-out_infinite]" : ""
+            }`}
+          >
+            <Image
+              src={item.game.thumbnail}
+              alt={item.game.name}
+              fill
+              className="object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
+            />
+          </div>
+        </div>
+
+        {/* Rodapé do Card (Info) */}
+        <div className="absolute bottom-0 inset-x-0 py-3 flex flex-col items-center  z-20">
+          <span className="text-[#a8b5cc] text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
+            Quantidade
+          </span>
+          <span
+            className="text-white font-black text-3xl leading-none drop-shadow-lg"
+            style={{ WebkitTextStroke: "1.5px black" }}
+          >
+            {item.spins}x
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- COMPONENTE PRINCIPAL ---
 
 type Props = {
   games: MiniGameTemplate[];
@@ -32,235 +162,189 @@ type Props = {
   lang: string;
 };
 
-type AvailableChest = {
-  skinId: string;
-  skinData: any;
-  game: MiniGameTemplate;
-  spins: number;
-};
+export default function SupercellChestCarousel({ games, uid, lang }: Props) {
+  const [activeIndex, setActiveIndex] = useState(0);
 
-export default function ChestCarousel({ games, uid, lang }: Props) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  // Lógica de dados
-  const availableChests = useMemo((): AvailableChest[] => {
-    const available: AvailableChest[] = [];
-    for (const [skinId, skinData] of Object.entries(giftboxSkins)) {
-      const game = games.find((g) => Number(g.id) === Number(skinData.templateId));
-      if (!game) continue;
-      const spins = getGameSpins(game);
-      if (spins > 0) {
-        available.push({ skinId, skinData, game, spins });
-      }
-    }
-    return available;
+  // Filtra e prepara os dados
+  const chests = useMemo(() => {
+    return Object.entries(giftboxSkins)
+      .map(([skinId, skinData]) => {
+        const game = games.find(
+          (g) => Number(g.id) === Number(skinData.templateId)
+        );
+        if (!game) return null;
+        const spins = getGameSpins(game);
+        if (spins <= 0) return null;
+        return { skinId, skinData, game, spins };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [games]);
 
-  // --- Estado Vazio ---
-  if (availableChests.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12">
-        <div className="w-32 h-32 bg-[#1e2337] rounded-[2rem] border-4 border-[#2d3548] flex items-center justify-center mb-6 opacity-60">
-           <span className="text-5xl grayscale">📦</span>
-        </div>
-        <h3 className="text-2xl font-black text-gray-500 uppercase italic">Inventário Vazio</h3>
-        <p className="text-gray-600 font-bold">Adquira baús na loja!</p>
-      </div>
-    );
-  }
+  const activeChest = chests[activeIndex];
 
-  // --- Lógica de Navegação Circular ---
-  const current = availableChests[currentIndex];
-  
-  const prevIndex = currentIndex === 0 ? availableChests.length - 1 : currentIndex - 1;
-  const nextIndex = currentIndex === availableChests.length - 1 ? 0 : currentIndex + 1;
-  
-  const prevChest = availableChests[prevIndex];
-  const nextChest = availableChests[nextIndex];
+  const navigate = (direction: number) => {
+    setActiveIndex((prev) => {
+      const next = prev + direction;
+      if (next < 0) return chests.length - 1;
+      if (next >= chests.length) return 0;
+      return next;
+    });
+  };
 
-  // Cores dinâmicas ou fallback
-  const theme = current.skinData.theme || { accent: '#f59e0b', accentGlow: '#fbbf24', accentBorder: '#b45309' };
-  
-  // Imagens
-  const currentImage = current.game.thumbnail;
-  const prevImage = prevChest.game.thumbnail;
-  const nextImage = nextChest.game.thumbnail;
-
-  const handlePrev = () => setCurrentIndex(prevIndex);
-  const handleNext = () => setCurrentIndex(nextIndex);
-  const handleOpen = () => window.location.href = getGameUrl(current.skinId, uid, lang);
+  if (!chests.length) return <EmptyStateToon />;
 
   return (
-    <div className="w-full max-w-5xl mx-auto py-6 font-sans select-none">
-      
-      {/* HEADER: Badge Central */}
-      <div className="flex justify-center mb-12">
-        <div className="relative z-10">
-          {/* Sombra do Badge */}
-          <div className="absolute inset-0 bg-black/60 rounded-full translate-y-2 blur-[2px]" />
-          
-          <div className="relative bg-gradient-to-b from-[#2e1a47] to-[#1a0f2e] px-8 py-3 rounded-full border-4 border-[#5b21b6] flex items-center gap-3 shadow-2xl">
-            <div className="bg-[#5b21b6] rounded-lg p-1">
-              <span className="text-xl">✨</span>
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-white uppercase italic tracking-widest leading-none">
-                Seus Baús
-              </h2>
-              <p className="text-[10px] font-bold text-[#a78bfa] uppercase tracking-wider text-center">
-                Escolha para abrir
-              </p>
-            </div>
-            <div className="bg-[#a78bfa] text-[#2e1a47] font-black text-sm px-3 py-1 rounded-md ml-2 border-b-2 border-[#7c3aed]">
-              {availableChests.length}
-            </div>
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+      {/* 1. HEADER (Contador) - Agora é flex item, não absolute */}
+      <div className="absolute top-0 flex flex-col items-center z-20 animate-slideDown">
+        <div className="">
+          <div className="bg-[#866700] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-[#665300]">
+            {chests.length}
           </div>
         </div>
       </div>
 
-      {/* --- CARROSSEL STAGE --- */}
-      <div className="relative h-[450px] flex items-center justify-center perspective-[1000px]">
-        
-        {/* === BAÚ ANTERIOR (Preview Esquerda) === */}
-        {availableChests.length > 1 && (
-          <div 
-            className="absolute left-[5%] md:left-[10%] z-0 opacity-40 blur-[1px] scale-75 transition-all duration-500 cursor-pointer hover:opacity-60"
-            onClick={handlePrev}
-          >
-             <div className="w-48 h-64 bg-[#0f111a] rounded-[2rem] border-[4px] border-gray-700 flex flex-col items-center justify-center p-4 shadow-xl grayscale">
-                <div className="relative w-32 h-32 mb-4">
-                  <Image src={prevImage} alt="Prev" fill className="object-contain" />
-                </div>
-                <div className="h-4 w-20 bg-gray-700 rounded-full" />
-             </div>
-          </div>
-        )}
+      {/* 2. PALCO DO CARROSSEL (Container Relativo apenas para os cards 3D) */}
+      {/* A altura fixa (h-[400px]) é necessária AQUI para o 3D funcionar, mas não no componente todo */}
+      <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
+        {chests.map((chest, i) => {
+          const offset = i - activeIndex;
 
-        {/* === BAÚ PRÓXIMO (Preview Direita) === */}
-        {availableChests.length > 1 && (
-          <div 
-            className="absolute right-[5%] md:right-[10%] z-0 opacity-40 blur-[1px] scale-75 transition-all duration-500 cursor-pointer hover:opacity-60"
-            onClick={handleNext}
-          >
-             <div className="w-48 h-64 bg-[#0f111a] rounded-[2rem] border-[4px] border-gray-700 flex flex-col items-center justify-center p-4 shadow-xl grayscale">
-                <div className="relative w-32 h-32 mb-4">
-                  <Image src={nextImage} alt="Next" fill className="object-contain" />
-                </div>
-                <div className="h-4 w-20 bg-gray-700 rounded-full" />
-             </div>
-          </div>
-        )}
+          // Lógica de loop infinito visual
+          let visualOffset = offset;
+          if (activeIndex === 0 && i === chests.length - 1) visualOffset = -1;
+          if (activeIndex === chests.length - 1 && i === 0) visualOffset = 1;
 
-        {/* === SETAS DE NAVEGAÇÃO (Arcade Buttons) === */}
-        {availableChests.length > 1 && (
-          <>
-            <button 
-              onClick={handlePrev}
-              className="absolute left-2 md:left-4 z-20 w-14 h-14 bg-[#3b82f6] hover:bg-[#60a5fa] rounded-xl border-b-[6px] border-[#1d4ed8] active:border-b-0 active:translate-y-[6px] transition-all flex items-center justify-center shadow-lg group"
+          // Renderizar apenas os vizinhos para performance
+          if (Math.abs(visualOffset) > 1 && chests.length > 2) return null;
+
+          return (
+            <div
+              key={chest.skinId}
+              className="absolute inset-0 flex items-center justify-center pointer-events-none" // pointer-events-none no wrapper para não bloquear cliques
             >
-              <div className="group-active:scale-90 transition-transform"><Icons.ArrowLeft /></div>
-            </button>
-            <button 
-              onClick={handleNext}
-              className="absolute right-2 md:right-4 z-20 w-14 h-14 bg-[#3b82f6] hover:bg-[#60a5fa] rounded-xl border-b-[6px] border-[#1d4ed8] active:border-b-0 active:translate-y-[6px] transition-all flex items-center justify-center shadow-lg group"
-            >
-              <div className="group-active:scale-90 transition-transform"><Icons.ArrowRight /></div>
-            </button>
-          </>
+              <div
+                className="pointer-events-auto cursor-pointer" // Reativa cliques no card
+                onClick={() => visualOffset !== 0 && navigate(visualOffset)}
+              >
+                <ChestCard
+                  item={chest}
+                  visualOffset={visualOffset}
+                  isActive={visualOffset === 0}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 3. CONTROLES E AÇÕES (Botões ao lado) */}
+      <div className="flex items-center justify-center gap-4 md:gap-8 z-30 w-full px-4">
+        {/* Botão Anterior (Esquerda) */}
+        {chests.length > 1 ? (
+          <JuicyButton
+            variant="yellow"
+            onClick={() => navigate(-1)}
+            className="max-w-14 flex items-center justify-center shrink-0"
+            title="Anterior"
+          >
+            <svg width="30" height="43" viewBox="0 0 30 43" fill="none" xmlns="http://www.w3.org/2000/svg" className="-rotate-180">
+              <path d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z" fill="black"/>
+            </svg>
+          </JuicyButton>
+        ) : (
+          /* Placeholder invisível para manter o botão centralizado se tiver apenas 1 item */
+          <div className="w-14 h-14 hidden md:block" />
         )}
 
-        {/* === HERO CARD (Baú Central) === */}
-        <div className="relative z-10 w-[300px] md:w-[340px] transition-all duration-500">
+        {/* Botão de Ação Principal (Centro) */}
+        <div className="relative group shrink-0">
+          <JuicyButton
+            variant="yellow"
+            onClick={() =>
+              (window.location.href = getGameUrl(activeChest.skinId, uid, lang))
+            }
+            className="px-8 md:px-16 py-5 text-xl md:text-2xl min-w-50 relative z-10"
+          >
+            <span
             
-            {/* Efeito de Luz "God Rays" atrás do baú */}
-            <div className="absolute inset-0 -z-10 animate-[spin_10s_linear_infinite] opacity-30 pointer-events-none scale-150">
-               <div className="w-full h-full bg-[conic-gradient(from_0deg,transparent_0deg,var(--glow-color)_20deg,transparent_40deg)]" style={{ '--glow-color': theme.accent } as any} />
-            </div>
-            <div className="absolute inset-0 -z-10 bg-gradient-radial from-white/10 to-transparent blur-2xl transform scale-125" />
-
-            {/* O CARD PRINCIPAL */}
-            <div 
-              className="relative bg-[#1e2337] rounded-[2.5rem] border-[4px] p-2 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]"
-              style={{ borderColor: theme.accentBorder || '#475569' }}
+              className="text-white font-black"
+              style={{
+                textShadow: "2px 2px 0 black",
+                WebkitTextStroke: "1px black",
+              }}
             >
-              
-              {/* Container da Imagem (Fundo Escuro) */}
-              <div className="relative bg-[#11131f] rounded-[2rem] h-64 w-full flex items-center justify-center overflow-hidden border-2 border-white/5 mb-[-20px] pb-6 z-0">
-                {/* Imagem do Baú Flutuando */}
-                <div 
-                  className="relative w-56 h-56 z-10"
-                  style={{ animation: 'float 3s ease-in-out infinite' }}
-                >
-                  <Image 
-                    src={currentImage} 
-                    alt={current.game.name}
-                    fill
-                    className="object-contain drop-shadow-[0_15px_15px_rgba(0,0,0,0.5)]"
-                    priority
-                  />
-                </div>
-
-                {/* Badge de Spins (Estilo Notificação Vermelha) */}
-                <div className="absolute top-4 right-4 z-20 animate-[bounce_2s_infinite]">
-                   <div className="bg-[#ef4444] text-white text-lg font-black px-3 py-1.5 rounded-xl border-2 border-white shadow-lg rotate-6">
-                      {current.spins}x
-                   </div>
-                </div>
-              </div>
-
-              {/* Área de Conteúdo Inferior */}
-              <div className="relative z-10 bg-[#1e2337] rounded-b-[2rem] pt-8 pb-6 px-4 text-center">
-                 {/* Divisor curvo para esconder o fundo da imagem */}
-                 <div className="absolute -top-8 left-0 right-0 h-8 bg-[#1e2337] rounded-t-[50%] scale-x-110" />
-
-                 <h3 className="text-2xl font-black text-white uppercase italic tracking-wide leading-none drop-shadow-md mb-2">
-                   {current.game.name}
-                 </h3>
-                 
-                 {current.game.description && (
-                   <p className="text-slate-400 text-xs font-bold leading-tight line-clamp-2 px-4 mb-6 h-8">
-                     {current.game.description}
-                   </p>
-                 )}
-
-                 {/* Botão GIGANTE de Ação */}
-                 <button 
-                   onClick={handleOpen}
-                   className="w-full relative group transform transition-transform active:scale-95"
-                 >
-                    <div className="absolute inset-0 bg-[#065f46] rounded-2xl translate-y-[6px]" />
-                    <div className="relative bg-gradient-to-b from-[#10b981] to-[#059669] p-4 rounded-2xl border-t border-white/30 flex items-center justify-center gap-2 shadow-lg group-hover:brightness-110 transition-all">
-                       <Icons.Key />
-                       <span className="text-white font-black text-xl uppercase tracking-widest drop-shadow-md">
-                         Abrir
-                       </span>
-                    </div>
-                 </button>
-              </div>
-            </div>
+              ABRIR
+            </span>
+          </JuicyButton>
         </div>
+
+        {/* Botão Próximo (Direita) */}
+        {chests.length > 1 ? (
+          <JuicyButton
+            variant="yellow"
+            onClick={() => navigate(1)}
+            className="max-w-14 flex items-center justify-center shrink-0"
+            title="Próximo"
+          >
+            <svg width="30" height="43" viewBox="0 0 30 43" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z" fill="black"/>
+            </svg>
+          </JuicyButton>
+        ) : (
+          /* Placeholder invisível */
+          <div className="w-14 h-14 hidden md:block" />
+        )}
       </div>
 
-      {/* Indicadores de Posição (Bolinhas) */}
-      <div className="flex justify-center gap-3 mt-8">
-        {availableChests.map((_, idx) => (
-          <div 
-            key={idx}
-            className={`
-              h-3 rounded-full transition-all duration-300 border-2 border-black/20
-              ${idx === currentIndex ? 'w-10 bg-[#fbbf24]' : 'w-3 bg-slate-700'}
-            `}
-          />
-        ))}
-      </div>
-
-      {/* Styles Globais para Animação */}
       <style jsx global>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
+          0%,
+          100% {
+            transform: translateY(-8px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(8px) rotate(1deg);
+          }
+        }
+        @keyframes slideDown {
+          from {
+            transform: translateY(-20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
       `}</style>
+    </div>
+  );
+}
+
+// --- Empty State ---
+function EmptyStateToon() {
+  return (
+    <div className="w-full max-w-lg mx-auto bg-[#1a233a] rounded-3xl border-4 border-[#2d3548] p-8 text-center shadow-xl relative overflow-hidden my-8">
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
+
+      <div className="relative z-10 flex flex-col items-center">
+        <div className="text-6xl mb-4 grayscale opacity-50 animate-bounce">
+          🔒
+        </div>
+        <h2 className="text-2xl font-black text-white uppercase mb-2">
+          Inventário Vazio
+        </h2>
+        <p className="text-slate-400 mb-6 max-w-xs mx-auto">
+          Não há baús disponíveis no momento. Jogue para conquistar recompensas!
+        </p>
+        <JuicyButton
+          variant="blue"
+          onClick={() => (window.location.href = "/shop")}
+        >
+          Ir para a Loja
+        </JuicyButton>
+      </div>
     </div>
   );
 }

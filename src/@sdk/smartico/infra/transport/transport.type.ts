@@ -3,6 +3,7 @@ import type {
   PlayerInfo,
   PlayResult,
   HistoryParams,
+  UserLevel,
 } from "../../domain/domain.type";
 
 /**
@@ -51,4 +52,9 @@ export interface Transport {
    * Busca perfil completo do usuário
    */
   getUserProfile(): Promise<any>;
+
+  /**
+   * Busca nível atual do usuário
+   */
+  getCurrentLevel(): Promise<UserLevel | null>;
 }

@@ -50,7 +50,6 @@ export type HistoryParams = {
 /**
  * Tipos relacionados aos baús e itens da loja
  */
-
 export type StoreItem = {
   id: number;
   name: string;
@@ -91,4 +90,22 @@ export type UserProfile = {
   core_registration_date?: number;
   core_inbox_unread_count?: number;
   core_is_test_account?: boolean;
+};
+
+/**
+ * Nível atual do usuário
+ * Retornado por getCurrentLevel()
+ */
+export type UserLevel = {
+  id: number;
+  name: string;
+  image?: string;
+  description?: string;
+  ordinal_position: number;
+  progress: number;
+  required_level_counter_1?: number;
+  required_level_counter_2?: number;
+  required_points: number;
+  visibility_points?: number | null;
+  custom_data?: Record<string, any>;
 };

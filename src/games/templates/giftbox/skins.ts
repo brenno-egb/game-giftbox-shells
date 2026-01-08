@@ -6,10 +6,12 @@ export const giftboxSkins = {
     assetsBase: "/games/giftbox/skins/gold",
     rivePath: "/games/giftbox/skins/gold/chest-gold.riv",
     templateId: 7282,
+    storeId: 6127,
     background: "bg-gold.webp",
+    backgroundStore: "bg-store-gold.png",
     backgroundColor: "#07080c",
     theme: {
-      accent: "#facc15", // gold
+      accent: "#facc15",
       accentSoft: "rgba(250,204,21,.65)",
       accentBorder: "rgba(250,204,21,.30)",
       accentGlow: "rgba(250,204,21,.20)",
@@ -23,10 +25,12 @@ export const giftboxSkins = {
     assetsBase: "/games/giftbox/skins/bronze",
     rivePath: "/games/giftbox/skins/bronze/chest-bronze.riv",
     templateId: 7257,
+    storeId: 6136,
     background: "bg-bronze.webp",
+    backgroundStore: "bg-store-bronze.png",
     backgroundColor: "#07080c",
     theme: {
-      accent: "#d18b47", // bronze
+      accent: "#d18b47",
       accentSoft: "rgba(209,139,71,.70)",
       accentBorder: "rgba(209,139,71,.32)",
       accentGlow: "rgba(209,139,71,.20)",
@@ -40,10 +44,12 @@ export const giftboxSkins = {
     assetsBase: "/games/giftbox/skins/silver",
     rivePath: "/games/giftbox/skins/silver/chest-silver.riv",
     templateId: 7279,
+    storeId: 6126,
     background: "bg-silver.webp",
+    backgroundStore: "bg-store-silver.png",
     backgroundColor: "#07080c",
     theme: {
-      accent: "#e5e7eb", // silver
+      accent: "#e5e7eb",
       accentSoft: "rgba(229,231,235,.72)",
       accentBorder: "rgba(229,231,235,.28)",
       accentGlow: "rgba(229,231,235,.18)",
@@ -57,10 +63,12 @@ export const giftboxSkins = {
     assetsBase: "/games/giftbox/skins/diamond",
     rivePath: "/games/giftbox/skins/diamond/chest-diamond.riv",
     templateId: 7284,
+    storeId: 6129,
     background: "bg-diamond.webp",
+    backgroundStore: "bg-store-diamond.png",
     backgroundColor: "#05070b",
     theme: {
-      accent: "#8be9ff", // icy cyan (diamond)
+      accent: "#8be9ff",
       accentSoft: "rgba(139,233,255,.72)",
       accentBorder: "rgba(139,233,255,.30)",
       accentGlow: "rgba(139,233,255,.20)",
@@ -74,10 +82,12 @@ export const giftboxSkins = {
     assetsBase: "/games/giftbox/skins/black-diamond",
     rivePath: "/games/giftbox/skins/black-diamond/chest-black-diamond.riv",
     templateId: 7285,
+    storeId: 6130,
     background: "bg-black-diamond.webp",
+    backgroundStore: "bg-store-black-diamond.png",
     backgroundColor: "#030409",
     theme: {
-      accent: "#c7a6ff", // deep violet highlight
+      accent: "#c7a6ff",
       accentSoft: "rgba(199,166,255,.70)",
       accentBorder: "rgba(199,166,255,.28)",
       accentGlow: "rgba(199,166,255,.18)",
@@ -91,7 +101,9 @@ export const giftboxSkins = {
     assetsBase: "/games/giftbox/skins/emerald",
     rivePath: "/games/giftbox/skins/emerald/chest-emerald.riv",
     templateId: 7283,
+    storeId: 6128,
     background: "bg-emerald.webp",
+    backgroundStore: "bg-store-emerald.png",
     backgroundColor: "#04080a",
     theme: {
       accent: "#34d399",

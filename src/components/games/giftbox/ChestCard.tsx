@@ -1,7 +1,6 @@
 "use client";
 
 import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
-import { getChestStatusMessage } from "@/games/templates/giftbox/chest/chest.rules";
 import { PURCHASE_TYPE_LABELS } from "@/games/templates/giftbox/chest/chest.types";
 
 type Props = {
@@ -10,101 +9,74 @@ type Props = {
 };
 
 export default function ChestCard({ chest, onClick }: Props) {
-  const statusMessage = getChestStatusMessage(chest);
   const isAvailable = chest.hasAttempts;
   const canAfford = chest.canAfford;
 
-  const handleClick = () => {
-    if (onClick) onClick(chest);
-  };
+  // Estilos Baseados em Estado (Cores Supercell)
+  const theme = isAvailable 
+    ? { border: "border-[#00d000]", bg: "from-[#00d000]/20 to-[#005900]/20", glow: "shadow-[#00d000]/20" }
+    : canAfford 
+    ? { border: "border-[#338aff]", bg: "from-[#338aff]/20 to-[#003380]/20", glow: "shadow-[#338aff]/20" }
+    : { border: "border-[#465363]", bg: "from-[#2b333d]/50 to-[#1a1f26]/50", glow: "" };
 
   return (
     <div
-      onClick={handleClick}
+      onClick={() => onClick && onClick(chest)}
       className={`
-        group relative rounded-2xl overflow-hidden
-        transition-all duration-300
-        ${
-          isAvailable
-            ? "bg-gradient-to-br from-amber-500/20 to-amber-700/20 border-2 border-amber-500 cursor-pointer hover:scale-105 hover:shadow-2xl hover:shadow-amber-500/50"
-            : canAfford
-            ? "bg-gradient-to-br from-emerald-500/20 to-emerald-700/20 border-2 border-emerald-500 cursor-pointer hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/30"
-            : "bg-gradient-to-br from-slate-700/20 to-slate-900/20 border-2 border-slate-600 opacity-60"
-        }
+        group relative rounded-[18px] border-[3px] overflow-hidden cursor-pointer select-none
+        transition-all duration-200 hover:-translate-y-1 hover:shadow-xl
+        bg-[#1a1f26] ${theme.border} ${theme.glow}
       `}
     >
+      {/* Background Decorativo */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${theme.bg} opacity-50`} />
+      
       {/* Ribbon */}
       {chest.ribbon && (
-        <div className="absolute top-4 right-4 z-10">
-          <span className="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase shadow-lg">
+        <div className="absolute top-0 right-0 z-20">
+          <div className="bg-[#ff3b30] text-white text-[9px] font-black px-2 py-0.5 rounded-bl-lg border-l border-b border-[#b91c1c]">
             {chest.ribbon}
-          </span>
-        </div>
-      )}
-
-      {/* Badge de disponível */}
-      {isAvailable && (
-        <div className="absolute top-4 left-4 z-10">
-          <span className="bg-amber-500 text-black text-xs font-bold px-3 py-1 rounded-full uppercase shadow-lg animate-pulse">
-            Disponível!
-          </span>
-        </div>
-      )}
-
-      {/* Imagem */}
-      <div className="relative aspect-square p-6 flex items-center justify-center">
-        {chest.image ? (
-          <img
-            src={chest.image}
-            alt={chest.name}
-            className={`
-              w-full h-full object-contain
-              transition-transform duration-300
-              ${isAvailable ? "group-hover:scale-110" : ""}
-            `}
-          />
-        ) : (
-          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white text-4xl font-bold">
-            ?
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Info */}
-      <div className="p-4 space-y-2">
-        <h3 className="text-lg font-bold text-white truncate">
-          {chest.name}
-        </h3>
+      <div className="relative p-3 flex items-center gap-4">
+        {/* Avatar/Icone */}
+        <div className="relative w-16 h-16 shrink-0 bg-black/30 rounded-xl border border-white/10 flex items-center justify-center">
+           {chest.image ? (
+             <img src={chest.image} alt={chest.name} className="w-14 h-14 object-contain drop-shadow-md group-hover:scale-110 transition-transform" />
+           ) : (
+             <span className="text-2xl">📦</span>
+           )}
+           {isAvailable && (
+             <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#00d000] border-2 border-white rounded-full animate-pulse" />
+           )}
+        </div>
 
-        {chest.description && (
-          <p className="text-sm text-gray-300 truncate">
-            {chest.description}
+        {/* Info Text */}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-white font-black text-sm uppercase leading-tight truncate">
+            {chest.name}
+          </h3>
+          <p className="text-gray-400 text-xs font-bold truncate opacity-80">
+            {chest.description || "Item Místico"}
           </p>
-        )}
-
-        {/* Status */}
-        <div className="flex items-center justify-between pt-2">
-          <span
-            className={`
-              text-sm font-bold
-              ${isAvailable ? "text-amber-400" : canAfford ? "text-emerald-400" : "text-gray-400"}
-            `}
-          >
-            {statusMessage}
-          </span>
-
-          {!isAvailable && (
-            <span className="text-xs text-gray-400">
-              {chest.price} {PURCHASE_TYPE_LABELS[chest.purchase_type]}
-            </span>
-          )}
+          
+          <div className="mt-1 flex items-center gap-2">
+            {!isAvailable && canAfford && (
+               <span className="text-[#ffc800] font-black text-sm drop-shadow-sm">
+                 {chest.price} {PURCHASE_TYPE_LABELS[chest.purchase_type]?.[0] || "$"}
+               </span>
+            )}
+            {isAvailable && (
+               <span className="text-[#00d000] font-black text-xs uppercase">Pronto para abrir</span>
+            )}
+            {!canAfford && !isAvailable && (
+               <span className="text-gray-500 font-bold text-xs uppercase">Bloqueado</span>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Hover effect */}
-      {(isAvailable || canAfford) && (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      )}
     </div>
   );
 }

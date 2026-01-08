@@ -4,6 +4,7 @@ import type {
   PlayerInfo,
   PlayResult,
   HistoryParams,
+  UserLevel,
 } from "../../domain/domain.type";
 import { createLogger } from "../../logger";
 
@@ -77,6 +78,16 @@ export class SmarticoTransport implements Transport {
   async getUserProfile(): Promise<any> {
     this.logger.debug("getUserProfile");
     return await this.smartico.api.getUserProfile();
+  }
+
+  async getCurrentLevel(): Promise<UserLevel | null> {
+    this.logger.debug("getCurrentLevel");
+    try {
+      return await this.smartico.api.getCurrentLevel();
+    } catch (err) {
+      this.logger.error("getCurrentLevel failed", err);
+      return null;
+    }
   }
 }
 

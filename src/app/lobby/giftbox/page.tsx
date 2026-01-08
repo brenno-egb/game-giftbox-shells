@@ -3,64 +3,71 @@
 import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
 import { useChestHall } from "@/games/templates/giftbox/chest/useChestHall";
 import { useSearchParams } from "next/navigation";
+import { Rubik } from "next/font/google";
+
+// Componentes do Jogo
 import UserProfileHeader from "@/components/games/giftbox/UserProfile";
-import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
+import SupercellChestCarousel from "@/components/games/giftbox/ChestCarousel";
 import ChestShop from "@/components/games/giftbox/ChestShop";
+import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
+
+const rubik = Rubik({
+  subsets: ["latin"],
+  weight: ["400", "500", "700", "900"],
+  display: "swap",
+});
+
+// --- Error Component (Pode manter aqui ou extrair também se quiser) ---
+const ErrorScreen = ({ title, message, onRetry }: any) => (
+  <div className="min-h-screen bg-[#1a0f0f] flex items-center justify-center p-4 font-sans">
+    <div className="max-w-md w-full bg-[#2a1a1a] border-[4px] border-[#5c2b2b] rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_0%,#000_100%)] opacity-50" />
+
+      <div className="relative z-10">
+        <div className="text-6xl mb-4 grayscale opacity-50">⚠️</div>
+        <h2 className="text-2xl font-black text-[#ff3b30] uppercase mb-2">
+          {title}
+        </h2>
+        <p className="text-[#ccacaa] font-bold mb-6">{message}</p>
+
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="bg-[#ff3b30] hover:bg-[#d32f2f] text-white font-black py-3 px-8 rounded-xl border-b-4 border-[#b71c1c] active:border-b-0 active:translate-y-1 transition-all uppercase tracking-wide"
+          >
+            Tentar Novamente
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+);
 
 export default function HallPage() {
   const searchParams = useSearchParams();
   const { isReady, error: smarticoError } = useSmartico();
-  
+
   const uid = searchParams.get("uid");
   const lang = searchParams.get("lang");
 
-  // Verifica parâmetros
+  // Validação de Parâmetros
   if (!uid || !lang) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-amber-900/20 border-2 border-amber-500 rounded-xl p-6">
-          <h2 className="text-xl font-bold mb-4">⚠️ Parâmetros Faltando</h2>
-          <p className="text-amber-300 mb-4">
-            Esta página precisa dos parâmetros <code className="bg-black/50 px-1 rounded">uid</code> e <code className="bg-black/50 px-1 rounded">lang</code> na URL.
-          </p>
-          <p className="text-gray-400 text-sm mb-4">Exemplo:</p>
-          <code className="block bg-black/50 p-2 rounded text-xs text-amber-300 mb-4">
-            /lobby/giftbox?uid=SEU_USER_ID&lang=pt
-          </code>
-          <div className="text-gray-400 text-sm">
-            Parâmetros atuais:
-            <ul className="mt-2 space-y-1">
-              <li>uid: {uid ? `✅ ${uid}` : "❌ faltando"}</li>
-              <li>lang: {lang ? `✅ ${lang}` : "❌ faltando"}</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <ErrorScreen
+        title="Parâmetros Inválidos"
+        message="As credenciais de jogador (UID/LANG) não foram detectadas."
+      />
     );
   }
 
-  // Erro no boot
+  // Erro Smartico
   if (smarticoError) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-red-900/20 border-2 border-red-500 rounded-xl p-6">
-          <h2 className="text-xl font-bold mb-4">Erro ao Iniciar</h2>
-          <p className="text-red-300">{smarticoError}</p>
-        </div>
-      </div>
-    );
+    return <ErrorScreen title="Erro de Conexão" message={smarticoError} />;
   }
 
-  // Aguarda Smartico
+  // Loading Inicial (Usando o novo componente)
   if (!isReady) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold mb-4">Carregando Smartico...</div>
-          <div className="animate-spin w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Conectando..." />;
   }
 
   return <HallContent uid={uid} lang={lang} />;
@@ -69,83 +76,67 @@ export default function HallPage() {
 function HallContent({ uid, lang }: { uid: string; lang: string }) {
   const hall = useChestHall();
 
-  // Loading
-  if (hall.isLoading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold mb-4">Carregando baús...</div>
-          <div className="animate-spin w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
+  // Loading de Recursos (Usando o novo componente)
+  if (hall.isLoading) return <LoadingScreen message="Carregando Recursos..." />;
 
-  // Erro
-  if (hall.error) {
+  if (hall.error)
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-red-900/20 border-2 border-red-500 rounded-xl p-6">
-          <h2 className="text-xl font-bold mb-4">Erro</h2>
-          <p className="text-red-300">{hall.error}</p>
-          <button
-            onClick={() => hall.refresh()}
-            className="mt-4 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-          >
-            Tentar novamente
-          </button>
-        </div>
-      </div>
+      <ErrorScreen
+        title="Falha no Sistema"
+        message={hall.error}
+        onRetry={() => hall.refresh()}
+      />
     );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-black text-white">
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-16 pb-32">
-        {/* Header com perfil */}
-        <UserProfileHeader profile={hall.profile} />
+    <div
+      className={[
+        "min-h-screen bg-[#15191F] selection:bg-[#ffc800] selection:text-black overflow-x-hidden",
+        rubik.className,
+      ].join(" ")}
+    >
+      {/* Background Pattern Global (Tileable) */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
 
-        {/* Título Principal */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-amber-400 via-purple-400 to-amber-400 bg-clip-text text-transparent">
-            Hall dos Baús
-          </h1>
-          <p className="text-gray-400">
-            {hall.hasAvailable
-              ? "Abra seus baús disponíveis ou compre mais na loja!"
-              : "Compre baús para começar a jogar"}
-          </p>
-        </div>
-
-        {/* Carrossel - APENAS games, uid, lang */}
-        <section>
-          <ChestCarousel 
-            games={hall.games}
-            uid={uid} 
-            lang={lang} 
-          />
+      {/* Conteúdo Principal */}
+      <div className="relative max-w-7xl p-4 md:p-6 pb-32">
+        {/* Header do Jogador */}
+        <section className="relative z-20 mb-2">
+          <UserProfileHeader profile={hall.profile} level={hall.level} />
         </section>
 
-        {/* Divisor */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-800"></div>
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-slate-950 px-6 text-gray-500 text-sm">
-              ou explore a loja
-            </span>
-          </div>
+        {/* Título da Seção */}
+        <div className="text-center relative z-10 mt-4">
+          <h1
+            className="text-4xl font-black uppercase tracking-tighter
+                      bg-linear-to-b from-[#F5C92F] to-[#D07D07]
+                      bg-clip-text text-transparent
+                      drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]"
+          >
+            Baús Disponíveis
+          </h1>
         </div>
 
-        {/* Loja Completa - usa chests + games */}
-        <section>
-          <ChestShop 
-            chests={hall.chests}
-            games={hall.games}
-          />
+        {/* --- INVENTÁRIO (Carrossel 3D) --- */}
+        <section className="relative z-10">
+          <SupercellChestCarousel games={hall.games} uid={uid} lang={lang} />
+        </section>
+
+        {/* Divisor Decorativo */}
+        <div className="flex items-center justify-center gap-4 opacity-50">
+          <div className="h-1 w-full bg-[#0c1833] rounded-full" />
+          <div className="shrink-0 w-3 h-3 bg-[#3a6bc2] rotate-45" />
+          <div className="h-1 w-full bg-[#0c1833] rounded-full" />
+        </div>
+
+        {/* --- LOJA (Grid de Ofertas) --- */}
+        <section className="relative z-10">
+          <ChestShop chests={hall.chests} games={hall.games} />
         </section>
       </div>
+
+      {/* Footer Decorativo Fixo */}
+      <div className="absolute top-0 left-0 right-0 h-30 bg-linear-to-b from-[#000000] to-transparent pointer-events-none z-0" />
     </div>
   );
 }

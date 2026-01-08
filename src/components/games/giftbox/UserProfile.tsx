@@ -1,187 +1,140 @@
 "use client";
 
-import type { UserProfile } from "@/@sdk/smartico";
+import type { UserLevel, UserProfile } from "@/@sdk/smartico";
+import Image from "next/image";
 
-// --- ÍCONES SVG (Feitos na mão para manter o estilo cartoon/bold) ---
+// --- ÍCONES SVG (Ajustados para ficarem nítidos em tamanho menor) ---
 const GameIcons = {
   Coin: () => (
-    <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md" fill="none">
-      <circle cx="12" cy="12" r="9" className="fill-amber-400 stroke-black stroke-2" />
-      <path d="M12 7V17M7 12H17" className="stroke-amber-600 stroke-[3] opacity-40" strokeLinecap="round" />
-      <circle cx="9" cy="9" r="2.5" className="fill-white opacity-60" />
-    </svg>
+    <img src="/games/giftbox/assets/coin.png" className="w-full h-full object-contain" />
   ),
   Diamond: () => (
-    <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md" fill="none">
-      <path
-        d="M6 9L12 2L18 9L12 21L6 9Z"
-        className="fill-cyan-400 stroke-black stroke-2"
-        strokeLinejoin="round"
-      />
-      <path d="M6 9H18" className="stroke-cyan-600/50 stroke-2" />
-      <path d="M12 2L12 21" className="stroke-cyan-600/50 stroke-2" />
-    </svg>
+    <img src="/games/giftbox/assets/key_gold.png" className="w-full h-full object-contain scale-190" />
   ),
   Gem: () => (
-    <svg viewBox="0 0 24 24" className="w-6 h-6 drop-shadow-md" fill="none">
-      <path
-        d="M7 6L12 2L17 6V16L12 20L7 16V6Z"
-        className="fill-emerald-400 stroke-black stroke-2"
-        strokeLinejoin="round"
-      />
-      <rect x="11" y="6" width="2" height="10" className="fill-white opacity-40" />
-    </svg>
+    <img src="/games/giftbox/assets/key_emerald.png" className="w-full h-full object-contain scale-200" />
   ),
-  Trophy: () => (
-    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-      <path d="M8 21h8m-4-13v13m-1-6.4a4 4 0 1 1-2.4 3.4m6.8 0a4 4 0 1 0-2.4 3.4M7 4h10l-1 8h-8z" className="stroke-white stroke-2" />
-    </svg>
-  )
 };
 
 type Props = {
   profile: UserProfile | null;
+  level: UserLevel | null;
 };
 
-// Componente para exibir os recursos (Moedas, Gemas, etc)
-// Simula um "slot" físico escuro onde o número brilha
+// Componente ULTRA Compacto de Recurso
 const ResourceSlot = ({
   icon: Icon,
   value,
-  label,
   accentColor,
 }: {
   icon: any;
   value: number;
-  label: string;
-  accentColor: string; // ex: text-amber-400
+  accentColor: string;
 }) => (
-  <div className="relative group">
-    {/* Fundo do Slot (Sombra dura) */}
-    <div className="absolute inset-0 bg-black/80 rounded-xl translate-y-1 translate-x-0" />
+  <div className="relative group shrink-0">
+    {/* Fundo Sombra Sutil */}
+    <div className="absolute inset-0 bg-black/40 rounded-md translate-y-[3px]" />
     
-    {/* Container Principal */}
-    <div className="relative flex items-center bg-slate-800 border-2 border-slate-600 rounded-xl p-1 pr-3 shadow-inner">
-      {/* Ícone flutuando levemente para fora */}
-      <div className="-ml-3 relative z-10 filter drop-shadow-lg transition-transform group-hover:scale-110">
+    {/* Container - Padding reduzido e altura fixa para alinhamento perfeito */}
+    <div className="relative flex items-center h-7 bg-slate-800 border-2 border-slate-600 rounded-sm px-2 gap-1.5 min-w-15 shadow-inner hover:bg-slate-750 transition-colors">
+      <div className="absolute -left-3 filter drop-shadow-sm shrink-0 -ml-0.5 w-7 h-7">
         <Icon />
       </div>
-      
-      {/* Valor e Label */}
-      <div className="flex flex-col ml-1 leading-none">
-        <span className={`font-black text-sm ${accentColor} drop-shadow-sm filter tracking-wide`}>
-          {value.toLocaleString()}
-        </span>
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-          {label}
-        </span>
-      </div>
+      <span className={`font-semibold text-xs ${accentColor} tracking-wide whitespace-nowrap leading-none text-center pl-3 w-full`}>
+        {value.toLocaleString()}
+      </span>
     </div>
   </div>
 );
 
-export default function UserProfileGameUI({ profile }: Props) {
+export default function UserProfileGameUI({ profile, level }: Props) {
   if (!profile) return null;
 
   const points = profile.ach_points_balance ?? 0;
   const diamonds = profile.ach_diamonds_balance ?? 0;
   const gems = profile.ach_gems_balance ?? 0;
-  const level = profile.ach_level_current ?? 1;
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 font-sans">
-      {/* PAINEL PRINCIPAL */}
+    <div className="w-full max-w-2xl p-1">
+      {/* CARD PRINCIPAL */}
       <div className="relative">
-        {/* Sombra dura do Painel (O segredo do estilo blocky) */}
-        <div className="absolute inset-0 bg-black/40 rounded-3xl translate-y-2 translate-x-0" />
+        
+        {/* Sombra do Card */}
+        <div className="absolute inset-0 bg-black/40 rounded-lg translate-y-0.5 translate-x-0" />
 
-        {/* Card em si */}
-        <div className="relative bg-[#1a1f2e] rounded-3xl border-[3px] border-[#2d3548] p-4 overflow-hidden">
+        {/* Container do Card - Reduzi o padding vertical para ficar mais 'slim' */}
+        <div className="relative bg-[#1a1f2e] rounded-lg border-2 border-[#2d3548] px-3 py-2 overflow-hidden">
           
-          {/* Decoração de fundo (Padrão sutil) */}
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-            <svg width="100" height="100" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+          {/* Padrão de Fundo Sutil */}
+          <div className="absolute top-6 -right-20 w-56 h-56 opacity-20 pointer-events-none">
+             <img src={level?.image}/>
           </div>
 
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+          {/* LAYOUT: Flex Row (Imagem Esquerda | Infos Direita) */}
+          <div className="relative z-10 flex flex-row items-center gap-4">
             
-            {/* --- AVATAR FRAME --- */}
-            <div className="relative shrink-0">
-              {/* O Frame Azulão Estilo Supercell */}
-              <div className="w-28 h-28 bg-[#3b6eff] rounded-2xl rotate-3 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] flex items-center justify-center relative">
+            {/* 1. IMAGEM (ESQUERDA) - Tamanho Otimizado (w-20 = 80px) */}
+            <div className="shrink-0 relative group">
+              {/* Moldura do Avatar */}
+              <div className="w-16 h-16 bg-[#DF9C36] rounded-sm rotate-3 flex items-center justify-center transition-transform group-hover:rotate-0">
                 
                 {/* Imagem Interna */}
-                <div className="w-[90%] h-[90%] bg-slate-900 rounded-xl overflow-hidden border-2 border-[#6ea0ff] relative">
+                <div className="w-[90%] h-[90%] bg-slate-900 rounded-sm overflow-hidden border-2 border-[#30230F] relative">
                   {profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                    <Image src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover scale-140" width={100} height={100} />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-blue-600 to-blue-800">
-                      <span className="text-3xl font-black text-white drop-shadow-md">
+                      <span className="text-2xl font-black text-white drop-shadow-md">
                         {profile.public_username?.[0]?.toUpperCase()}
                       </span>
                     </div>
                   )}
-                  {/* Brilho "Gloss" no vidro do avatar */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-transparent to-white/30 pointer-events-none" />
+                  {/* Brilho */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent pointer-events-none" />
                 </div>
 
-                {/* Badge de Nível (Estilo Escudo) */}
-                <div className="absolute -bottom-3 -right-3 z-20">
-                  <div className="bg-[#d0002e] text-white w-9 h-9 flex items-center justify-center font-black text-sm rounded-lg border-2 border-white shadow-md rotate-[-3deg]">
-                    {level}
+                {/* Badge de Nível (Mais discreto) */}
+                {/* <div className="absolute -bottom-2 -right-2 z-20">
+                  <div className="text-white w-6 h-6 flex items-center justify-center font-black text-[10px] drop-shadow-md drop-shadow-black rotate-6">
+                    <img src={level?.image}/>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
 
-            {/* --- INFORMAÇÕES DO JOGADOR --- */}
-            <div className="flex-1 w-full text-center md:text-left">
+            {/* 2. INFORMAÇÕES (DIREITA) - Layout Coluna Compacta */}
+            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
               
-              {/* Header com Nome e Tag */}
-              <div className="mb-4">
-                <div className="inline-block bg-black/30 rounded px-2 py-0.5 mb-1 backdrop-blur-sm border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Player Profile</span>
-                </div>
-                <h2 className="text-3xl font-black text-white italic tracking-wide drop-shadow-[2px_2px_0px_rgba(0,0,0,0.8)] uppercase stroke-black">
-                  {profile.public_username || "Unknown"}
+              {/* Cabeçalho: Nome e Nome do Nível */}
+              <div className="flex flex-col">
+                <h2 className="text-xl sm:text-2xl font-bold text-white truncate leading-tight drop-shadow-md">
+                  {profile.public_username || "Jogador"}
                 </h2>
-                {/* Barra de XP Decorativa */}
-                <div className="w-full max-w-[200px] h-2 bg-black/50 rounded-full mt-2 mx-auto md:mx-0 border border-white/10 relative overflow-hidden">
-                  <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-purple-500 to-fuchsia-500" />
-                </div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">
+                    {level?.name || "Novato"}
+                </span>
               </div>
 
-              {/* Grid de Recursos */}
-              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              {/* Recursos Inline - Usando flex-wrap para segurança, mas desenhado para caber */}
+              <div className="flex flex-wrap items-center gap-2 mt-1.5">
                 <ResourceSlot 
                   icon={GameIcons.Coin}
                   value={points}
-                  label="Coins"
-                  accentColor="text-amber-400"
+                  accentColor="text-white"
                 />
                 <ResourceSlot 
                   icon={GameIcons.Diamond}
                   value={diamonds}
-                  label="Gems"
-                  accentColor="text-cyan-400"
+                  accentColor="text-white"
                 />
                 <ResourceSlot 
                   icon={GameIcons.Gem}
                   value={gems}
-                  label="Tokens"
-                  accentColor="text-emerald-400"
+                  accentColor="text-white"
                 />
               </div>
 
             </div>
-
-            {/* --- BOTÃO DE AÇÃO (Estilo "Settings" engrenagem) --- */}
-            <div className="hidden md:block self-start">
-               <button className="w-10 h-10 bg-slate-700 rounded-lg border-b-4 border-slate-900 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center hover:bg-slate-600 text-slate-300">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-               </button>
-            </div>
-
           </div>
         </div>
       </div>

@@ -1,9 +1,65 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+
 import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
 import { findGameByTemplateId, getGameSpins } from "@/games/templates/giftbox/chest/chest.helpers";
+import ChestPreviewModal from "./ChestPreviewModal";
+
+
+// --- SUB-COMPONENTES VISUAIS ---
+
+const CurrencyIcon = ({ type }: { type?: string }) => {
+  if (type === 'gems') {
+    return (
+      <svg viewBox="0 0 24 24" className="w-4 h-4 md:w-5 md:h-5 drop-shadow-sm filter">
+        <path d="M7.5 18L3 9l9-7 9 7-4.5 9h-9z" className="fill-emerald-400 stroke-emerald-600 stroke-2" />
+        <path d="M3 9h18" className="stroke-emerald-600/50 stroke-1" />
+        <path d="M12 2l-3 7 3 9 3-9-3-7z" className="fill-white/30" />
+      </svg>
+    );
+  }
+  // Default Coins/Points
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4 md:w-5 md:h-5 drop-shadow-sm filter">
+      <circle cx="12" cy="12" r="9" className="fill-amber-400 stroke-amber-600 stroke-2" />
+      <circle cx="12" cy="12" r="6" className="stroke-amber-600/50 stroke-1" />
+      <path d="M12 6v12M6 12h12" className="stroke-amber-600/30" />
+    </svg>
+  );
+};
+
+const JuicyButton = ({ children, onClick, disabled, variant = "green", className = "" }: any) => {
+  const styles: any = {
+    green: "bg-[#00d000] border-[#007c00] text-white shadow-[0_4px_0_#005900]",
+    blue: "bg-[#338aff] border-[#004bbd] text-white shadow-[0_4px_0_#003380]",
+    gray: "bg-[#555f6d] border-[#363d45] text-[#aeb5bc] shadow-[0_4px_0_#252a30]",
+  };
+  
+  const activeStyle = disabled ? styles.gray : styles[variant];
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        relative w-full py-2 md:py-3 rounded-xl border-b-4 font-black uppercase tracking-wide transition-all select-none flex items-center justify-center gap-2 text-xs md:text-sm
+        ${disabled ? "cursor-not-allowed" : "cursor-pointer hover:scale-105 hover:brightness-110 active:scale-95 active:translate-y-1 active:shadow-none"}
+        ${activeStyle}
+        ${className}
+      `}
+      style={{ textShadow: "0 1px 0 rgba(0,0,0,0.5)" }}
+    >
+      <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-lg pointer-events-none" />
+      <span className="relative z-10 truncate px-1">{children}</span>
+    </button>
+  );
+};
+
+
+// --- COMPONENTE PRINCIPAL ---
 
 type Props = {
   chests: ChestItem[];
@@ -11,198 +67,184 @@ type Props = {
 };
 
 export default function ChestShop({ chests, games }: Props) {
+    console.log(chests)
+  const [selectedChest, setSelectedChest] = useState<ChestItem | null>(null);
+
   const handleBuyClick = (chest: ChestItem) => {
     if (chest.canAfford || chest.hasAttempts) {
       window.location.href = "https://www.lottu.bet.br/gamification/store";
     }
   };
 
-  const getChestStatusBadge = (chest: ChestItem) => {
-    // Busca game para obter spins corretos
-    const game = findGameByTemplateId(games, chest.templateId);
-    const spins = getGameSpins(game);
-    
-    if (chest.hasAttempts && spins > 0) {
-      return (
-        <div className="absolute -top-2 -right-2 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-gray-900 shadow-lg z-10">
-          {spins}× Disponível
-        </div>
-      );
-    }
-    
-    if (!chest.canAfford) {
-      return (
-        <div className="absolute -top-2 -right-2 bg-gradient-to-br from-gray-600 to-gray-700 text-gray-300 text-xs font-bold px-3 py-1 rounded-full border-2 border-gray-900 shadow-lg z-10 flex items-center gap-1">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-          </svg>
-          Bloqueado
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  const getChestStyle = (chest: ChestItem) => {
-    if (chest.hasAttempts) {
-      return {
-        opacity: "opacity-100",
-        scale: "hover:scale-105",
-        border: "border-emerald-500/50",
-        glow: "shadow-emerald-500/20",
-        filter: "",
-      };
-    }
-    
-    if (!chest.canAfford) {
-      return {
-        opacity: "opacity-50",
-        scale: "hover:scale-102",
-        border: "border-gray-700/50",
-        glow: "shadow-gray-900/50",
-        filter: "grayscale",
-      };
-    }
-    
-    return {
-      opacity: "opacity-90",
-      scale: "hover:scale-105",
-      border: "border-amber-500/30",
-      glow: "shadow-amber-500/10",
-      filter: "",
-    };
-  };
-
-  const getPriceColor = (chest: ChestItem) => {
-    if (chest.canAfford) {
-      return "text-emerald-400";
-    }
-    return "text-gray-500";
-  };
-
   return (
-    <div>
-      {/* Header da Loja */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-3 bg-gradient-to-r from-purple-500/20 via-purple-500/10 to-purple-500/20 px-6 py-3 rounded-full border border-purple-500/30">
-          <span className="text-2xl">🛒</span>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-purple-500 bg-clip-text text-transparent">
-            Loja de Baús
-          </h2>
+    <div className="w-full font-sans">
+      
+      {/* Título da Seção */}
+      <div className="relative text-center mb-8">
+        <div className="inline-block relative">
+           <h2 className="text-3xl font-black text-white uppercase italic drop-shadow-[0_4px_0_rgba(0,0,0,0.5)]"
+               style={{ WebkitTextStroke: "1.5px black" }}>
+             Ofertas Especiais
+           </h2>
+           <div className="absolute -right-8 -top-4 rotate-12 text-4xl animate-bounce">💎</div>
         </div>
-        <p className="text-gray-400 mt-3">
-          Compre baús para aumentar suas chances de ganhar prêmios incríveis
-        </p>
       </div>
 
-      {/* Grid de Baús */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {chests.map((chest) => {
-          const style = getChestStyle(chest);
+      {/* Grid: 2 cols Mobile, 3 Tablet, 4 Desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6">
+        {chests.map((chest, index) => {
+          // Lógica de Estado
+          const game = findGameByTemplateId(games, chest.templateId);
+          const spins = getGameSpins(game);
           
+          const isReady = chest.hasAttempts && spins > 0;
+          const canAfford = chest.canAfford;
+          const isLocked = !isReady && !canAfford;
+
           return (
             <div
               key={chest.id}
-              className={`relative bg-gradient-to-br from-gray-900 via-gray-800 to-black border-2 ${style.border} rounded-2xl p-6 transition-all ${style.scale} ${style.opacity} ${style.glow} shadow-xl`}
+              className="group h-full animate-fadeInUp"
+              style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => setSelectedChest(chest)} // Abre o Modal
             >
-              {/* Badge de Status */}
-              {getChestStatusBadge(chest)}
-
-              {/* Ribbon (se tiver) */}
-              {chest.ribbon && (
-                <div className="absolute top-4 left-4 bg-purple-500/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg z-10">
-                  {chest.ribbon}
-                </div>
-              )}
-
-              {/* Imagem do Baú */}
-              <div className={`relative mb-4 ${style.filter}`}>
-                <div className="w-full aspect-square bg-gradient-to-br from-gray-800/50 to-gray-900/50 rounded-xl border border-gray-700/50 overflow-hidden">
-                  {chest.image ? (
-                    <Image
-                      src={chest.image}
-                      alt={chest.name}
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-6xl">📦</span>
-                    </div>
-                  )}
-                </div>
+              {/* O Card */}
+              <div className={`
+                relative flex flex-col items-center p-2 md:p-4 rounded-xl md:rounded-[24px] border-[3px] md:border-[4px] shadow-lg overflow-hidden bg-[#242424] h-full cursor-pointer
+                transition-transform duration-200 active:scale-95
+                ${isReady 
+                  ? "border-[#00d000] shadow-[#00d000]/10" 
+                  : canAfford 
+                    ? "border-[#338aff] hover:-translate-y-1 hover:shadow-xl hover:shadow-[#338aff]/20" 
+                    : "border-[#4a4a4a]" 
+                }
+              `}>
                 
-                {/* Ícone de Bloqueado */}
-                {!chest.canAfford && !chest.hasAttempts && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-xl">
-                    <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                    </svg>
+                {/* Background Radiante */}
+                <div className="absolute inset-0 bg-[#352554]">
+                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-[length:8px_8px]" />
+                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#242424]/50 to-[#242424]" />
+                </div>
+
+                {/* Ribbon (Só se existir no JSON) */}
+                {chest.ribbon && (
+                  <div className="absolute -top-[2px] -right-[2px] z-20">
+                    <div className="bg-[#ff3b30] text-white text-[9px] md:text-[10px] font-black uppercase px-2 py-1 rounded-bl-xl border-l-2 border-b-2 border-[#b91c1c] shadow-md">
+                      {chest.ribbon}
+                    </div>
                   </div>
                 )}
-              </div>
 
-              {/* Nome do Baú */}
-              <h3 className="text-lg font-bold text-white mb-2 truncate">
-                {chest.name}
-              </h3>
-
-              {/* Descrição */}
-              {chest.description && (
-                <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                  {chest.description}
-                </p>
-              )}
-
-              {/* Preço */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className={`text-2xl font-bold ${getPriceColor(chest)}`}>
-                    {chest.price}
-                  </span>
-                  <span className="text-gray-500 text-sm uppercase">
-                    {chest.purchase_type}
-                  </span>
+                {/* Nome do Item */}
+                <div className="relative z-10 w-full text-center mt-1 mb-2 h-10 md:h-12 flex flex-col justify-center">
+                  <h3 className="text-white font-black uppercase text-xs md:text-base leading-tight drop-shadow-md line-clamp-2"
+                      style={{ WebkitTextStroke: "0.5px black" }}>
+                    {chest.name}
+                  </h3>
                 </div>
-              </div>
 
-              {/* Botão */}
-              <button
-                onClick={() => handleBuyClick(chest)}
-                disabled={!chest.canAfford && !chest.hasAttempts}
-                className={`w-full font-bold py-3 rounded-xl transition-all ${
-                  chest.hasAttempts
-                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white"
-                    : chest.canAfford
-                    ? "bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-400 hover:to-purple-500 text-white"
-                    : "bg-gray-800 text-gray-600 cursor-not-allowed"
-                }`}
-              >
-                {chest.hasAttempts
-                  ? "🎁 Ver na Loja"
-                  : chest.canAfford
-                  ? "🛒 Comprar"
-                  : "🔒 Bloqueado"}
-              </button>
+                {/* Área da Imagem */}
+                <div className="relative w-24 h-24 md:w-32 md:h-32 mb-2 z-10">
+                   {/* Se bloqueado: Grayscale + Opacidade, mas visível */}
+                   <div className={`
+                     relative w-full h-full transition-all duration-300 
+                     ${isLocked ? 'grayscale opacity-80' : 'group-hover:scale-110 group-hover:rotate-3'}
+                   `}>
+                     {chest.image ? (
+                       <Image
+                         src={chest.image}
+                         alt={chest.name}
+                         fill
+                         className="object-contain drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"
+                         sizes="(max-width: 768px) 100px, 150px"
+                       />
+                     ) : (
+                       <div className="text-5xl flex items-center justify-center h-full">📦</div>
+                     )}
+                   </div>
+                </div>
+
+                {/* Footer */}
+                <div className="w-full mt-auto z-10 flex flex-col gap-2">
+                  
+                  {/* Preço ou Giros */}
+                  <div className="flex justify-center">
+                    {isReady ? (
+                      <div className="bg-[#00d000]/20 border border-[#00d000] text-[#00d000] px-2 py-0.5 rounded-lg text-[10px] md:text-xs font-black uppercase tracking-wide animate-pulse">
+                        {spins} Giros
+                      </div>
+                    ) : (
+                      // Preço: Vermelho se bloqueado, Branco se ok
+                      <div className={`
+                        flex items-center gap-1.5 px-3 py-1 rounded-full border shadow-sm transition-colors
+                        ${canAfford ? "bg-black/40 border-white/10" : "bg-red-900/20 border-red-500/30"}
+                      `}>
+                         <CurrencyIcon type={chest.purchase_type} />
+                         <span className={`
+                           font-black text-sm md:text-lg shadow-black drop-shadow-sm
+                           ${canAfford ? "text-white" : "text-[#ff4d4d]"}
+                         `}>
+                           {chest.price}
+                         </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Botão de Ação */}
+                  <JuicyButton 
+                    variant={isReady ? "green" : "blue"}
+                    onClick={(e: any) => {
+                      e.stopPropagation(); // Impede abrir o modal ao clicar no botão
+                      handleBuyClick(chest);
+                    }}
+                    disabled={isLocked}
+                  >
+                    {isReady ? "ABRIR" : canAfford ? "COMPRAR" : "BLOQUEADO"}
+                  </JuicyButton>
+                </div>
+
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Mensagem se vazio */}
-      {chests.length === 0 && (
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4 opacity-30">🏪</div>
-          <h3 className="text-xl font-bold text-gray-400 mb-2">
-            Loja vazia
-          </h3>
-          <p className="text-gray-500">
-            Nenhum baú disponível no momento
-          </p>
-        </div>
+      {/* --- MODAL DE VISUALIZAÇÃO --- */}
+      {selectedChest && (
+        <ChestPreviewModal 
+          chest={selectedChest}
+          onClose={() => setSelectedChest(null)}
+          onBuy={() => {
+            handleBuyClick(selectedChest);
+            setSelectedChest(null);
+          }}
+        />
       )}
+
+      {/* Empty State */}
+      {chests.length === 0 && (
+         <div className="text-center py-12 opacity-60">
+            <h3 className="text-xl font-black text-white uppercase">Loja Fechada</h3>
+            <p className="text-gray-400">Volte mais tarde!</p>
+         </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .animate-fadeInUp {
+          animation: fadeInUp 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }
