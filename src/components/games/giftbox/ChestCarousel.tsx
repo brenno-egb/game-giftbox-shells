@@ -264,7 +264,7 @@ export default function SupercellChestCarousel({ games, uid, lang }: Props) {
             onClick={() =>
               (window.location.href = getGameUrl(activeChest.skinId, uid, lang))
             }
-            className="px-8 md:px-16 py-5 text-xl md:text-2xl min-w-50 relative z-10"
+            className="px-8 md:px-16 py-6 text-2xl! min-w-50 relative z-10"
           >
             <span
             

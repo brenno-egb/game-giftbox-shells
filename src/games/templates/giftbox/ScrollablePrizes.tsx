@@ -31,7 +31,6 @@ export function InfiniteAutoScrollStrip({
     return arr;
   }, [pool, take]);
 
-  // Duplicado: [base][base] => loop
   const items = useMemo(() => {
     if (!baseItems.length) return [];
     return baseItems.concat(baseItems);

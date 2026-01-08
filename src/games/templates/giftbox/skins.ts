@@ -1,6 +1,7 @@
 import type { BaseSkin } from "@/games/core/types";
 
 export const giftboxSkins = {
+  // GOLD: Não define tema -> Usa 100% o Default (Azul)
   gold: {
     id: "gold",
     assetsBase: "/games/giftbox/skins/gold",
@@ -11,15 +12,11 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-gold.png",
     backgroundColor: "#07080c",
     theme: {
-      accent: "#facc15",
-      accentSoft: "rgba(250,204,21,.65)",
-      accentBorder: "rgba(250,204,21,.30)",
-      accentGlow: "rgba(250,204,21,.20)",
-      panelBg: "rgba(0,0,0,.45)",
-      panelBorder: "rgba(255,255,255,.10)",
-    },
+      panelBorder: "#E1FF00"
+    }
   },
 
+  // BRONZE: Define Accent e AccentBorder para combinar
   bronze: {
     id: "bronze",
     assetsBase: "/games/giftbox/skins/bronze",
@@ -28,17 +25,13 @@ export const giftboxSkins = {
     storeId: 6136,
     background: "bg-bronze.webp",
     backgroundStore: "bg-store-bronze.png",
-    backgroundColor: "#07080c",
+    backgroundColor: "#703F29",
     theme: {
-      accent: "#d18b47",
-      accentSoft: "rgba(209,139,71,.70)",
-      accentBorder: "rgba(209,139,71,.32)",
-      accentGlow: "rgba(209,139,71,.20)",
-      panelBg: "rgba(0,0,0,.50)",
-      panelBorder: "rgba(255,255,255,.12)",
+      panelBorder: "#703F29",
     },
   },
 
+  // SILVER: Não define tema -> Usa Default (Azul)
   silver: {
     id: "silver",
     assetsBase: "/games/giftbox/skins/silver",
@@ -49,15 +42,11 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-silver.png",
     backgroundColor: "#07080c",
     theme: {
-      accent: "#e5e7eb",
-      accentSoft: "rgba(229,231,235,.72)",
-      accentBorder: "rgba(229,231,235,.28)",
-      accentGlow: "rgba(229,231,235,.18)",
-      panelBg: "rgba(0,0,0,.50)",
-      panelBorder: "rgba(255,255,255,.12)",
-    },
+      panelBorder: "#D9D9D9"
+    }
   },
 
+  // DIAMOND: Define tudo
   diamond: {
     id: "diamond",
     assetsBase: "/games/giftbox/skins/diamond",
@@ -68,15 +57,16 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-diamond.png",
     backgroundColor: "#05070b",
     theme: {
-      accent: "#8be9ff",
-      accentSoft: "rgba(139,233,255,.72)",
-      accentBorder: "rgba(139,233,255,.30)",
+      accent: "#5A55FF",
+      accentBorder: "#4944FF",
+      accentSoft: "rgba(139,233,255,.72)", // Opcional, se usar em outro lugar
       accentGlow: "rgba(139,233,255,.20)",
       panelBg: "rgba(0,0,0,.52)",
       panelBorder: "rgba(255,255,255,.12)",
     },
   },
 
+  // BLACK DIAMOND: Define tudo
   blackDiamond: {
     id: "black-diamond",
     assetsBase: "/games/giftbox/skins/black-diamond",
@@ -87,15 +77,16 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-black-diamond.png",
     backgroundColor: "#030409",
     theme: {
-      accent: "#c7a6ff",
+      accent: "black",
+      accentBorder: "#333333", // Cinza escuro para aparecer no fundo preto
       accentSoft: "rgba(199,166,255,.70)",
-      accentBorder: "rgba(199,166,255,.28)",
-      accentGlow: "rgba(199,166,255,.18)",
+      accentGlow: "black",
       panelBg: "rgba(0,0,0,.58)",
       panelBorder: "rgba(255,255,255,.10)",
     },
   },
 
+  // EMERALD: Só define Accent e Border
   emerald: {
     id: "emerald",
     assetsBase: "/games/giftbox/skins/emerald",
@@ -106,12 +97,7 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-emerald.png",
     backgroundColor: "#04080a",
     theme: {
-      accent: "#34d399",
-      accentSoft: "rgba(52,211,153,.70)",
-      accentBorder: "rgba(52,211,153,.30)",
-      accentGlow: "rgba(52,211,153,.20)",
-      panelBg: "rgba(0,0,0,.52)",
-      panelBorder: "rgba(255,255,255,.12)",
-    },
+      panelBorder: "#00FF15"
+    }
   },
 } as const satisfies Record<string, BaseSkin>;
