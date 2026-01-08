@@ -23,7 +23,7 @@ export const giftboxSkins = {
     rivePath: "/games/giftbox/skins/bronze/chest-bronze.riv",
     templateId: 7257,
     storeId: 6136,
-    background: "bg-bronze.avif",
+    background: "bg-bronze.webp",
     backgroundStore: "bg-store-bronze.png",
     backgroundColor: "#703F29",
     theme: {

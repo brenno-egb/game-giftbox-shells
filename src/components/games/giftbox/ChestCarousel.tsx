@@ -11,7 +11,8 @@ import {
   getGameSpins,
 } from "@/games/templates/giftbox/chest/chest.helpers";
 
-// --- SUB-COMPONENTES DE UI ---
+// ... (MANTENHA OS COMPONENTES JuicyButton E ChestCard IGUAIS AO SEU CÓDIGO) ...
+// Vou ocultar aqui para focar na correção, mas você deve manter o código deles.
 
 interface JuicyButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -24,6 +25,7 @@ const JuicyButton = ({
   variant = "green",
   ...props
 }: JuicyButtonProps) => {
+  // ... (Mantenha seu código original do botão aqui)
   const styles = {
     green: "bg-[#00d000] border-[#007c00] text-white shadow-[0_6px_0_#005900]",
     yellow:
@@ -52,7 +54,6 @@ const JuicyButton = ({
     >
       <div className="absolute w-full h-2 top-0 left-0 bg-[#ffd23f]" />
       <div className="absolute w-full h-2 bottom-0 left-0 bg-[#C4A023]" />
-      {/* <div className="absolute top-1 left-2 right-2 h-1/3 bg-white/20 rounded-t-xl pointer-events-none" /> */}
       <div className="flex items-center justify-center gap-2 relative z-10 -skew-x-4">
         {children}
       </div>
@@ -60,56 +61,57 @@ const JuicyButton = ({
   );
 };
 
-// --- CARD DO BAÚ (Isolado para limpeza) ---
-
 const ChestCard = ({
   item,
   visualOffset,
-  isActive,
 }: {
   item: any;
   visualOffset: number;
-  isActive: boolean;
 }) => {
-  // Configuração visual baseada na posição (Centro vs Laterais)
-  const styles = isActive
-    ? {
-        transform: `translateX(0) scale(1) rotateY(0deg)`,
-        opacity: 1,
-        zIndex: 50,
-        filter: "brightness(1)",
-        border: "border-none",
-        shadow: "shadow-none",
-      }
-    : {
-        transform: `translateX(${visualOffset * 200}px) scale(0.75) rotateY(${
-          visualOffset * -20
-        }deg)`,
-        opacity: 0.5,
-        zIndex: 10,
-        filter: "brightness(0.5) blur(1px) grayscale(0.6)",
-        border: "border-[#4a4a4a]",
-        shadow: "shadow-2xl",
-      };
+  // Distância absoluta (0 = centro, 1 = vizinho, 2 = longe)
+  const dist = Math.abs(visualOffset);
+  const isActive = dist === 0;
+
+  // Cálculos de Estilo Dinâmico
+  // Se visualOffset é -1 (esquerda), rotateY deve ser positivo para virar pro centro
+  // Se visualOffset é +1 (direita), rotateY deve ser negativo
+  const rotateY = visualOffset * -25;
+  const translateX = visualOffset * 220; // Espaçamento entre cards
+  const scale = 1 - dist * 0.25; // Diminui 25% a cada passo
+  const opacity = dist > 1 ? 0 : 1 - dist * 0.4; // Vizinhos ficam semi-transparentes, distantes somem
+  const zIndex = 100 - dist; // Quem está perto tem z-index maior (CRUCIAL)
+
+  // Filtros visuais
+  const filter = isActive
+    ? "brightness(1) blur(0px) grayscale(0)"
+    : "brightness(0.5) blur(2px) grayscale(0.8)";
+
+  const borderStyle = isActive
+    ? "border-none shadow-none"
+    : "border-[#4a4a4a] shadow-2xl";
 
   return (
     <div
       className="absolute top-0 left-0 right-0 mx-auto w-70 h-90 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
       style={{
-        transform: styles.transform,
-        opacity: styles.opacity,
-        zIndex: styles.zIndex,
-        filter: styles.filter,
+        transform: `translateX(${translateX}px) scale(${scale}) rotateY(${rotateY}deg)`,
+        opacity: opacity,
+        zIndex: zIndex,
+        filter: filter,
+        // Se estiver muito longe, esconde pointer events para não clicar no invisível
+        pointerEvents: dist > 1 ? "none" : "auto",
+        visibility: dist > 2 ? "hidden" : "visible", // Otimização de render
       }}
     >
       {/* Sombra de chão (Apenas no ativo) */}
-      {isActive && (
-        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[80%] h-6 bg-black/40 blur-xl rounded-[100%]" />
-      )}
+      <div
+        className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[80%] h-6 bg-black/40 blur-xl rounded-[100%] transition-opacity duration-500"
+        style={{ opacity: isActive ? 1 : 0 }}
+      />
 
       {/* Container Principal do Card */}
       <div
-        className={`relative w-full h-full rounded-3xl border-[6px] overflow-hidden ${styles.border} ${styles.shadow}`}
+        className={`relative w-full h-full rounded-3xl border-[6px] overflow-hidden transition-all duration-500 ${borderStyle}`}
       >
         {/* Título do Jogo */}
         <div className="absolute top-5 inset-x-0 text-center z-20 px-4">
@@ -136,12 +138,13 @@ const ChestCard = ({
               alt={item.game.name}
               fill
               className="object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.6)]"
+              sizes="(max-width: 768px) 300px, 400px"
             />
           </div>
         </div>
 
         {/* Rodapé do Card (Info) */}
-        <div className="absolute bottom-0 inset-x-0 py-3 flex flex-col items-center  z-20">
+        <div className="absolute bottom-0 inset-x-0 py-3 flex flex-col items-center z-20">
           <span className="text-[#a8b5cc] text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
             Quantidade
           </span>
@@ -156,7 +159,6 @@ const ChestCard = ({
     </div>
   );
 };
-
 // --- COMPONENTE PRINCIPAL ---
 
 type Props = {
@@ -188,6 +190,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
   const navigate = (direction: number) => {
     setActiveIndex((prev) => {
       const next = prev + direction;
+      // Loop infinito real
       if (next < 0) return chests.length - 1;
       if (next >= chests.length) return 0;
       return next;
@@ -198,7 +201,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
-      {/* 1. HEADER (Contador) - Agora é flex item, não absolute */}
+      {/* 1. HEADER (Contador) */}
       <div className="absolute top-0 flex flex-col items-center z-20 animate-slideDown">
         <div className="">
           <div className="bg-[#866700] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-[#665300]">
@@ -207,43 +210,42 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
         </div>
       </div>
 
-      {/* 2. PALCO DO CARROSSEL (Container Relativo apenas para os cards 3D) */}
-      {/* A altura fixa (h-[400px]) é necessária AQUI para o 3D funcionar, mas não no componente todo */}
+      {/* 2. PALCO DO CARROSSEL */}
       <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
         {chests.map((chest, i) => {
-          const offset = i - activeIndex;
+          // Cálculo Matemático de Loop Circular Robusto
+          const length = chests.length;
 
-          // Lógica de loop infinito visual
-          let visualOffset = offset;
-          if (activeIndex === 0 && i === chests.length - 1) visualOffset = -1;
-          if (activeIndex === chests.length - 1 && i === 0) visualOffset = 1;
+          // 1. Calcula distância bruta
+          let visualOffset = i - activeIndex;
 
-          // Renderizar apenas os vizinhos para performance
-          if (Math.abs(visualOffset) > 1 && chests.length > 2) return null;
+          // 2. Ajusta para o caminho mais curto no círculo
+          // Ex: Se tem 5 itens, ir do 0 para o 4 é -1 (esquerda), não +4 (direita)
+          if (visualOffset > length / 2) visualOffset -= length;
+          if (visualOffset < -length / 2) visualOffset += length;
+
+          // NOTA: Removemos o "return null" para permitir animações suaves de entrada/saída
+          // O componente ChestCard agora lida com a ocultação visual (opacity: 0)
 
           return (
             <div
               key={chest.skinId}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none" // pointer-events-none no wrapper para não bloquear cliques
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
             >
               <div
-                className="pointer-events-auto cursor-pointer" // Reativa cliques no card
+                className="pointer-events-auto cursor-pointer"
                 onClick={() => visualOffset !== 0 && navigate(visualOffset)}
               >
-                <ChestCard
-                  item={chest}
-                  visualOffset={visualOffset}
-                  isActive={visualOffset === 0}
-                />
+                <ChestCard item={chest} visualOffset={visualOffset} />
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* 3. CONTROLES E AÇÕES (Botões ao lado) */}
+      {/* 3. CONTROLES */}
       <div className="flex items-center justify-center gap-4 md:gap-8 z-30 w-full px-4">
-        {/* Botão Anterior (Esquerda) */}
+        {/* Botão Anterior */}
         {chests.length > 1 ? (
           <JuicyButton
             variant="yellow"
@@ -251,12 +253,12 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             className="max-w-14 flex items-center justify-center shrink-0"
             title="Anterior"
           >
+            {/* SVG Seta Esquerda */}
             <svg
               width="30"
               height="43"
               viewBox="0 0 30 43"
               fill="none"
-              xmlns="http://www.w3.org/2000/svg"
               className="-rotate-180"
             >
               <path
@@ -266,11 +268,10 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             </svg>
           </JuicyButton>
         ) : (
-          /* Placeholder invisível para manter o botão centralizado se tiver apenas 1 item */
           <div className="w-14 h-14 hidden md:block" />
         )}
 
-        {/* Botão de Ação Principal (Centro) */}
+        {/* Botão ABRIR */}
         <div className="relative group shrink-0">
           <JuicyButton
             variant="yellow"
@@ -291,7 +292,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
           </JuicyButton>
         </div>
 
-        {/* Botão Próximo (Direita) */}
+        {/* Botão Próximo */}
         {chests.length > 1 ? (
           <JuicyButton
             variant="yellow"
@@ -299,13 +300,8 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             className="max-w-14 flex items-center justify-center shrink-0"
             title="Próximo"
           >
-            <svg
-              width="30"
-              height="43"
-              viewBox="0 0 30 43"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
+            {/* SVG Seta Direita */}
+            <svg width="30" height="43" viewBox="0 0 30 43" fill="none">
               <path
                 d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z"
                 fill="black"
@@ -313,7 +309,6 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             </svg>
           </JuicyButton>
         ) : (
-          /* Placeholder invisível */
           <div className="w-14 h-14 hidden md:block" />
         )}
       </div>
@@ -343,28 +338,16 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
   );
 }
 
-// --- Empty State ---
+// ... EmptyStateToon ...
 function EmptyStateToon() {
+  // ... (Mantenha seu empty state)
   return (
     <div className="w-full max-w-lg mx-auto bg-[#1a233a] rounded-3xl border-4 border-[#2d3548] p-8 text-center shadow-xl relative overflow-hidden my-8">
-      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-
+      {/* ... */}
       <div className="relative z-10 flex flex-col items-center">
-        <div className="text-6xl mb-4 grayscale opacity-50 animate-bounce">
-          🔒
-        </div>
         <h2 className="text-2xl font-black text-white uppercase mb-2">
           Inventário Vazio
         </h2>
-        <p className="text-slate-400 mb-6 max-w-xs mx-auto">
-          Não há baús disponíveis no momento. Jogue para conquistar recompensas!
-        </p>
-        <JuicyButton
-          variant="blue"
-          onClick={() => (window.location.href = "/shop")}
-        >
-          Ir para a Loja
-        </JuicyButton>
       </div>
     </div>
   );

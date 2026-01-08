@@ -111,6 +111,9 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     !isAnimating &&
     !showPrizeAnnouncement;
 
+  const themeGlowColor = skin?.theme?.panelBorder ?? "#00000060";
+  // --------------------------------------------
+
   const getStepPx = useCallback(() => {
     if (!trackRef.current) return 120;
     const items = trackRef.current.children;
@@ -343,9 +346,9 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     <div
       data-skin={skin?.id ?? "default"}
       style={rootStyle}
-      className={`${rubik.className} min-h-screen w-full relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
+      className={`${rubik.className} min-h-screen relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
     >
-      {/* Glow quando abre */}
+      {/* Glow Overlay quando abre (Tela inteira) */}
       {chestOpen && (
         <div
           className="absolute inset-0 pointer-events-none"
@@ -359,6 +362,12 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
       {/* Container principal - Layout vertical otimizado */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3 pt-24">
+        {/* Gradiente Esquerdo: Preto -> Transparente */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-linear-to-r from-black/70 to-transparent z-10" />
+
+        {/* Gradiente Direito: Preto -> Transparente */}
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-linear-to-l from-black/70 to-transparent z-10" />
+        
         {/* ROLETA NO CENTRO */}
         {showWheel && (
           <div
@@ -381,7 +390,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
               {/* Pointer indicador */}
               <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2">
                 <img
-                  src="/games/giftbox/pointer.webp"
+                  src="/games/giftbox/pointer.png"
                   alt="Pointer"
                   className="h-10 w-7"
                 />
@@ -390,9 +399,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
               {/* Container da roleta */}
               <div className="relative h-36 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
-                <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-linear-to-r from-black/60 to-transparent z-10" />
-                <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-linear-to-l from-black/60 to-transparent z-10" />
-
                 <div
                   ref={trackRef}
                   className="absolute left-0 top-0 flex items-center h-full will-change-transform"
@@ -497,6 +503,18 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             isCompactMode ? "scale-90" : "scale-100"
           }`}
         >
+          {/* --- GLOW ATRÁS DO BAÚ (NOVO) --- */}
+          <div
+            className="absolute top-1/3 left-1/2 w-80 h-80 pointer-events-none -z-10"
+            style={{
+              background: `radial-gradient(circle, ${themeGlowColor} 30%, transparent 100%)`,
+              filter: "blur(40px)",
+              opacity: 0.6,
+              animation: "pulse-slow 4s ease-in-out infinite",
+            }}
+          />
+          {/* -------------------------------- */}
+
           <button
             type="button"
             onClick={handleChestClick}
@@ -557,7 +575,13 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
                   </div>
                 </>
               ) : (
-                <div className="text-base font-semibold text-white/70">
+                <div
+                  className="mt-1.5 text-2xl font-black text-white/90 uppercase"
+                  style={{
+                    textShadow: "2px 2px 0 black",
+                    WebkitTextStroke: "1px black",
+                  }}
+                >
                   Sem tentativas
                 </div>
               )}
@@ -611,6 +635,18 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           }
           50% {
             opacity: 0.6;
+          }
+        }
+
+        @keyframes pulse-slow {
+          0%,
+          100% {
+            opacity: 0.4;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          50% {
+            opacity: 0.7;
+            transform: translate(-50%, -50%) scale(1.1);
           }
         }
 
