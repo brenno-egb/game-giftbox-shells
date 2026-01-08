@@ -1,139 +1,117 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Rubik } from "next/font/google";
 import { useWheelGame } from "@/@sdk/smartico";
 import GiftboxChestRive from "./animation";
 import { runPrizeAcknowledge } from "@/@sdk/smartico/domain/acknowledge";
 import { HostBridge } from "@/@sdk/smartico/messaging/hostBridge";
 
-const rubik = Rubik({ subsets: ["latin"], weight: ["400", "700"] });
+import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
+import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
 
-const easeOutQuint = (t: number) => 1 - Math.pow(1 - t, 5);
+import { PrizeItem, PrizeAnnouncement } from "./PrizeComponents";
 
-const DEFAULT_ICON = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-    <defs>
-      <radialGradient id="g" cx="30%" cy="30%" r="70%">
-        <stop offset="0" stop-color="rgba(255,255,255,.75)"/>
-        <stop offset="1" stop-color="rgba(255,255,255,.10)"/>
-      </radialGradient>
-    </defs>
-    <circle cx="32" cy="32" r="22" fill="url(#g)"/>
-    <circle cx="32" cy="32" r="10" fill="rgba(255,255,255,.12)"/>
-  </svg>
-`)}`;
+import {
+  WHEEL_CONFIG,
+  CHEST_CONFIG,
+  DEFAULT_BACKGROUND,
+  easeOutQuint,
+  calculateTargetX,
+} from "./config";
 
-function CompactPrizeItem({ prize }: { prize: any }) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="w-10 h-10">
-        <img
-          src={prize.icon || DEFAULT_ICON}
-          alt={prize.name}
-          className="h-full w-full object-contain opacity-90"
-          decoding="async"
-          draggable={false}
-        />
-      </div>
+const rubik = Rubik({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
+});
 
-      <span className="text-xs text-center opacity-80 truncate w-full">
-        {prize.name || "Item"}
-      </span>
-    </div>
-  );
+// ========================================
+// TIPOS
+// ========================================
+
+interface GiftboxGameProps {
+  smartico: any;
+  templateId: number | string;
+  skin: any;
 }
 
-// Item da roleta (com nome)
-function PrizeItem({ prize, isTarget }: { prize: any; isTarget?: boolean }) {
-  return (
-    <div
-      className={`flex h-full w-[120px] shrink-0 flex-col items-center justify-center gap-2 px-2 transition-all ${
-        isTarget ? "scale-105" : ""
-      }`}
-    >
-      <img
-        src={prize.icon || DEFAULT_ICON}
-        alt={prize.name}
-        className="h-20 w-20 object-contain"
-        decoding="async"
-      />
-      <div className="text-[11px] text-white/85 text-center leading-tight max-w-full overflow-hidden text-ellipsis">
-        {prize.name || "Item"}
-      </div>
-    </div>
-  );
-}
+// ========================================
+// COMPONENTE PRINCIPAL
+// ========================================
 
-export default function GiftboxGame({ smartico, templateId, skin }: any) {
+export default function GiftboxGame({
+  smartico,
+  templateId,
+  skin,
+}: GiftboxGameProps) {
+  // ========================================
+  // HOOKS E STATE
+  // ========================================
+
   const gameState = useWheelGame({ smartico, templateId });
 
+  // Estados do baú
   const [isShaking, setIsShaking] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
   const [triggerFinal, setTriggerFinal] = useState(false);
+
+  // Estados da roleta
   const [showWheel, setShowWheel] = useState(false);
   const [targetPrizeIndex, setTargetPrizeIndex] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
+
+  // Estados do prêmio
   const [lastPrize, setLastPrize] = useState<any>(null);
   const [showPrizeAnnouncement, setShowPrizeAnnouncement] = useState(false);
+
+  // Estados de controle
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
 
+  // Refs
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const currentXRef = useRef<number>(0);
 
+  // ========================================
+  // COMPUTED VALUES
+  // ========================================
+
   const pool = useMemo(() => gameState.game?.prizes || [], [gameState.game]);
-  const STRIP_TARGET = 200;
 
   const poolKey = useMemo(
     () => pool.map((p: any) => String(p.id)).join("|"),
     [pool]
   );
 
+  // Cria strip de prêmios (array longo para roleta)
   const strip = useMemo(() => {
     if (!pool.length) return [];
-    const repeats = Math.max(3, Math.ceil(STRIP_TARGET / pool.length));
+    const repeats = Math.max(3, Math.ceil(WHEEL_CONFIG.STRIP_SIZE / pool.length));
     return Array.from({ length: repeats }, () => pool).flat();
   }, [poolKey, pool.length]);
 
-  const showPossiblePrizes =
-    pool.length > 0 &&
-    !chestOpen &&
-    !showWheel &&
-    !isShaking &&
-    !isAnimating &&
-    !showPrizeAnnouncement;
-
+  // Cor do glow baseada no tema
   const themeGlowColor = skin?.theme?.panelBorder ?? "#00000060";
-  // --------------------------------------------
 
-  const getStepPx = useCallback(() => {
-    if (!trackRef.current) return 120;
-    const items = trackRef.current.children;
-    if (items.length < 2) return 120;
-    const a = items[0] as HTMLElement;
-    const b = items[1] as HTMLElement;
-    return b.offsetLeft - a.offsetLeft;
-  }, []);
+  // Background do jogo
+  const bgUrl = skin?.background
+    ? `${skin.assetsBase}/${skin.background}`
+    : null;
 
-  const getTargetX = useCallback((index: number, xPosition: number) => {
-    if (!trackRef.current) return 0;
-    const viewport = trackRef.current.parentElement;
-    const item = trackRef.current.children[index] as HTMLElement;
-    if (!viewport || !item) return xPosition;
+  const rootStyle = {
+    backgroundImage: bgUrl ? `url('${bgUrl}')` : undefined,
+    backgroundColor: skin?.backgroundColor ?? DEFAULT_BACKGROUND.COLOR,
+  } as React.CSSProperties;
 
-    const viewportCenter = viewport.clientWidth / 2;
-    const itemCenter = item.offsetLeft + item.offsetWidth / 2;
-    return Math.round(viewportCenter - itemCenter);
-  }, []);
+  // ========================================
+  // FUNÇÕES DE ANIMAÇÃO
+  // ========================================
 
+  /**
+   * Anima a roleta de uma posição X para outra
+   */
   const animateTo = useCallback(
     (fromX: number, toX: number, durationMs: number) => {
       return new Promise<void>((resolve) => {
@@ -165,31 +143,43 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     []
   );
 
+  // ========================================
+  // FUNÇÕES DE JOGO
+  // ========================================
+
+  /**
+   * Executa uma jogada
+   */
   const playGame = useCallback(async () => {
     if (!gameState.canPlay || gameState.isPlaying || isAnimating) return;
 
     setIsAnimating(true);
 
+    // Reset state
     setTargetPrizeIndex(null);
     setLastPrize(null);
     setCurrentX(0);
     currentXRef.current = 0;
 
-    if (trackRef.current)
+    if (trackRef.current) {
       trackRef.current.style.transform = "translate3d(0px, 0, 0)";
+    }
 
+    // Chama API de jogo
     const result = await gameState.play();
     if (!result) {
       setIsAnimating(false);
       return;
     }
 
+    // Encontra prêmio ganho
     const prizeId = result?.prize_id != null ? String(result.prize_id) : "";
     const prize = prizeId
       ? pool.find((p: any) => String(p.id) === prizeId) || null
       : null;
 
-    const startIndex = Math.floor(strip.length * 0.65);
+    // Encontra índice alvo na strip
+    const startIndex = Math.floor(strip.length * WHEEL_CONFIG.START_POSITION_RATIO);
     let targetIndex = startIndex;
 
     if (prizeId) {
@@ -203,22 +193,28 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
 
     setTargetPrizeIndex(targetIndex);
 
-    const toX = getTargetX(targetIndex, currentXRef.current);
-    await animateTo(currentXRef.current, toX, 11000);
+    // Anima roleta
+    const toX = calculateTargetX(trackRef.current, targetIndex, currentXRef.current);
+    await animateTo(currentXRef.current, toX, WHEEL_CONFIG.ANIMATION_DURATION_MS);
 
+    // Mostra resultado
     setLastPrize(prize);
 
     setTimeout(() => {
       setTriggerFinal(true);
-    }, 200);
+    }, CHEST_CONFIG.ANNOUNCEMENT_DELAY_MS);
 
     await new Promise((resolve) => setTimeout(resolve, 400));
     setShowPrizeAnnouncement(true);
     setIsAnimating(false);
 
+    // Atualiza estado do jogo
     await gameState.refresh();
-  }, [gameState, isAnimating, pool, strip, getStepPx, animateTo, getTargetX]);
+  }, [gameState, isAnimating, pool, strip, animateTo]);
 
+  /**
+   * Clique no baú
+   */
   const handleChestClick = () => {
     if (!gameState.canPlay || isAnimating || chestOpen) return;
 
@@ -226,22 +222,31 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     setTimeout(() => {
       setIsShaking(false);
       setChestOpen(true);
-    }, 600);
+    }, CHEST_CONFIG.SHAKE_DURATION_MS);
   };
 
+  /**
+   * Baú começou a abrir
+   */
   const handleChestOpenStart = () => {};
 
+  /**
+   * Baú no pico da abertura
+   */
   const handleChestOpenPeak = () => {
     setShowWheel(true);
-
     setTimeout(() => {
       playGame();
-    }, 100);
+    }, CHEST_CONFIG.OPEN_DELAY_MS);
   };
 
+  /**
+   * Fecha anúncio de prêmio
+   */
   const closePrizeAnnouncement = useCallback(() => {
     setShowPrizeAnnouncement(false);
 
+    // Processa acknowledge do prêmio
     if (lastPrize) {
       runPrizeAcknowledge(
         lastPrize,
@@ -256,29 +261,41 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
     setTriggerFinal(true);
     setIsCompactMode(true);
 
+    // Reset se não puder jogar mais
     setTimeout(() => {
       if (!gameState.canPlay) {
         setChestOpen(false);
         setShowWheel(false);
-
         setTargetPrizeIndex(null);
         setLastPrize(null);
         setTriggerFinal(false);
         setIsCompactMode(false);
       }
-    }, 1000);
+    }, CHEST_CONFIG.POST_ANNOUNCEMENT_DELAY_MS);
   }, [lastPrize, smartico, gameState.canPlay]);
 
+  // ========================================
+  // EFFECTS
+  // ========================================
+
+  /**
+   * Recalcula posição ao redimensionar
+   */
   useEffect(() => {
     if (!trackRef.current || targetPrizeIndex === null || isAnimating) return;
 
     const handleResize = () => {
       if (!isAnimating && targetPrizeIndex !== null) {
-        const toX = getTargetX(targetPrizeIndex, currentXRef.current);
+        const toX = calculateTargetX(
+          trackRef.current,
+          targetPrizeIndex,
+          currentXRef.current
+        );
         currentXRef.current = toX;
         setCurrentX(toX);
-        if (trackRef.current)
+        if (trackRef.current) {
           trackRef.current.style.transform = `translate3d(${toX}px, 0, 0)`;
+        }
       }
     };
 
@@ -292,55 +309,41 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       resizeObserver.disconnect();
       window.removeEventListener("resize", handleResize);
     };
-  }, [targetPrizeIndex, isAnimating, getTargetX]);
+  }, [targetPrizeIndex, isAnimating]);
 
+  /**
+   * Cleanup animation frame
+   */
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
-  const prizeLabel = useMemo(() => {
-    if (!lastPrize) return "Jogada concluída.";
-    const msg = lastPrize.acknowledge_message ?? lastPrize.aknowledge_message;
-    if (lastPrize.prize_type === "no-prize") return msg || "Quase lá!";
-    return `${msg ?? "Você ganhou"} ${lastPrize.name ?? ""}`.trim();
-  }, [lastPrize]);
+  // ========================================
+  // RENDER STATES
+  // ========================================
 
+  // ✅ Loading State (usando componente compartilhado)
   if (gameState.isLoading) {
     return (
-      <div
-        className={`${rubik.className} min-h-screen w-full flex items-center justify-center`}
-      >
-        <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-white/85 backdrop-blur-[2px]">
-          Carregando...
-        </div>
-      </div>
+      <LoadingScreen
+        message="Construindo cenário"
+        backgroundImage={DEFAULT_BACKGROUND.IMAGE}
+      />
     );
   }
 
+  // ✅ Error State (usando componente compartilhado)
   if (gameState.error) {
-    return (
-      <div
-        className={`${rubik.className} min-h-screen w-full flex items-center justify-center`}
-      >
-        <div className="rounded-2xl border border-white/10 bg-black/40 px-5 py-4 text-sm text-red-300 backdrop-blur-[2px]">
-          {gameState.error}
-        </div>
-      </div>
-    );
+    return <ErrorState message={gameState.error} />;
   }
+
+  // ========================================
+  // RENDER PRINCIPAL
+  // ========================================
 
   const chestPath = skin?.rivePath ?? skin?.lottiePath;
-
-  const bgUrl = skin?.background
-    ? `${skin.assetsBase}/${skin.background}`
-    : null;
-
-  const rootStyle = {
-    backgroundImage: bgUrl ? `url('${bgUrl}')` : undefined,
-    backgroundColor: skin?.backgroundColor ?? "#07080c",
-  } as React.CSSProperties;
 
   return (
     <div
@@ -348,44 +351,39 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
       style={rootStyle}
       className={`${rubik.className} min-h-screen relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
     >
-      {/* Glow Overlay quando abre (Tela inteira) */}
+      {/* Glow Overlay quando abre */}
       {chestOpen && (
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none animate-pulse-glow"
           style={{
             background:
               "radial-gradient(circle at 50% 70%, rgba(255,215,0,0.15) 0%, transparent 50%)",
-            animation: "pulse-glow 2s ease-in-out infinite",
           }}
         />
       )}
 
-      {/* Container principal - Layout vertical otimizado */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3 pt-24">
-        {/* Gradiente Esquerdo: Preto -> Transparente */}
+      {/* Container principal */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3 pt-10">
+        {/* Gradientes laterais */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-linear-to-r from-black/70 to-transparent z-10" />
-
-        {/* Gradiente Direito: Preto -> Transparente */}
         <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-linear-to-l from-black/70 to-transparent z-10" />
-        
-        {/* ROLETA NO CENTRO */}
+
+        {/* ROLETA */}
         {showWheel && (
-          <div
-            className="w-full max-w-4xl animate-slide-up-fade shrink-0"
-            style={{
-              animation:
-                "slide-up-fade 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-            }}
-          >
+          <div className="w-full max-w-4xl animate-slide-up-fade shrink-0">
+            {/* Header da roleta */}
             <div className="text-center mb-3">
-              <div className="text-[11px] uppercase tracking-[0.2em] text-white/70 font-semibold">
-                SORTEANDO
-              </div>
-              <div className="mt-0.5 text-base font-bold text-white/90">
+              <div className="mt-0.5 text-base font-bold text-white"
+              style={{
+                textShadow: "2px 2px 0 black",
+                WebkitTextStroke: "0.5px dark-gray",
+              }}
+              >
                 {isAnimating ? "Girando..." : "Resultado"}
               </div>
             </div>
 
+            {/* Container da roleta */}
             <div className="relative">
               {/* Pointer indicador */}
               <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2">
@@ -397,7 +395,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
               </div>
               <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-linear-to-b from-white/60 via-white/40 to-transparent opacity-60" />
 
-              {/* Container da roleta */}
+              {/* Track da roleta */}
               <div className="relative h-36 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
                 <div
                   ref={trackRef}
@@ -436,98 +434,39 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           </div>
         )}
 
-        {/* ANÚNCIO DE PRÊMIO - OVERLAY */}
+        {/* ANÚNCIO DE PRÊMIO */}
         {showPrizeAnnouncement && lastPrize && (
-          <div className="w-full max-w-md animate-bounce-in z-40 shrink-0">
-            <div className="relative overflow-hidden rounded-lg border border-white/15 bg-black/50 backdrop-blur-md shadow-[0_0_30px_rgba(0,0,0,0.25)]">
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background:
-                    "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.10) 0%, transparent 60%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.06) 0%, transparent 55%)",
-                }}
-              />
-
-              <div className="relative flex min-h-25">
-                <div className="relative w-30 shrink-0">
-                  <div className="absolute inset-0">
-                    <div className="absolute -inset-6 bg-[radial-gradient(circle,rgba(255,255,255,0.18),transparent_60%)]" />
-                  </div>
-
-                  <div className="relative h-full w-full flex items-center justify-center p-3">
-                    <img
-                      src={lastPrize?.icon || DEFAULT_ICON}
-                      alt={lastPrize?.name || "Prêmio"}
-                      className="h-full w-full object-contain"
-                      decoding="async"
-                    />
-                  </div>
-
-                  <div className="absolute right-0 top-3 bottom-3 w-px bg-white/10" />
-                </div>
-
-                <div className="flex flex-1 flex-col justify-between p-1 pl-3 text-left">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-[0.22em] text-white/55 font-semibold">
-                      prêmio
-                    </div>
-
-                    <div className="mt-1 text-[15px] font-extrabold leading-snug text-white/95">
-                      {lastPrize?.name ?? "Você ganhou!"}
-                    </div>
-
-                    <div className="mt-1 text-[12px] leading-snug text-white/75">
-                      {prizeLabel}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between gap-3">
-                    <div className="text-[11px] text-white/45 tabular-nums"></div>
-
-                    <button
-                      onClick={closePrizeAnnouncement}
-                      className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-[2px] transition hover:bg-white/15 active:scale-[0.98] focus-visible:outline focus-visible:outline-white/30 shadow-[0_0_20px_rgba(0,0,0,0.25)]"
-                    >
-                      Continuar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PrizeAnnouncement
+            prize={lastPrize}
+            onClose={closePrizeAnnouncement}
+          />
         )}
 
-        {/* BAÚ EMBAIXO */}
+        {/* BAÚ */}
         <div
           className={`relative z-30 shrink-0 transition-all duration-500 ${
             isCompactMode ? "scale-90" : "scale-100"
           }`}
         >
-          {/* --- GLOW ATRÁS DO BAÚ (NOVO) --- */}
+          {/* Glow atrás do baú */}
           <div
-            className="absolute top-1/3 left-1/2 w-80 h-80 pointer-events-none -z-10"
+            className="absolute top-1/3 left-1/2 w-80 h-80 pointer-events-none -z-10 -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"
             style={{
               background: `radial-gradient(circle, ${themeGlowColor} 30%, transparent 100%)`,
               filter: "blur(40px)",
               opacity: 0.6,
-              animation: "pulse-slow 4s ease-in-out infinite",
             }}
           />
-          {/* -------------------------------- */}
 
           <button
             type="button"
             onClick={handleChestClick}
             className={`group cursor-pointer outline-none transition-transform duration-200 ${
               isShaking ? "animate-shake" : ""
-            }`}
+            } ${!chestOpen && !isShaking ? "animate-float" : ""}`}
             aria-label="Abrir baú"
             disabled={!gameState.canPlay || isAnimating || chestOpen}
             style={{
-              animation:
-                !chestOpen && !isShaking
-                  ? "float 3.2s ease-in-out infinite"
-                  : undefined,
               transform: chestOpen ? "scale(1.05)" : undefined,
             }}
           >
@@ -550,7 +489,7 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
             </div>
           </button>
 
-          {/* Texto abaixo do baú - só quando não tem roleta */}
+          {/* Texto abaixo do baú */}
           {!showWheel && (
             <div className="mt-4 text-center">
               {gameState.canPlay ? (
@@ -596,128 +535,6 @@ export default function GiftboxGame({ smartico, templateId, skin }: any) {
           )}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-14px);
-          }
-        }
-
-        @keyframes shake {
-          0%,
-          100% {
-            transform: translateX(0) rotate(0deg);
-          }
-          10%,
-          30%,
-          50%,
-          70%,
-          90% {
-            transform: translateX(-8px) rotate(-2deg);
-          }
-          20%,
-          40%,
-          60%,
-          80% {
-            transform: translateX(8px) rotate(2deg);
-          }
-        }
-
-        @keyframes pulse-glow {
-          0%,
-          100% {
-            opacity: 0.3;
-          }
-          50% {
-            opacity: 0.6;
-          }
-        }
-
-        @keyframes pulse-slow {
-          0%,
-          100% {
-            opacity: 0.4;
-            transform: translate(-50%, -50%) scale(0.9);
-          }
-          50% {
-            opacity: 0.7;
-            transform: translate(-50%, -50%) scale(1.1);
-          }
-        }
-
-        @keyframes slide-up-fade {
-          from {
-            opacity: 0;
-            transform: translateY(40px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        @keyframes fade-in {
-          from {
-            scale: 1;
-          }
-          to {
-            scale: 1.2;
-          }
-        }
-
-        @keyframes scale-in {
-          from {
-            opacity: 0;
-            transform: scale(0.8);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        @keyframes bounce-in {
-          0% {
-            opacity: 0;
-            transform: scale(0.3);
-          }
-          50% {
-            transform: scale(1.05);
-          }
-          70% {
-            transform: scale(0.9);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .animate-shake {
-          animation: shake 0.6s ease-in-out;
-        }
-
-        .animate-fade-in {
-          animation: fade-in 1s infinite alternate;
-        }
-
-        .animate-scale-in {
-          animation: scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .animate-bounce-in {
-          animation: bounce-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .animate-slide-up-fade {
-          animation: slide-up-fade 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-      `}</style>
     </div>
   );
 }

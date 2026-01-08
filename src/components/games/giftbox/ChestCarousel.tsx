@@ -25,7 +25,6 @@ const JuicyButton = ({
   variant = "green",
   ...props
 }: JuicyButtonProps) => {
-  // ... (Mantenha seu código original do botão aqui)
   const styles = {
     green: "bg-[#00d000] border-[#007c00] text-white shadow-[0_6px_0_#005900]",
     yellow:
@@ -68,13 +67,9 @@ const ChestCard = ({
   item: any;
   visualOffset: number;
 }) => {
-  // Distância absoluta (0 = centro, 1 = vizinho, 2 = longe)
   const dist = Math.abs(visualOffset);
   const isActive = dist === 0;
 
-  // Cálculos de Estilo Dinâmico
-  // Se visualOffset é -1 (esquerda), rotateY deve ser positivo para virar pro centro
-  // Se visualOffset é +1 (direita), rotateY deve ser negativo
   const rotateY = visualOffset * -25;
   const translateX = visualOffset * 220; // Espaçamento entre cards
   const scale = 1 - dist * 0.25; // Diminui 25% a cada passo
@@ -202,9 +197,9 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
       {/* 1. HEADER (Contador) */}
-      <div className="absolute top-0 flex flex-col items-center z-20 animate-slideDown">
+      <div className="absolute -top-6 right-13 flex flex-col items-center z-20 animate-slideDown rotate-20">
         <div className="">
-          <div className="bg-[#866700] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-[#665300]">
+          <div className="bg-[#7a5e00] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-black">
             {chests.length}
           </div>
         </div>
@@ -213,19 +208,13 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
       {/* 2. PALCO DO CARROSSEL */}
       <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
         {chests.map((chest, i) => {
-          // Cálculo Matemático de Loop Circular Robusto
           const length = chests.length;
 
-          // 1. Calcula distância bruta
           let visualOffset = i - activeIndex;
 
-          // 2. Ajusta para o caminho mais curto no círculo
-          // Ex: Se tem 5 itens, ir do 0 para o 4 é -1 (esquerda), não +4 (direita)
           if (visualOffset > length / 2) visualOffset -= length;
           if (visualOffset < -length / 2) visualOffset += length;
 
-          // NOTA: Removemos o "return null" para permitir animações suaves de entrada/saída
-          // O componente ChestCard agora lida com a ocultação visual (opacity: 0)
 
           return (
             <div

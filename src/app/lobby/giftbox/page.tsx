@@ -20,7 +20,7 @@ const rubik = Rubik({
 // --- Error Component (Pode manter aqui ou extrair também se quiser) ---
 const ErrorScreen = ({ title, message, onRetry }: any) => (
   <div className="min-h-screen bg-[#1a0f0f] flex items-center justify-center p-4 font-sans">
-    <div className="max-w-md w-full bg-[#2a1a1a] border-[4px] border-[#5c2b2b] rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
+    <div className="max-w-md w-full bg-[#2a1a1a] border-4 border-[#5c2b2b] rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_0%,#000_100%)] opacity-50" />
 
       <div className="relative z-10">
@@ -50,7 +50,6 @@ export default function HallPage() {
   const uid = searchParams.get("uid");
   const lang = searchParams.get("lang");
 
-  // Validação de Parâmetros
   if (!uid || !lang) {
     return (
       <ErrorScreen
@@ -60,12 +59,10 @@ export default function HallPage() {
     );
   }
 
-  // Erro Smartico
   if (smarticoError) {
     return <ErrorScreen title="Erro de Conexão" message={smarticoError} />;
   }
 
-  // Loading Inicial (Usando o novo componente)
   if (!isReady) {
     return <LoadingScreen message="Conectando..." />;
   }
@@ -76,7 +73,6 @@ export default function HallPage() {
 function HallContent({ uid, lang }: { uid: string; lang: string }) {
   const hall = useChestHall();
 
-  // Loading de Recursos (Usando o novo componente)
   if (hall.isLoading) return <LoadingScreen message="Carregando Recursos..." />;
 
   if (hall.error)
@@ -113,29 +109,20 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
                       bg-clip-text text-transparent
                       drop-shadow-[0_4px_0_rgba(0,0,0,0.8)]"
           >
-            Baús Disponíveis
+            Seus baús
           </h1>
         </div>
 
-        {/* --- INVENTÁRIO (Carrossel 3D) --- */}
         <section className="relative z-10">
           <ChestCarousel games={hall.games} uid={uid} lang={lang} />
         </section>
 
-        {/* Divisor Decorativo */}
-        <div className="flex items-center justify-center gap-4 opacity-50">
-          <div className="h-1 w-full bg-[#0c1833] rounded-full" />
-          <div className="shrink-0 w-3 h-3 bg-[#3a6bc2] rotate-45" />
-          <div className="h-1 w-full bg-[#0c1833] rounded-full" />
-        </div>
 
-        {/* --- LOJA (Grid de Ofertas) --- */}
         <section className="relative z-10 mt-12">
           <ChestShop chests={hall.chests} games={hall.games} />
         </section>
       </div>
 
-      {/* Footer Decorativo Fixo */}
       <div className="absolute top-0 left-0 right-0 h-30 bg-linear-to-b from-[#000000] to-transparent pointer-events-none z-0" />
     </div>
   );

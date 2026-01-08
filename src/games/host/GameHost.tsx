@@ -5,6 +5,8 @@ import type { GameKey } from "@/games/registry";
 import { gamesRegistry } from "@/games/registry";
 import GameRenderer from "@/games/host/GameRenderer.client";
 import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
+import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
+import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
 import type { BaseSkin } from "../core/types";
 
 type Props = {
@@ -14,7 +16,6 @@ type Props = {
 
 export default function GameHost({ gameKey, skinId }: Props) {
   const { smartico, isReady, error } = useSmartico();
-
   const entry = gamesRegistry[gameKey];
 
   const resolvedSkin = useMemo((): BaseSkin => {
@@ -29,18 +30,21 @@ export default function GameHost({ gameKey, skinId }: Props) {
 
   if (error) {
     return (
-      <div style={{ padding: 24 }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>Erro</div>
-        <pre style={{ whiteSpace: "pre-wrap" }}>{error}</pre>
-      </div>
+      <ErrorState
+        title="Falha ao Inicializar"
+        message={error}
+        onRetry={() => window.location.reload()}
+        retryLabel="Recarregar Página"
+      />
     );
   }
 
   if (!isReady || !smartico) {
     return (
-      <div style={{ padding: 24 }}>
-        Carregando Smartico…
-      </div>
+      <LoadingScreen
+        message="Inicializando Sistema"
+        backgroundImage={"/games/giftbox/background.avif"}
+      />
     );
   }
 
