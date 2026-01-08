@@ -324,7 +324,6 @@ export default function GiftboxGame({
   // RENDER STATES
   // ========================================
 
-  // ✅ Loading State (usando componente compartilhado)
   if (gameState.isLoading) {
     return (
       <LoadingScreen
@@ -334,7 +333,6 @@ export default function GiftboxGame({
     );
   }
 
-  // ✅ Error State (usando componente compartilhado)
   if (gameState.error) {
     return <ErrorState message={gameState.error} />;
   }

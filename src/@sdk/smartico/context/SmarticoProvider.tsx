@@ -33,7 +33,7 @@ export function SmarticoProvider({ children }: { children: ReactNode }) {
     const allowLocalhost = process.env.NEXT_PUBLIC_SMARTICO_ALLOW_LOCALHOST === "true";
 
     if (!labelKey || !brandKey || !scriptUrl) {
-      setError("Faltam env vars NEXT_PUBLIC_SMARTICO_*");
+      setError("ev setup");
       return;
     }
 

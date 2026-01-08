@@ -5,11 +5,12 @@ import { useChestHall } from "@/games/templates/giftbox/chest/useChestHall";
 import { useSearchParams } from "next/navigation";
 import { Rubik } from "next/font/google";
 
-// Componentes do Jogo
 import UserProfileHeader from "@/components/games/giftbox/UserProfile";
 import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
 import ChestShop from "@/components/games/giftbox/ChestShop";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
+import { validateGameParams, validateGameParamsFromURL } from "@/games/core/utils/validation";
+import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
 
 const rubik = Rubik({
   subsets: ["latin"],
@@ -17,50 +18,22 @@ const rubik = Rubik({
   display: "swap",
 });
 
-// --- Error Component (Pode manter aqui ou extrair também se quiser) ---
-const ErrorScreen = ({ title, message, onRetry }: any) => (
-  <div className="min-h-screen bg-[#1a0f0f] flex items-center justify-center p-4 font-sans">
-    <div className="max-w-md w-full bg-[#2a1a1a] border-4 border-[#5c2b2b] rounded-2xl p-8 text-center shadow-2xl relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle,transparent_0%,#000_100%)] opacity-50" />
-
-      <div className="relative z-10">
-        <div className="text-6xl mb-4 grayscale opacity-50">⚠️</div>
-        <h2 className="text-2xl font-black text-[#ff3b30] uppercase mb-2">
-          {title}
-        </h2>
-        <p className="text-[#ccacaa] font-bold mb-6">{message}</p>
-
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="bg-[#ff3b30] hover:bg-[#d32f2f] text-white font-black py-3 px-8 rounded-xl border-b-4 border-[#b71c1c] active:border-b-0 active:translate-y-1 transition-all uppercase tracking-wide"
-          >
-            Tentar Novamente
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-);
-
 export default function HallPage() {
   const searchParams = useSearchParams();
   const { isReady, error: smarticoError } = useSmartico();
 
-  const uid = searchParams.get("uid");
-  const lang = searchParams.get("lang");
+  const validation = validateGameParamsFromURL(searchParams);
 
-  if (!uid || !lang) {
+  if (!validation.valid) {
     return (
-      <ErrorScreen
-        title="Parâmetros Inválidos"
-        message="As credenciais de jogador (UID/LANG) não foram detectadas."
-      />
+      <ErrorState title="Parâmetros Inválidos" message={validation.error} />
     );
   }
 
+  const { uid, lang } = validation.params;
+
   if (smarticoError) {
-    return <ErrorScreen title="Erro de Conexão" message={smarticoError} />;
+    return <ErrorState title="Erro de Conexão" message={smarticoError} />;
   }
 
   if (!isReady) {
@@ -77,7 +50,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
 
   if (hall.error)
     return (
-      <ErrorScreen
+      <ErrorState
         title="Falha no Sistema"
         message={hall.error}
         onRetry={() => hall.refresh()}
@@ -116,7 +89,6 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
         <section className="relative z-10">
           <ChestCarousel games={hall.games} uid={uid} lang={lang} />
         </section>
-
 
         <section className="relative z-10 mt-12">
           <ChestShop chests={hall.chests} games={hall.games} />

@@ -4,15 +4,11 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import Image from "next/image";
 
-// Imports do seu projeto
 import GiftboxChestRive from "@/games/templates/giftbox/animation";
 import { getSkinByChest } from "@/games/templates/giftbox/chest/chest.helpers";
 import { resolveChestTheme } from "@/games/templates/giftbox/chest/chest.theme";
 import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
 import { CurrencyIcon } from "./ChestComponents";
-
-
-// --- COMPONENTE PRINCIPAL ---
 
 type Props = {
   chest: ChestItem;
@@ -21,7 +17,6 @@ type Props = {
 };
 
 export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
-  // 1. Resolve Skin e Tema
   const skin = getSkinByChest(chest);
   const theme = resolveChestTheme("buyable", skin?.theme); 
 

@@ -26,7 +26,7 @@ function loadScriptOnce(src: string) {
       existing.addEventListener("load", () => resolve(), { once: true });
       existing.addEventListener(
         "error",
-        () => reject(new Error("Falha ao carregar smartico.js")),
+        () => reject(new Error("smjs fail")),
         { once: true }
       );
       return;
@@ -42,7 +42,7 @@ function loadScriptOnce(src: string) {
       resolve();
     };
 
-    s.onerror = () => reject(new Error("Falha ao carregar smartico.js"));
+    s.onerror = () => reject(new Error("smjs fail"));
 
     document.head.appendChild(s);
   });
@@ -54,7 +54,7 @@ async function waitFor(cond: () => boolean, timeoutMs: number, label: string) {
     if (cond()) return;
     await sleep(50);
   }
-  throw new Error(`Timeout esperando: ${label}`);
+  throw new Error(`timeout esperando: ${label}`);
 }
 
 /**
@@ -85,7 +85,7 @@ async function waitForInternalSetup(s: Smartico, timeoutMs: number) {
     await sleep(100);
   }
   
-  throw new Error('Timeout esperando setup interno da Smartico');
+  throw new Error('timeout waiting');
 }
 
 /* ---------------------------------- boot ---------------------------------- */
@@ -108,7 +108,6 @@ export async function bootSmartico(opts: BootOptions): Promise<Smartico> {
     if (debug) console.log("[SMARTICO BOOT]", s);
   };
 
-  // Evita boots concorrentes
   if (window.__smarticoBootPromise) {
     if (debug) console.log("[SMARTICO BOOT] reuse existing boot");
     return window.__smarticoBootPromise;

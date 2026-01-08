@@ -1,8 +1,6 @@
 "use client";
 
-// --- ÍCONE DE MOEDA ---
 export const CurrencyIcon = ({ type }: { type?: string }) => {
-  console.log(type);
   if (type === "gems") {
     return (
       <img

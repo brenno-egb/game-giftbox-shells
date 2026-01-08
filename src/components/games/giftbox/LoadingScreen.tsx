@@ -50,13 +50,10 @@ export default function LoadingScreen({
             }}
           >
 
-            {/* 1. Camada Base (A cor mais escura, fundo total) */}
             <div className="absolute inset-0 bg-[#d99000]" />
 
-            {/* 2. Camada Média (Cor principal, cobre 70% superior) */}
             <div className="absolute inset-0 bottom-[30%] bg-[#ffc800]" />
 
-            {/* 3. Camada Superior (Brilho/Highlight, cobre 35% superior) */}
             <div className="absolute inset-0 bottom-[65%] bg-[#ffdd55]" />
 
           </motion.div>

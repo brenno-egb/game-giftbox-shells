@@ -8,16 +8,13 @@ import type {
 } from "../../domain/domain.type";
 import { createLogger } from "../../logger";
 
-/**
- * Implementação de Transport que usa smartico.api e smartico.dp
- */
 export class SmarticoTransport implements Transport {
   private smartico: any;
   private logger: ReturnType<typeof createLogger>;
 
   constructor(smartico: any, debug = false) {
     if (!smartico?.api) {
-      throw new Error("Smartico não inicializado (smartico.api ausente).");
+      throw new Error("sapi null");
     }
     this.smartico = smartico;
     this.logger = createLogger("smartico:transport", debug);
@@ -91,9 +88,6 @@ export class SmarticoTransport implements Transport {
   }
 }
 
-/**
- * Factory para criar transport do Smartico
- */
 export function createSmarticoTransport(
   smartico: any,
   debug = false

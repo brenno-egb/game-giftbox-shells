@@ -77,9 +77,9 @@ export const ChestCardCompact = ({
           }}
         >
           {/* Padrão de bolinhas (Existente) */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-[length:8px_8px]" />
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-size-[8px_8px]" />
 
-          {/* --- NOVO: Gradiente Colorido da Borda (Bottom -> Top) --- */}
+          {/* Gradiente Colorido da Borda (Bottom -> Top) --- */}
           <div 
             className="absolute inset-0 opacity-40 pointer-events-none"
             style={{
@@ -87,8 +87,8 @@ export const ChestCardCompact = ({
             }}
           />
 
-          {/* Fade Escuro para o texto (Existente) */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#242424]/50 to-[#242424]" />
+          {/* Fade Escuro para o texto */}
+          <div className="absolute inset-0 bg-linear-to-b from-transparent via-[#242424]/50 to-[#242424]" />
         </div>
 
         {/* Imagem do Baú */}

@@ -3,7 +3,6 @@
 import type { UserLevel, UserProfile } from "@/@sdk/smartico";
 import Image from "next/image";
 
-// --- ÍCONES SVG (Ajustados para ficarem nítidos em tamanho menor) ---
 const GameIcons = {
   Coin: () => (
     <img src="/games/giftbox/assets/currency/coin.png" className="w-full h-full object-contain" />
@@ -21,7 +20,6 @@ type Props = {
   level: UserLevel | null;
 };
 
-// Componente ULTRA Compacto de Recurso
 const ResourceSlot = ({
   icon: Icon,
   value,
