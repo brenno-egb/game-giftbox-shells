@@ -373,10 +373,10 @@ export default function GiftboxGame({
           <div className="w-full max-w-4xl animate-slide-up-fade shrink-0">
             {/* Header da roleta */}
             <div className="text-center mb-3">
-              <div className="mt-0.5 text-base font-bold text-white"
+              <div className="mt-0.5 text-2xl font-black text-white uppercase"
               style={{
                 textShadow: "2px 2px 0 black",
-                WebkitTextStroke: "0.5px dark-gray",
+                WebkitTextStroke: "1px dark-gray",
               }}
               >
                 {isAnimating ? "Girando..." : "Resultado"}
@@ -525,9 +525,9 @@ export default function GiftboxGame({
                 </div>
               )}
 
-              <div className="mt-12 text-[15px] text-white/60">
+              <div className="mt-12 font-bold text-lg text-black">
                 {gameState.attemptsDisplay.label}:{" "}
-                <span className="font-semibold text-white/90 tabular-nums">
+                <span className="font-bold text-black tabular-nums">
                   {gameState.attemptsDisplay.value}
                 </span>
               </div>
