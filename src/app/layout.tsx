@@ -1,12 +1,42 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import ClientWrapper from "./ClientWrapper";
 
-export const metadata = { title: "Smartico Games Host" };
+export const metadata: Metadata = {
+  title: "SDK Host",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-snippet": -1,
+      "max-image-preview": "none",
+      "max-video-preview": -1,
+    },
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+  },
+};
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html>
-      <body>
+    <html lang="pt-BR">
+      <head>
+        <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+        <meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+      </head>
+
+      <body style={{ margin: 0, padding: 0 }}>
         <ClientWrapper>{children}</ClientWrapper>
       </body>
     </html>

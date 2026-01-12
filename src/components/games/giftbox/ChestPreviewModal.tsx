@@ -18,6 +18,7 @@ type Props = {
 
 export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
   const skin = getSkinByChest(chest);
+  console.log(skin)
   const theme = resolveChestTheme("buyable", skin?.theme); 
 
   const canAfford = chest.canAfford ?? true;
@@ -43,15 +44,18 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
         className="relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col"
         style={{
           backgroundImage: `
-            linear-gradient(${theme.panelBg || '#242424'}, ${theme.panelBg || '#242424'}), 
+            url(${skin?.assetsBase}/${skin?.backgroundStore}), 
             linear-gradient(to top, ${theme.panelBorder || theme.accent} 0%, transparent 60%)
           `,
+          backgroundSize: 'cover',
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center",
           backgroundClip: "padding-box, border-box",
           backgroundOrigin: "padding-box, border-box",
           borderWidth: "4px",
           borderStyle: "solid",
           borderColor: "transparent",
-          boxShadow: `0 0 40px -10px ${theme.accentGlow}`,
+          boxShadow: `0 0 40px -20px ${theme.accentGlow}`,
         }}
       >
 
@@ -62,6 +66,8 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
         >
           <X size={18} strokeWidth={3} />
         </button>
+
+        <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
 
         {/* --- ÁREA DE SHOWCASE (Topo) --- */}
         <div className="relative h-64 w-full flex items-center justify-center overflow-hidden z-10 shrink-0">

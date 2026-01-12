@@ -59,8 +59,8 @@ export const giftboxSkins = {
     theme: {
       accent: "#5A55FF",
       accentBorder: "#4944FF",
-      accentSoft: "rgba(139,233,255,.72)", // Opcional, se usar em outro lugar
-      accentGlow: "rgba(139,233,255,.20)",
+      accentSoft: "rgba(139,233,255)", // Opcional, se usar em outro lugar
+      accentGlow: "#4B4EFF",
       panelBg: "rgba(0,0,0,.52)",
       panelBorder: "#4B4EFF",
     },
@@ -79,7 +79,7 @@ export const giftboxSkins = {
     theme: {
       accent: "black",
       accentBorder: "#333333", // Cinza escuro para aparecer no fundo preto
-      accentSoft: "rgba(199,166,255,.70)",
+      accentSoft: "rgba(199,166,255)",
       accentGlow: "black",
       panelBg: "rgba(0,0,0,.58)",
       panelBorder: "#4D4D4D",
@@ -97,7 +97,8 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-emerald.png",
     backgroundColor: "#04080a",
     theme: {
-      panelBorder: "#00FF15"
+      panelBorder: "#00FF15",
+      accentGlow: "#00FF15"
     }
   },
 } as const satisfies Record<string, BaseSkin>;

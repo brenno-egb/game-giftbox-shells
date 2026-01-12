@@ -90,7 +90,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
           <ChestCarousel games={hall.games} uid={uid} lang={lang} />
         </section>
 
-        <section className="relative z-10 mt-12">
+        <section className="relative z-30 mt-12">
           <ChestShop chests={hall.chests} games={hall.games} />
         </section>
       </div>

@@ -76,8 +76,6 @@ export const ChestCardCompact = ({
             backgroundColor,
           }}
         >
-          {/* Padrão de bolinhas (Existente) */}
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-size-[8px_8px]" />
 
           {/* Gradiente Colorido da Borda (Bottom -> Top) --- */}
           <div 
