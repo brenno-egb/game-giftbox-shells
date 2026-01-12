@@ -8,8 +8,13 @@ import { createUserProfileStore } from "@/@sdk/smartico/services/userProfileStor
 import { createUserLevelStore } from "@/@sdk/smartico/services/userLevelStore";
 import { createMiniGamesStore } from "@/@sdk/smartico";
 import { UserProfile, UserLevel } from "@/@sdk/smartico";
-import { filterChests, enrichChestsWithGameData, categorizeChests, hasAnyAvailableChest } from "@/games/templates/giftbox/chest/chest.rules";
-import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
+import {
+  filterChests,
+  enrichChestsWithGameData,
+  categorizeChests,
+  hasAnyAvailableChest,
+} from "@/@games/templates/giftbox/chest/chest.rules";
+import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
 
 type State = {
@@ -36,27 +41,27 @@ export function useChestHall() {
 
   // Cria transport e stores localmente
   const transport = useMemo(
-    () => smartico ? createSmarticoTransport(smartico, false) : null,
+    () => (smartico ? createSmarticoTransport(smartico, false) : null),
     [smartico]
   );
 
   const storeItemsStore = useMemo(
-    () => transport ? createStoreItemsStore(transport, false) : null,
+    () => (transport ? createStoreItemsStore(transport, false) : null),
     [transport]
   );
 
   const userProfileStore = useMemo(
-    () => transport ? createUserProfileStore(transport, false) : null,
+    () => (transport ? createUserProfileStore(transport, false) : null),
     [transport]
   );
 
   const userLevelStore = useMemo(
-    () => transport ? createUserLevelStore(transport, false) : null,
+    () => (transport ? createUserLevelStore(transport, false) : null),
     [transport]
   );
 
   const miniGamesStore = useMemo(
-    () => transport ? createMiniGamesStore(transport, false) : null,
+    () => (transport ? createMiniGamesStore(transport, false) : null),
     [transport]
   );
 
@@ -97,7 +102,12 @@ export function useChestHall() {
   );
 
   const refresh = useCallback(async () => {
-    if (!storeItemsStore || !userProfileStore || !userLevelStore || !miniGamesStore) {
+    if (
+      !storeItemsStore ||
+      !userProfileStore ||
+      !userLevelStore ||
+      !miniGamesStore
+    ) {
       return;
     }
 
@@ -126,12 +136,18 @@ export function useChestHall() {
         error: e?.message ?? "Erro ao carregar dados",
       }));
     }
-  }, [storeItemsStore, userProfileStore, userLevelStore, miniGamesStore, computeState]);
+  }, [
+    storeItemsStore,
+    userProfileStore,
+    userLevelStore,
+    miniGamesStore,
+    computeState,
+  ]);
 
   // Load inicial
   useEffect(() => {
     if (!smartico) return;
-    
+
     let mounted = true;
 
     (async () => {

@@ -1,4 +1,4 @@
-import type { BaseSkin } from "@/games/core/types";
+import type { BaseSkin } from "@/@games/core/types";
 
 export const giftboxSkins = {
   // GOLD: Não define tema -> Usa 100% o Default (Azul)
@@ -12,8 +12,8 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-gold.png",
     backgroundColor: "#07080c",
     theme: {
-      panelBorder: "#FFAE00"
-    }
+      panelBorder: "#FFAE00",
+    },
   },
 
   // BRONZE: Define Accent e AccentBorder para combinar
@@ -42,8 +42,8 @@ export const giftboxSkins = {
     backgroundStore: "bg-store-silver.png",
     backgroundColor: "#07080c",
     theme: {
-      panelBorder: "#D9D9D9"
-    }
+      panelBorder: "#D9D9D9",
+    },
   },
 
   // DIAMOND: Define tudo
@@ -98,7 +98,7 @@ export const giftboxSkins = {
     backgroundColor: "#04080a",
     theme: {
       panelBorder: "#00FF15",
-      accentGlow: "#00FF15"
-    }
+      accentGlow: "#00FF15",
+    },
   },
 } as const satisfies Record<string, BaseSkin>;

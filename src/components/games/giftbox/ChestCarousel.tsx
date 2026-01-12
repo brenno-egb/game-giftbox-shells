@@ -4,12 +4,12 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 
 // Ajuste os imports conforme seu caminho real
-import { giftboxSkins } from "@/games/templates/giftbox/skins";
+import { giftboxSkins } from "@/@games/templates/giftbox/skins";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
 import {
   getGameUrl,
   getGameSpins,
-} from "@/games/templates/giftbox/chest/chest.helpers";
+} from "@/@games/templates/giftbox/chest/chest.helpers";
 
 // ... (MANTENHA OS COMPONENTES JuicyButton E ChestCard IGUAIS AO SEU CÓDIGO) ...
 // Vou ocultar aqui para focar na correção, mas você deve manter o código deles.
@@ -196,17 +196,16 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
-
       {/* 2. PALCO DO CARROSSEL */}
       <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
-      {/* 1. HEADER (Contador) */}
-      <div className="absolute w-[65%] flex justify-end -top-6 z-20 animate-slideDown">
-        <div className="w-8  rotate-20">
-          <div className="bg-[#7a5e00] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-black">
-            {chests.length}
+        {/* 1. HEADER (Contador) */}
+        <div className="absolute w-[65%] flex justify-end -top-6 z-20 animate-slideDown">
+          <div className="w-8  rotate-20">
+            <div className="bg-[#7a5e00] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-black">
+              {chests.length}
+            </div>
           </div>
         </div>
-      </div>
         {chests.map((chest, i) => {
           const length = chests.length;
 
@@ -214,7 +213,6 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
 
           if (visualOffset > length / 2) visualOffset -= length;
           if (visualOffset < -length / 2) visualOffset += length;
-
 
           return (
             <div

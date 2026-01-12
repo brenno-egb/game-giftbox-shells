@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import BaseRive, { type RiveInstance } from "@/games/core/lib/baseRive";
+import BaseRive, { type RiveInstance } from "@/@games/core/lib/baseRive";
 import { StateMachineInputType } from "@rive-app/react-canvas";
 
 type Props = {
@@ -25,7 +25,9 @@ const FALLBACK_MS = 2200;
 const STATECHANGE_EVENT = "statechange";
 
 function norm(x: unknown) {
-  return String(x ?? "").trim().toLowerCase();
+  return String(x ?? "")
+    .trim()
+    .toLowerCase();
 }
 
 export default function GiftboxChestRive({
@@ -111,7 +113,9 @@ export default function GiftboxChestRive({
 
     try {
       const inputs = rive.stateMachineInputs(SM_NAME) ?? [];
-      const input = inputs.find((i: any) => norm(i?.name) === norm(FINAL_INPUT));
+      const input = inputs.find(
+        (i: any) => norm(i?.name) === norm(FINAL_INPUT)
+      );
       if (!input) return;
 
       if (input.type === StateMachineInputType.Trigger) {
@@ -136,8 +140,8 @@ export default function GiftboxChestRive({
       const states: string[] = Array.isArray(data)
         ? data.map((x: any) => String(x))
         : typeof data === "string"
-          ? [data]
-          : [];
+        ? [data]
+        : [];
 
       const hitFinal = states.some((s) => {
         const v = norm(s);
@@ -183,10 +187,10 @@ export default function GiftboxChestRive({
 
   useEffect(() => {
     if (!triggerFinal || finalFiredRef.current) return;
-    
+
     finalFiredRef.current = true;
     setFinalValue();
-    
+
     // Callback após um delay para a animação completar
     setTimeout(() => {
       onFinalCompleteRef.current?.();
@@ -221,7 +225,14 @@ export default function GiftboxChestRive({
       clearFallback();
       clearPeak();
     };
-  }, [isOpen, setOpenValue, clearFallback, clearPeak, fireCompleteOnce, firePeakOnce]);
+  }, [
+    isOpen,
+    setOpenValue,
+    clearFallback,
+    clearPeak,
+    fireCompleteOnce,
+    firePeakOnce,
+  ]);
 
   useEffect(() => {
     return () => {

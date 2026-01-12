@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import type { GameKey } from "@/games/registry";
-import { gamesRegistry } from "@/games/registry";
-import GameRenderer from "@/games/host/GameRenderer.client";
+import type { GameKey } from "@/@games/registry";
+import { gamesRegistry } from "@/@games/registry";
+import GameRenderer from "@/@games/host/GameRenderer.client";
 import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";

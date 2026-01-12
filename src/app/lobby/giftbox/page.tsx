@@ -1,7 +1,7 @@
 "use client";
 
 import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
-import { useChestHall } from "@/games/templates/giftbox/chest/useChestHall";
+import { useChestHall } from "@/@games/templates/giftbox/chest/useChestHall";
 import { useSearchParams } from "next/navigation";
 import { Rubik } from "next/font/google";
 
@@ -9,7 +9,10 @@ import UserProfileHeader from "@/components/games/giftbox/UserProfile";
 import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
 import ChestShop from "@/components/games/giftbox/ChestShop";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
-import { validateGameParams, validateGameParamsFromURL } from "@/games/core/utils/validation";
+import {
+  validateGameParams,
+  validateGameParamsFromURL,
+} from "@/@games/core/utils/validation";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
 
 const rubik = Rubik({

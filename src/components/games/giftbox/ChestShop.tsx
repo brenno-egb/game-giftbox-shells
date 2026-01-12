@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
+import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
 import {
   findGameByTemplateId,
@@ -9,7 +9,7 @@ import {
   getSkinByChest,
   getChestShopImage,
   sortChestsByOrder,
-} from "@/games/templates/giftbox/chest/chest.helpers";
+} from "@/@games/templates/giftbox/chest/chest.helpers";
 
 import { ChestCardCompact, ChestCardWide } from "./ChestCards";
 import ChestPreviewModal from "./ChestPreviewModal";
@@ -98,7 +98,9 @@ export default function ChestShop({ chests, games }: Props) {
       {/* Empty */}
       {sortedChests.length === 0 && (
         <div className="text-center py-12 opacity-60">
-          <h3 className="text-xl font-black text-white uppercase">Loja Fechada</h3>
+          <h3 className="text-xl font-black text-white uppercase">
+            Loja Fechada
+          </h3>
           <p className="text-gray-400">Volte mais tarde!</p>
         </div>
       )}

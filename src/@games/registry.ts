@@ -1,4 +1,4 @@
-import { giftboxSkins } from "@/games/templates/giftbox/skins";
+import { giftboxSkins } from "@/@games/templates/giftbox/skins";
 
 export const gamesRegistry = {
   giftbox: {

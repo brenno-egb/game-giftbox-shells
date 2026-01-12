@@ -1,6 +1,6 @@
-import { giftboxSkins } from "@/games/templates/giftbox/skins";
+import { giftboxSkins } from "@/@games/templates/giftbox/skins";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
-import type { ChestItem } from "@/games/templates/giftbox/chest/chest.types";
+import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
 
 /**
  * Gera URL do jogo com skin
@@ -14,7 +14,7 @@ export function getGameUrl(skinId: string, uid: string, lang: string): string {
  */
 export function getGameSpins(game: MiniGameTemplate | undefined): number {
   if (!game) return 0;
-  
+
   const spinCount = game.spin_count;
   return typeof spinCount === "number" ? spinCount : 0;
 }
@@ -36,13 +36,15 @@ export function findGameByTemplateId(
  * Para ChestShop: usa chest.image (da loja)
  * Para ChestCarousel: usa skin.background diretamente
  */
-export function getChestImageFromStore(chestImage: string | undefined): string | null {
+export function getChestImageFromStore(
+  chestImage: string | undefined
+): string | null {
   return chestImage || null;
 }
 
 /**
  * Tenta encontrar a skin associada a um ChestItem usando múltiplas estratégias.
- * Prioridade: 
+ * Prioridade:
  * 1. Store ID (chest.id === skin.storeId) -> Exato para a loja
  * 2. Template ID (chest.templateId === skin.templateId) -> Fallback técnico
  * 3. Nome (Fuzzy match) -> Fallback visual
@@ -58,14 +60,21 @@ export function getSkinByChest(chest: ChestItem) {
 
   // 2. Pelo Template ID
   if (chest.templateId) {
-    const byTemplate = skins.find((s) => Number(s.templateId) === Number(chest.templateId));
+    const byTemplate = skins.find(
+      (s) => Number(s.templateId) === Number(chest.templateId)
+    );
     if (byTemplate) return byTemplate;
   }
 
   // 3. Pelo Nome (Fallback)
   if (chest.name) {
-    const normalizedName = chest.name.toLowerCase().replace(/baú\s+/, "").trim();
-    return skins.find((s) => normalizedName.includes(s.id) || s.id.includes(normalizedName));
+    const normalizedName = chest.name
+      .toLowerCase()
+      .replace(/baú\s+/, "")
+      .trim();
+    return skins.find(
+      (s) => normalizedName.includes(s.id) || s.id.includes(normalizedName)
+    );
   }
 
   return undefined;
@@ -97,12 +106,12 @@ export function getChestShopImage(chest: ChestItem): string | null {
  * bronze → silver → gold → emerald → diamond → black diamond
  */
 const CHEST_ORDER = [
-  'bronze',
-  'silver', 
-  'gold',
-  'emerald',
-  'diamond',
-  'black-diamond'
+  "bronze",
+  "silver",
+  "gold",
+  "emerald",
+  "diamond",
+  "black-diamond",
 ] as const;
 
 /**
@@ -113,14 +122,14 @@ export function sortChestsByOrder(chests: ChestItem[]): ChestItem[] {
   return [...chests].sort((a, b) => {
     const skinA = getSkinByChest(a);
     const skinB = getSkinByChest(b);
-    
+
     const orderA = skinA ? CHEST_ORDER.indexOf(skinA.id as any) : 999;
     const orderB = skinB ? CHEST_ORDER.indexOf(skinB.id as any) : 999;
-    
+
     // Se não encontrou, mantém ordem original
     if (orderA === -1) return 1;
     if (orderB === -1) return -1;
-    
+
     return orderA - orderB;
   });
 }
