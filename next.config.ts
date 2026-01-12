@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+/** @type {import('next').NextConfig} */
+const JavaScriptObfuscator = require("webpack-obfuscator");
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -8,15 +10,30 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**.smartico.ai',
+        protocol: "https",
+        hostname: "**.smartico.ai",
       },
       {
-        protocol: 'https',
-        hostname: '**.cloudfront.net',
+        protocol: "https",
+        hostname: "**.cloudfront.net",
       },
     ],
   },
+
+  productionBrowserSourceMaps: false,
+  webpack: (config, { isServer, dev }) => {
+    if (!isServer && !dev) {
+      config.plugins.push(
+        new JavaScriptObfuscator(
+          {
+            rotateStringArray: true,
+          },
+          []
+        )
+      );
+    }
+    return config;
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
