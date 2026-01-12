@@ -1,7 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 type Props = {
   message: string;
   backgroundImage?: string;
@@ -37,35 +35,34 @@ export default function LoadingScreen({
         <div className="relative w-full h-9 bg-black/20 rounded-xl border-4 border-[#524c00] p-0.75 shadow-[0_4px_0_rgba(0,0,0,0.3)] overflow-hidden">
           
           <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.3)_10px,rgba(0,0,0,0.3)_20px)] opacity-50" />
-
-          <motion.div
-            className="h-full relative rounded-md overflow-hidden box-border shadow-[inset_0_-2px_4px_rgba(0,0,0,0.4)]"
-            initial={{ width: "5%" }}
-            animate={{ width: ["5%", "40%", "70%", "90%", "100%"] }}
-            transition={{ 
-              duration: 3.5, 
-              ease: "easeInOut", 
-              repeat: Infinity, 
-              repeatType: "reverse"
-            }}
-          >
-
+          
+          <div className="h-full relative rounded-md overflow-hidden box-border shadow-[inset_0_-2px_4px_rgba(0,0,0,0.4)] animate-progress-bar">
             <div className="absolute inset-0 bg-[#d99000]" />
-
             <div className="absolute inset-0 bottom-[30%] bg-[#ffc800]" />
-
             <div className="absolute inset-0 bottom-[65%] bg-[#ffdd55]" />
-
-          </motion.div>
+          </div>
         </div>
-
       </div>
 
-      {/* Animação das listras */}
+      {/* Animações */}
       <style jsx>{`
         @keyframes moveStripes {
           from { background-position: 0 0; }
           to { background-position: 40px 0; }
+        }
+
+        @keyframes progressBar {
+          0% { width: 5%; }
+          20% { width: 35%; }
+          40% { width: 58%; }
+          60% { width: 78%; }
+          80% { width: 92%; }
+          95% { width: 98%; }
+          100% { width: 100%; }
+        }
+
+        .animate-progress-bar {
+          animation: progressBar 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
       `}</style>
     </div>

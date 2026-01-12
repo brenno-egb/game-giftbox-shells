@@ -1,8 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { X } from "lucide-react";
 import Image from "next/image";
+import { useState, useEffect } from "react";
 
 import GiftboxChestRive from "@/@games/templates/giftbox/animation";
 import { getSkinByChest } from "@/@games/templates/giftbox/chest/chest.helpers";
@@ -17,30 +16,36 @@ type Props = {
 };
 
 export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
+  const [isVisible, setIsVisible] = useState(false);
   const skin = getSkinByChest(chest);
   console.log(skin);
   const theme = resolveChestTheme("buyable", skin?.theme);
 
   const canAfford = chest.canAfford ?? true;
 
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+  }, []);
+
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center px-4 font-sans">
       {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      <div
         onClick={onClose}
-        className="absolute inset-0 bg-black/80 backdrop-blur-md"
+        className={`absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300 ${
+          isVisible ? "opacity-100" : "opacity-0"
+        }`}
       />
 
       {/* Container do Modal */}
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.8, opacity: 0, y: 20 }}
-        transition={{ type: "spring", bounce: 0.4 }}
-        className="relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col"
+      <div
+        className={`relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 ${
+          isVisible
+            ? "scale-100 opacity-100 translate-y-0"
+            : "scale-80 opacity-0 translate-y-5"
+        }`}
         style={{
           backgroundImage: `
             url(${skin?.assetsBase}/${skin?.backgroundStore}), 
@@ -57,6 +62,7 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
           borderStyle: "solid",
           borderColor: "transparent",
           boxShadow: `0 0 40px -20px ${theme.accentGlow}`,
+          transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
         {/* Botão Fechar */}
@@ -64,7 +70,19 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
           onClick={onClose}
           className="absolute top-4 right-4 z-50 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-colors border border-white/10"
         >
-          <X size={18} strokeWidth={3} />
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
 
         <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
@@ -83,15 +101,7 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
                 />
               </div>
             ) : (
-              <motion.div
-                animate={{ y: [-8, 8, -8], rotate: [0, 2, -2, 0] }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-                className="relative w-40 h-40"
-              >
+              <div className="relative w-40 h-40 animate-float">
                 {chest.image ? (
                   <Image
                     src={chest.image}
@@ -104,7 +114,7 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
                     📦
                   </div>
                 )}
-              </motion.div>
+              </div>
             )}
           </div>
         </div>
@@ -175,7 +185,26 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(-8px) rotate(0deg);
+          }
+          25% {
+            transform: translateY(8px) rotate(2deg);
+          }
+          75% {
+            transform: translateY(8px) rotate(-2deg);
+          }
+        }
+
+        .animate-float {
+          animation: float 4s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }

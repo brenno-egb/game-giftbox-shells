@@ -60,8 +60,8 @@ export default function UserProfileGameUI({ profile, level }: Props) {
         {/* Sombra do Card */}
         <div className="absolute inset-0 bg-black/40 rounded-lg translate-y-0.5 translate-x-0" />
 
-        {/* Container do Card - Reduzi o padding vertical para ficar mais 'slim' */}
-        <div className="relative bg-[#1a1f2e] rounded-lg border-2 border-[#2d3548] px-3 py-2 overflow-hidden">
+        {/* Container do Card */}
+        <div className="relative bg-linear-to-br from-[#1a1f2e] to-[#251600] rounded-lg border-3 border-[#2d3548] px-3 py-2 overflow-hidden">
           
           {/* Padrão de Fundo Sutil */}
           <div className="absolute top-6 -right-20 w-56 h-56 opacity-20 pointer-events-none">
@@ -71,10 +71,10 @@ export default function UserProfileGameUI({ profile, level }: Props) {
           {/* LAYOUT: Flex Row (Imagem Esquerda | Infos Direita) */}
           <div className="relative z-10 flex flex-row items-center gap-4">
             
-            {/* 1. IMAGEM (ESQUERDA) - Tamanho Otimizado (w-20 = 80px) */}
+            {/* 1. IMAGEM */}
             <div className="shrink-0 relative group">
               {/* Moldura do Avatar */}
-              <div className="w-16 h-16 bg-[#DF9C36] rounded-sm rotate-3 flex items-center justify-center transition-transform group-hover:rotate-0">
+              <div className="w-16 h-16 bg-linear-to-b from-[#DF9C36] to-yellow-800 rounded-sm rotate-3 flex items-center justify-center transition-transform group-hover:rotate-0">
                 
                 {/* Imagem Interna */}
                 <div className="w-[90%] h-[90%] bg-slate-900 rounded-sm overflow-hidden border-2 border-[#30230F] relative">
@@ -113,8 +113,8 @@ export default function UserProfileGameUI({ profile, level }: Props) {
                 </span>
               </div>
 
-              {/* Recursos Inline - Usando flex-wrap para segurança, mas desenhado para caber */}
-              <div className="flex flex-wrap items-center gap-2 mt-1.5">
+              {/* Recursos Inline */}
+              <div className="flex flex-wrap items-center gap-4 mt-1.5 ml-2">
                 <ResourceSlot 
                   icon={GameIcons.Coin}
                   value={points}

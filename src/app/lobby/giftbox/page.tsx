@@ -67,8 +67,6 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
         rubik.className,
       ].join(" ")}
     >
-      {/* Background Pattern Global (Tileable) */}
-      <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
 
       {/* Conteúdo Principal */}
       <div className="relative p-4 pb-32">
@@ -98,7 +96,6 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
         </section>
       </div>
 
-      <div className="absolute top-0 left-0 right-0 h-30 bg-linear-to-b from-[#000000] to-transparent pointer-events-none z-0" />
     </div>
   );
 }
