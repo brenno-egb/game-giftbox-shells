@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
 import {
@@ -9,23 +10,136 @@ import {
   getSkinByChest,
   getChestShopImage,
   sortChestsByOrder,
+  getGameUrl,
 } from "@/@games/templates/giftbox/chest/chest.helpers";
+import { getUserBalance } from "@/@games/templates/giftbox/chest/chest.rules";
+import { useStorePurchase } from "@/@sdk/smartico/hooks/useStorePurchase";
+import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
+import { createSmarticoTransport } from "@/@sdk/smartico";
 
 import { ChestCardCompact, ChestCardWide } from "./ChestCards";
-import ChestPreviewModal from "./ChestPreviewModal";
+import PurchaseConfirmModal from "./PurchaseConfirmModal";
+import PurchaseSuccessModal from "./PurchaseSucessModal";
 
 type Props = {
   chests: ChestItem[];
   games: MiniGameTemplate[];
+  userProfile: any;
+  onPurchaseSuccess?: () => void;
+  onBalanceUpdate?: (newBalance: number) => void;
 };
 
-export default function ChestShop({ chests, games }: Props) {
+export default function ChestShop({
+  chests,
+  games,
+  userProfile,
+  onPurchaseSuccess,
+  onBalanceUpdate,
+}: Props) {
+  const searchParams = useSearchParams();
+  const { smartico } = useSmartico();
+
+  const uid = searchParams.get("uid") || "test-user";
+  const lang = searchParams.get("lang") || "pt";
+
+  // Estados - SEM modal de preview
   const [selectedChest, setSelectedChest] = useState<ChestItem | null>(null);
+  const [purchasedChest, setPurchasedChest] = useState<ChestItem | null>(null);
+  const [modalMode, setModalMode] = useState<"confirm" | "success" | null>(null);
+
+  // Transport e hook de compra
+  const transport = useMemo(
+    () => (smartico ? createSmarticoTransport(smartico, false) : null),
+    [smartico]
+  );
+
+  const { 
+    purchase, 
+    state: purchaseState, 
+    purchaseError,
+    reset: resetPurchase 
+  } = useStorePurchase({
+    transport: transport!,
+    onSuccess: (result) => {
+      console.log("✅ Compra realizada com sucesso!", result);
+      
+      setModalMode(null);
+      
+      setTimeout(() => {
+        setPurchasedChest(selectedChest);
+        setModalMode("success");
+      }, 300);
+
+      onPurchaseSuccess?.();
+    },
+    onError: (error) => {
+      console.error("❌ Erro na compra:", error);
+    },
+    onBalanceUpdate: (newBalance) => {
+      console.log("💰 Saldo atualizado:", newBalance);
+      onBalanceUpdate?.(newBalance);
+    },
+  });
 
   const sortedChests = useMemo(() => sortChestsByOrder(chests), [chests]);
 
-  const handleBuyClick = (chest: ChestItem) => {
-    window.location.href = "https://www.lottu.bet.br/gamification/store";
+  // ⭐ CORRIGIDO: Permite ver modal mesmo bloqueado
+  const handleCardClick = (chest: ChestItem, status: string) => {
+    const game = findGameByTemplateId(games, chest.templateId);
+    const spins = getGameSpins(game);
+    const isReady = chest.hasAttempts && spins > 0;
+
+    if (isReady) {
+      // Tem tentativas → vai pro jogo
+      const skin = getSkinByChest(chest);
+      if (skin) {
+        window.location.href = getGameUrl(skin.id, uid, lang);
+      }
+    } else {
+      // ✅ ABRE MODAL mesmo se locked (usuário pode ver, só não pode comprar)
+      setSelectedChest(chest);
+      setModalMode("confirm");
+    }
+  };
+
+  // ⭐ CORRIGIDO: Permite ver modal mesmo bloqueado
+  const handleBuyClick = (chest: ChestItem, status: string, e?: any) => {
+    e?.stopPropagation?.();
+    
+    // ✅ ABRE MODAL mesmo se locked
+    setSelectedChest(chest);
+    setModalMode("confirm");
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedChest || !transport) return;
+    await purchase(selectedChest.id);
+  };
+
+  const handleCloseModal = () => {
+    setModalMode(null);
+    setSelectedChest(null);
+    setPurchasedChest(null);
+    resetPurchase();
+  };
+
+  // ⭐ NOVO: Fecha toast permanentemente
+  const handleCloseToast = () => {
+    resetPurchase(); // Limpa erro do estado
+  };
+
+  const handleRetry = () => {
+    resetPurchase();
+    handleConfirmPurchase();
+  };
+
+  const handlePlayNow = () => {
+    if (!purchasedChest) return;
+    
+    const skin = getSkinByChest(purchasedChest);
+    if (skin) {
+      window.location.href = getGameUrl(skin.id, uid, lang);
+    }
   };
 
   return (
@@ -33,7 +147,7 @@ export default function ChestShop({ chests, games }: Props) {
       {/* Título */}
       <div className="relative text-center mb-8">
         <div className="inline-block relative">
-          <img src="/games/giftbox/assets/shop-title.png" />
+          <img src="/games/giftbox/assets/shop-title.png" alt="Loja" />
         </div>
       </div>
 
@@ -69,33 +183,39 @@ export default function ChestShop({ chests, games }: Props) {
               spinsAvailable={spins}
               status={status}
               chest={chest}
-              onClick={() => setSelectedChest(chest)}
-              onActionClick={(e: any) => {
-                e.stopPropagation();
-                if (isReady) {
-                  setSelectedChest(chest);
-                } else {
-                  handleBuyClick(chest);
-                }
-              }}
+              onClick={() => handleCardClick(chest, status)}
+              onActionClick={(e: any) => handleBuyClick(chest, status, e)}
             />
           );
         })}
       </div>
 
-      {/* Modal */}
-      {selectedChest && (
-        <ChestPreviewModal
+      {/* Modal de Confirmação */}
+      {modalMode === "confirm" && selectedChest && userProfile && (
+        <PurchaseConfirmModal
           chest={selectedChest}
-          onClose={() => setSelectedChest(null)}
-          onBuy={() => {
-            handleBuyClick(selectedChest);
-            setSelectedChest(null);
-          }}
+          userBalance={getUserBalance(userProfile, selectedChest.purchase_type)}
+          onClose={handleCloseModal}
+          onConfirm={handleConfirmPurchase}
+          isLoading={purchaseState.isLoading}
+          error={purchaseError}
+          onRetry={handleRetry}
+          onCloseToast={handleCloseToast} // ⭐ NOVO: Fecha toast permanentemente
         />
       )}
 
-      {/* Empty */}
+      {/* Modal de Sucesso */}
+      {modalMode === "success" && purchasedChest && (
+        <PurchaseSuccessModal
+          chest={purchasedChest}
+          onClose={handleCloseModal}
+          onPlayNow={handlePlayNow}
+          uid={uid}
+          lang={lang}
+        />
+      )}
+
+      {/* Empty State */}
       {sortedChests.length === 0 && (
         <div className="text-center py-12 opacity-60">
           <h3 className="text-xl font-black text-white uppercase">
@@ -104,22 +224,6 @@ export default function ChestShop({ chests, games }: Props) {
           <p className="text-gray-400">Volte mais tarde!</p>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }

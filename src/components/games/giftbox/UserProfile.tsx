@@ -70,7 +70,7 @@ export default function UserProfileGameUI({ profile, level }: Props) {
                   {profile.avatar_url ? (
                     <Image src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover scale-140" width={100} height={100} />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-b from-blue-600 to-blue-800">
+                    <div className="w-full h-full flex items-center justify-center bg-linear-to-b from-blue-600 to-blue-800">
                       <span className="text-2xl font-black text-white drop-shadow-md">
                         {profile.public_username?.[0]?.toUpperCase()}
                       </span>

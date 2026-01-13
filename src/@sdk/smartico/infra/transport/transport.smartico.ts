@@ -6,6 +6,7 @@ import type {
   HistoryParams,
   UserLevel,
 } from "../../domain/domain.type";
+import type { PurchaseResult } from "../../domain/purchase.types";
 import { createLogger } from "../../logger";
 
 export class SmarticoTransport implements Transport {
@@ -67,9 +68,11 @@ export class SmarticoTransport implements Transport {
     }
   }
 
-  async getStoreItems(): Promise<any[]> {
-    this.logger.debug("getStoreItems");
-    return await this.smartico.api.getStoreItems();
+  async getStoreItems(opts?: {
+    onUpdate?: (items: any[]) => void;
+  }): Promise<any[]> {
+    this.logger.debug("getStoreItems", opts ? "with onUpdate" : "");
+    return await this.smartico.api.getStoreItems(opts ?? undefined);
   }
 
   async getUserProfile(): Promise<any> {
@@ -84,6 +87,31 @@ export class SmarticoTransport implements Transport {
     } catch (err) {
       this.logger.error("getCurrentLevel failed", err);
       return null;
+    }
+  }
+
+  /**
+   * ⭐ CRÍTICO: NÃO LANÇA EXCEÇÃO - Retorna resultado da API
+   * O hook vai usar handlePurchaseError(result) para processar err_code
+   */
+  async purchaseStoreItem(itemId: number): Promise<PurchaseResult> {
+    this.logger.debug("purchaseStoreItem", itemId);
+
+    try {
+      const res = await this.smartico.api.buyStoreItem(itemId);
+      
+      // ⭐⭐⭐ RETORNA DIRETO - SEM THROW ⭐⭐⭐
+      this.logger.debug("purchaseStoreItem result", res);
+      return res;
+      
+    } catch (err: any) {
+      // ⭐ Só cai aqui em erro de REDE (não erro da API)
+      this.logger.error("purchaseStoreItem network error", err);
+      
+      return {
+        err_code: -1,
+        err_msg: err?.message || "Erro de rede ao processar compra",
+      };
     }
   }
 }

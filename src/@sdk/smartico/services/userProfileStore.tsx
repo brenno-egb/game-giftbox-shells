@@ -6,7 +6,7 @@ type Listener = (profile: UserProfile | null) => void;
 
 /**
  * Store para perfil do usuário
- * Smartico faz cache de 30s - sempre chama API
+ * Sempre chama API (sem cache ruim)
  * Mantém lastResult apenas para getSnapshot (acesso síncrono)
  */
 export class UserProfileStore {
@@ -32,7 +32,7 @@ export class UserProfileStore {
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
-    
+
     if (this.lastResult !== null) {
       try {
         listener(this.lastResult);
@@ -40,7 +40,7 @@ export class UserProfileStore {
         this.logger.error("listener error on subscribe", err);
       }
     }
-    
+
     return () => {
       this.listeners.delete(listener);
     };
@@ -52,7 +52,7 @@ export class UserProfileStore {
 
   async fetch(): Promise<UserProfile | null> {
     this.logger.debug("fetching user profile");
-    
+
     try {
       const profile = await this.transport.getUserProfile();
       this.lastResult = profile;

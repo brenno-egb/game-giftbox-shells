@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 
-// Ajuste os imports conforme seu caminho real
 import { giftboxSkins } from "@/@games/templates/giftbox/skins";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
 import {
@@ -11,9 +10,6 @@ import {
   getGameSpins,
 } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { EmptyState } from "./shared/StateComponents";
-
-// ... (MANTENHA OS COMPONENTES JuicyButton E ChestCard IGUAIS AO SEU CÓDIGO) ...
-// Vou ocultar aqui para focar na correção, mas você deve manter o código deles.
 
 interface JuicyButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -72,10 +68,10 @@ const ChestCard = ({
   const isActive = dist === 0;
 
   const rotateY = visualOffset * -25;
-  const translateX = visualOffset * 220; // Espaçamento entre cards
-  const scale = 1 - dist * 0.25; // Diminui 25% a cada passo
-  const opacity = dist > 1 ? 0 : 1 - dist * 0.4; // Vizinhos ficam semi-transparentes, distantes somem
-  const zIndex = 100 - dist; // Quem está perto tem z-index maior (CRUCIAL)
+  const translateX = visualOffset * 220;
+  const scale = 1 - dist * 0.25;
+  const opacity = dist > 1 ? 0 : 1 - dist * 0.4;
+  const zIndex = 100 - dist;
 
   // Filtros visuais
   const filter = isActive
@@ -155,6 +151,7 @@ const ChestCard = ({
     </div>
   );
 };
+
 // --- COMPONENTE PRINCIPAL ---
 
 type Props = {
@@ -166,7 +163,6 @@ type Props = {
 export default function ChestCarousel({ games, uid, lang }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Filtra e prepara os dados
   const chests = useMemo(() => {
     return Object.entries(giftboxSkins)
       .map(([skinId, skinData]) => {
@@ -186,7 +182,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
   const navigate = (direction: number) => {
     setActiveIndex((prev) => {
       const next = prev + direction;
-      // Loop infinito real
+
       if (next < 0) return chests.length - 1;
       if (next >= chests.length) return 0;
       return next;

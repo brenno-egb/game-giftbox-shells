@@ -6,7 +6,7 @@ type Listener = (items: StoreItem[]) => void;
 
 /**
  * Store para itens da loja
- * Smartico faz cache de 30s - sempre chama API
+ * Smartico faz cache de 30s - usa onUpdate callback
  * Mantém lastResult apenas para getSnapshot (acesso síncrono)
  */
 export class StoreItemsStore {
@@ -14,10 +14,35 @@ export class StoreItemsStore {
   private logger: ReturnType<typeof createLogger>;
   private listeners = new Set<Listener>();
   private lastResult: StoreItem[] = [];
+  private isSubscribed = false;
 
   constructor(transport: Transport, debug = false) {
     this.transport = transport;
     this.logger = createLogger("smartico:storeItemsStore", debug);
+  }
+
+  private ensureSubscribed() {
+    if (this.isSubscribed) return;
+
+    this.logger.debug("registering onUpdate");
+    this.isSubscribed = true;
+
+    // Registra onUpdate da Smartico UMA VEZ
+    this.transport
+      .getStoreItems({
+        onUpdate: (items) => {
+          this.logger.debug("onUpdate received", items.length, "items");
+          this.lastResult = items;
+          this.notifyListeners(items);
+        },
+      })
+      .then((items) => {
+        this.lastResult = items;
+        this.notifyListeners(items);
+      })
+      .catch((err) => {
+        this.logger.error("initial getStoreItems failed", err);
+      });
   }
 
   private notifyListeners(items: StoreItem[]) {
@@ -31,8 +56,9 @@ export class StoreItemsStore {
   }
 
   subscribe(listener: Listener): () => void {
+    this.ensureSubscribed();
     this.listeners.add(listener);
-    
+
     if (this.lastResult.length > 0) {
       try {
         listener(this.lastResult);
@@ -40,7 +66,7 @@ export class StoreItemsStore {
         this.logger.error("listener error on subscribe", err);
       }
     }
-    
+
     return () => {
       this.listeners.delete(listener);
     };
@@ -51,8 +77,8 @@ export class StoreItemsStore {
   }
 
   async fetch(): Promise<StoreItem[]> {
-    this.logger.debug("fetching store items");
-    
+    this.logger.debug("manual fetch");
+
     try {
       const items = await this.transport.getStoreItems();
       this.lastResult = items;

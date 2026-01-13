@@ -18,7 +18,6 @@ type Props = {
 export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
   const [isVisible, setIsVisible] = useState(false);
   const skin = getSkinByChest(chest);
-  console.log(skin);
   const theme = resolveChestTheme("buyable", skin?.theme);
 
   const canAfford = chest.canAfford ?? true;

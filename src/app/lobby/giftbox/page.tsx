@@ -10,7 +10,6 @@ import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
 import ChestShop from "@/components/games/giftbox/ChestShop";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
 import {
-  validateGameParams,
   validateGameParamsFromURL,
 } from "@/@games/core/utils/validation";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
@@ -36,7 +35,7 @@ export default function HallPage() {
   const { uid, lang } = validation.params;
 
   if (smarticoError) {
-    return <ErrorState title="Erro de Conexão" message={smarticoError} />;
+    return <ErrorState title="Erro de Conexão" message={smarticoError} />; 
   }
 
   if (!isReady) {
@@ -67,7 +66,6 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
         rubik.className,
       ].join(" ")}
     >
-
       {/* Conteúdo Principal */}
       <div className="relative p-4 pb-6">
         {/* Header do Jogador */}
@@ -87,15 +85,36 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
           </h1>
         </div>
 
+        {/* Carousel de Baús Disponíveis */}
         <section className="relative z-10">
           <ChestCarousel games={hall.games} uid={uid} lang={lang} />
         </section>
 
+        {/* Loja de Baús */}
         <section className="relative z-30 mt-12">
-          <ChestShop chests={hall.chests} games={hall.games} />
+          <ChestShop
+            chests={hall.chests}
+            games={hall.games}
+            userProfile={hall.profile}
+            onPurchaseSuccess={() => {
+              // ⭐ Atualiza todos os dados após compra bem-sucedida
+              console.log("🔄 Atualizando dados após compra...");
+              
+              // Aguarda um pouco para a API processar
+              setTimeout(() => {
+                hall.refresh();
+              }, 500);
+            }}
+            onBalanceUpdate={(newBalance) => {
+              // ⭐ NOVO: Atualização otimista de saldo
+              console.log("💰 Novo saldo recebido:", newBalance);
+              
+              // Força refresh para garantir sincronização
+              hall.refresh();
+            }}
+          />
         </section>
       </div>
-
     </div>
   );
 }

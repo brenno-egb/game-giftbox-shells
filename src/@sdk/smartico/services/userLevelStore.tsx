@@ -32,7 +32,7 @@ export class UserLevelStore {
 
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
-    
+
     if (this.lastResult !== null) {
       try {
         listener(this.lastResult);
@@ -40,7 +40,7 @@ export class UserLevelStore {
         this.logger.error("listener error on subscribe", err);
       }
     }
-    
+
     return () => {
       this.listeners.delete(listener);
     };
@@ -51,8 +51,8 @@ export class UserLevelStore {
   }
 
   async fetch(): Promise<UserLevel | null> {
-    this.logger.debug("fetching current level");
-    
+    this.logger.debug("fetching user level");
+
     try {
       const level = await this.transport.getCurrentLevel();
       this.lastResult = level;

@@ -5,6 +5,7 @@ import type {
   HistoryParams,
   UserLevel,
 } from "../../domain/domain.type";
+import type { PurchaseResult } from "../../domain/purchase.types";
 
 /**
  * Interface abstrata para comunicação com Smartico
@@ -46,7 +47,9 @@ export interface Transport {
   /**
    * Busca itens da loja (baús, etc)
    */
-  getStoreItems(): Promise<any[]>;
+  getStoreItems(opts?: {
+    onUpdate?: (items: any[]) => void;
+  }): Promise<any[]>;
 
   /**
    * Busca perfil completo do usuário
@@ -57,4 +60,9 @@ export interface Transport {
    * Busca nível atual do usuário
    */
   getCurrentLevel(): Promise<UserLevel | null>;
+
+  /**
+   * Compra um item da loja
+   */
+  purchaseStoreItem(itemId: number): Promise<PurchaseResult>;
 }
