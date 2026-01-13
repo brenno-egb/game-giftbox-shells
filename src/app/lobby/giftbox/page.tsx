@@ -69,7 +69,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
     >
 
       {/* Conteúdo Principal */}
-      <div className="relative p-4 pb-32">
+      <div className="relative p-4 pb-6">
         {/* Header do Jogador */}
         <section className="relative z-20 mb-2">
           <UserProfileHeader profile={hall.profile} level={hall.level} />

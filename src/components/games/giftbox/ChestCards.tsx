@@ -13,7 +13,7 @@ export type ChestCardProps = {
   imageBackground?: string;
   backgroundColor: string;
   priceLabel: string | number;
-  currencyType?: string;
+  currencyType?: "diamonds" | "gems" | "points";
   spinsAvailable: number;
   index: number;
   onClick: () => void;

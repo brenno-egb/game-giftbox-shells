@@ -2,18 +2,7 @@
 
 import type { UserLevel, UserProfile } from "@/@sdk/smartico";
 import Image from "next/image";
-
-const GameIcons = {
-  Coin: () => (
-    <img src="/games/giftbox/assets/currency/coin.png" className="w-full h-full object-contain" />
-  ),
-  Diamond: () => (
-    <img src="/games/giftbox/assets/currency/key_gold.png" className="w-full h-full object-contain scale-190" />
-  ),
-  Gem: () => (
-    <img src="/games/giftbox/assets/currency/key_emerald.png" className="w-full h-full object-contain scale-200" />
-  ),
-};
+import { GameIcons } from "./ChestComponents";
 
 type Props = {
   profile: UserProfile | null;
@@ -31,7 +20,7 @@ const ResourceSlot = ({
 }) => (
   <div className="relative group shrink-0">
     {/* Fundo Sombra Sutil */}
-    <div className="absolute inset-0 bg-black/40 rounded-md translate-y-[3px]" />
+    <div className="absolute inset-0 bg-black/40 rounded-md translate-y-0.75" />
     
     {/* Container - Padding reduzido e altura fixa para alinhamento perfeito */}
     <div className="relative flex items-center h-7 bg-slate-800 border-2 border-slate-600 rounded-sm px-2 gap-1.5 min-w-15 shadow-inner hover:bg-slate-750 transition-colors">
@@ -88,7 +77,7 @@ export default function UserProfileGameUI({ profile, level }: Props) {
                     </div>
                   )}
                   {/* Brilho */}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/10 via-transparent to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-linear-to-tr from-white/10 via-transparent to-transparent pointer-events-none" />
                 </div>
 
                 {/* Badge de Nível (Mais discreto) */}
@@ -105,7 +94,7 @@ export default function UserProfileGameUI({ profile, level }: Props) {
               
               {/* Cabeçalho: Nome e Nome do Nível */}
               <div className="flex flex-col">
-                <h2 className="text-xl sm:text-2xl font-bold text-white truncate leading-tight drop-shadow-md">
+                <h2 className="text-xl font-bold max-w-50 text-white truncate leading-tight drop-shadow-md">
                   {profile.public_username || "Jogador"}
                 </h2>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">

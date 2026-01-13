@@ -10,6 +10,7 @@ import {
   getGameUrl,
   getGameSpins,
 } from "@/@games/templates/giftbox/chest/chest.helpers";
+import { EmptyState } from "./shared/StateComponents";
 
 // ... (MANTENHA OS COMPONENTES JuicyButton E ChestCard IGUAIS AO SEU CÓDIGO) ...
 // Vou ocultar aqui para focar na correção, mas você deve manter o código deles.
@@ -192,7 +193,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
     });
   };
 
-  if (!chests.length) return <EmptyStateToon />;
+  if (!chests.length) return <EmptyState />;
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
@@ -325,17 +326,3 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
   );
 }
 
-// ... EmptyStateToon ...
-function EmptyStateToon() {
-  // ... (Mantenha seu empty state)
-  return (
-    <div className="w-full max-w-lg mx-auto bg-[#1a233a] rounded-3xl border-4 border-[#2d3548] p-8 text-center shadow-xl relative overflow-hidden my-8">
-      {/* ... */}
-      <div className="relative z-10 flex flex-col items-center">
-        <h2 className="text-2xl font-black text-white uppercase mb-2">
-          Inventário Vazio
-        </h2>
-      </div>
-    </div>
-  );
-}

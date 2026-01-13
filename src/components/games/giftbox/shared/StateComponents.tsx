@@ -2,7 +2,7 @@
 
 /**
  * 🎯 COMPONENTES DE ESTADOS DE ERRO E WARNING
- * 
+ *
  * Componentes reutilizáveis para mostrar erros e warnings de forma consistente
  * Podem ser usados em qualquer lugar da aplicação
  */
@@ -205,47 +205,14 @@ interface EmptyStateProps {
  * Empty State (Nenhum conteúdo)
  * Visual: Card cinza com ícone
  */
-export const EmptyState = ({
-  title = "Nenhum Conteúdo",
-  message,
-  icon,
-  action,
-}: EmptyStateProps) => {
+export const EmptyState = () => {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-black p-8">
-      <div className="max-w-lg w-full bg-slate-800/30 border-2 border-slate-600 rounded-xl p-8 text-center shadow-2xl">
-        <div className="mb-4">
-          {icon || (
-            <svg
-              className="w-16 h-16 text-slate-400 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-              />
-            </svg>
-          )}
-        </div>
-
-        <h2 className="text-2xl font-black text-slate-400 uppercase mb-2">
-          {title}
+    <div className="bg-[#1a233a] rounded-3xl border-4 border-[#2d3548] p-8 text-center shadow-xl relative overflow-hidden my-8">
+      {/* ... */}
+      <div className="relative z-10 flex flex-col items-center">
+        <h2 className="text-2xl font-black text-white uppercase mb-2">
+          Inventário Vazio
         </h2>
-
-        <p className="text-slate-400/80 mb-6">{message}</p>
-
-        {action && (
-          <button
-            onClick={action.onClick}
-            className="px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white font-bold rounded-lg transition-colors active:scale-95"
-          >
-            {action.label}
-          </button>
-        )}
       </div>
     </div>
   );
@@ -253,13 +220,13 @@ export const EmptyState = ({
 
 /**
  * EXEMPLO DE USO:
- * 
+ *
  * // Erro
  * <ErrorState
  *   message="Falha ao conectar com servidor"
  *   onRetry={() => window.location.reload()}
  * />
- * 
+ *
  * // Warning
  * <WarningState
  *   title="Template Não Suportado"
@@ -267,7 +234,7 @@ export const EmptyState = ({
  *   details="template: giftbox-v2"
  *   onBack={() => router.back()}
  * />
- * 
+ *
  * // Info
  * <InfoState
  *   title="Manutenção Programada"
@@ -277,7 +244,7 @@ export const EmptyState = ({
  *     onClick: () => router.push("/")
  *   }}
  * />
- * 
+ *
  * // Empty
  * <EmptyState
  *   title="Nenhum Jogo Disponível"

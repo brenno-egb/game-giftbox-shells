@@ -1,28 +1,36 @@
-"use client";
+const CURRENCY_CONFIG = {
+  points: {
+    src: "/games/giftbox/assets/currency/coin.png",
+    scale: "",
+  },
+  diamonds: {
+    src: "/games/giftbox/assets/currency/key_gold.png",
+    scale: "scale-190",
+  },
+  gems: {
+    src: "/games/giftbox/assets/currency/key_emerald.png",
+    scale: "scale-200",
+  },
+} as const;
 
-export const CurrencyIcon = ({ type }: { type?: string }) => {
-  if (type === "gems") {
-    return (
-      <img
-        src="/games/giftbox/assets/currency/key_emerald.png"
-        className="w-full h-full object-contain scale-200"
-      />
-    );
-  }
-  if (type === "diamonds") {
-    return (
-      <img
-        src="/games/giftbox/assets/currency/key_gold.png"
-        className="w-full h-full object-contain scale-160"
-      />
-    );
-  }
-  if (type === "coins") {
-    return (
-      <img
-        src="/games/giftbox/assets/currency/coin.png"
-        className="w-full h-full object-contain"
-      />
-    );
-  }
+export type CurrencyType = keyof typeof CURRENCY_CONFIG;
+
+export const CurrencyIcon = ({ type }: { type?: CurrencyType }) => {
+  if (!type || !CURRENCY_CONFIG[type]) return null;
+  
+  const { src, scale } = CURRENCY_CONFIG[type];
+  
+  return (
+    <img
+      src={src}
+      className={`w-full h-full object-contain ${scale}`}
+      alt={type}
+    />
+  );
+};
+
+export const GameIcons = {
+  Coin: () => <CurrencyIcon type="points" />,
+  Diamond: () => <CurrencyIcon type="diamonds" />,
+  Gem: () => <CurrencyIcon type="gems" />,
 };
