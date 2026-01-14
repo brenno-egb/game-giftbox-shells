@@ -33,14 +33,9 @@ type State = {
   error: string | null;
 };
 
-/**
- * Hook para o Hall dos Baús
- * ⭐ Usa callback props_change da Smartico para atualizações em tempo real
- */
 export function useChestHall() {
   const { smartico } = useSmartico();
 
-  // Cria transport e stores localmente
   const transport = useMemo(
     () => (smartico ? createSmarticoTransport(smartico, false) : null),
     [smartico]
@@ -144,7 +139,6 @@ export function useChestHall() {
     computeState,
   ]);
 
-  // ⭐ Escuta props_change da Smartico para atualizar em tempo real
   usePropsChange(
     useCallback(() => {
       refresh();

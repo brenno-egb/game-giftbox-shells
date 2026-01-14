@@ -9,12 +9,10 @@ type UsePurchaseOptions = {
   transport: Transport;
   onSuccess?: (result: PurchaseResult) => void;
   onError?: (error: PurchaseError) => void;
-  // ⭐ Removido onBalanceUpdate - props_change cuida disso
 };
 
 /**
  * Hook para gerenciar compras de itens da loja
- * ⭐ Simplificado: props_change da Smartico atualiza saldo automaticamente
  */
 export function useStorePurchase({
   transport,

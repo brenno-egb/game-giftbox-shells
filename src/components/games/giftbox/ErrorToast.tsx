@@ -10,7 +10,6 @@ type Props = {
 
 /**
  * Toast flutuante para erros
- * Não afeta o height do modal - fica em position fixed
  */
 export function ErrorToast({ error, onClose }: Props) {
   const [isVisible, setIsVisible] = useState(false);
@@ -24,10 +23,8 @@ export function ErrorToast({ error, onClose }: Props) {
     }
   }, [error]);
 
-  // ⭐ CORRIGIDO: Fecha permanentemente
   const handleClose = () => {
     setIsVisible(false);
-    // Aguarda animação terminar antes de limpar erro
     setTimeout(() => {
       onClose?.();
     }, 300);

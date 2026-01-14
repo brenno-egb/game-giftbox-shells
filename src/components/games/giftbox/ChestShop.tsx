@@ -27,10 +27,6 @@ type Props = {
   userProfile: any;
 };
 
-/**
- * Loja de Baús
- * ⭐ Simplificado: props_change da Smartico cuida das atualizações automaticamente
- */
 export default function ChestShop({
   chests,
   games,
@@ -67,7 +63,6 @@ export default function ChestShop({
         setModalMode("success");
       }, 300);
       
-      // ⭐ Não precisa de callback manual - props_change cuida disso
     },
     onError: (error) => {
       console.error("❌ Erro na compra:", error);
@@ -149,7 +144,6 @@ export default function ChestShop({
           const isReady = chest.hasAttempts && spins > 0;
           const canAfford = chest.canAfford;
           const canBuy = chest.can_buy;
-          console.log(chest)
 
           let status: "ready" | "buyable" | "insufficient" | "locked" = "locked";
           if (isReady) status = "ready";

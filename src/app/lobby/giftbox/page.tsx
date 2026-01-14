@@ -43,10 +43,6 @@ export default function HallPage() {
   return <HallContent uid={uid} lang={lang} />;
 }
 
-/**
- * Conteúdo do Hall
- * ⭐ Simplificado: useChestHall escuta props_change automaticamente
- */
 function HallContent({ uid, lang }: { uid: string; lang: string }) {
   const hall = useChestHall();
 

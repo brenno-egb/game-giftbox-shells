@@ -52,10 +52,6 @@ export function useSmarticoEvent<T = any>(
   }, [smartico, event]);
 }
 
-/**
- * Hook específico para props_change (mais comum)
- * Executa callback quando qualquer propriedade do usuário muda
- */
 export function usePropsChange(callback: (props: any) => void) {
   useSmarticoEvent("props_change", callback);
 }

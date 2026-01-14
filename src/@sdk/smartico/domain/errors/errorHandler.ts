@@ -11,17 +11,12 @@ export type PurchaseError = {
   requiresReload: boolean;
 };
 
-/**
- * Processa resultado da API e retorna erro formatado
- * ⭐ CORRIGIDO: Parseia err_code da resposta da API corretamente
- */
 export function handlePurchaseError(result: PurchaseResult): PurchaseError | null {
   // Sem erro
   if (!result.err_code || isSuccessCode(result.err_code)) {
     return null;
   }
 
-  // ⭐ AQUI: err_code vem na resposta da API
   const errorCode = result.err_code;
   const errorInfo = getErrorInfo(errorCode);
 

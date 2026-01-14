@@ -90,22 +90,16 @@ export class SmarticoTransport implements Transport {
     }
   }
 
-  /**
-   * ⭐ CRÍTICO: NÃO LANÇA EXCEÇÃO - Retorna resultado da API
-   * O hook vai usar handlePurchaseError(result) para processar err_code
-   */
   async purchaseStoreItem(itemId: number): Promise<PurchaseResult> {
     this.logger.debug("purchaseStoreItem", itemId);
 
     try {
       const res = await this.smartico.api.buyStoreItem(itemId);
       
-      // ⭐⭐⭐ RETORNA DIRETO - SEM THROW ⭐⭐⭐
       this.logger.debug("purchaseStoreItem result", res);
       return res;
       
     } catch (err: any) {
-      // ⭐ Só cai aqui em erro de REDE (não erro da API)
       this.logger.error("purchaseStoreItem network error", err);
       
       return {

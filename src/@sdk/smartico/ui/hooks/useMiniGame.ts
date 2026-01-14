@@ -30,7 +30,6 @@ type State = {
 
 /**
  * Hook principal para mini-games
- * ⭐ Usa callback props_change da Smartico para atualizações em tempo real
  */
 export function useMiniGame({
   smartico,
@@ -169,7 +168,6 @@ export function useMiniGame({
     }
   }, [miniGamesStore, playerStore, templateId, computeState]);
 
-  // ⭐ Escuta props_change da Smartico para atualizar em tempo real
   useSmarticoEvent("props_change", useCallback(() => {
     refresh();
   }, [refresh]));
