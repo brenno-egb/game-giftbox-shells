@@ -9,18 +9,17 @@ type UsePurchaseOptions = {
   transport: Transport;
   onSuccess?: (result: PurchaseResult) => void;
   onError?: (error: PurchaseError) => void;
-  onBalanceUpdate?: (newBalance: number) => void;
+  // ⭐ Removido onBalanceUpdate - props_change cuida disso
 };
 
 /**
  * Hook para gerenciar compras de itens da loja
- * ⭐ CORRIGIDO: Trata err_code da API sem lançar exceção
+ * ⭐ Simplificado: props_change da Smartico atualiza saldo automaticamente
  */
 export function useStorePurchase({
   transport,
   onSuccess,
   onError,
-  onBalanceUpdate,
 }: UsePurchaseOptions) {
   const [state, setState] = useState<PurchaseState>({
     isLoading: false,
@@ -42,14 +41,11 @@ export function useStorePurchase({
       setPurchaseError(null);
 
       try {
-        // ⭐ API retorna resultado mesmo com erro
         const result = await transport.purchaseStoreItem(itemId);
 
-        // ⭐ Verifica erros através do handler
         const error = handlePurchaseError(result);
         
         if (error) {
-          // Registra erro
           logPurchaseError(error, { itemId });
           
           setState({
@@ -65,7 +61,7 @@ export function useStorePurchase({
           return result;
         }
 
-        // ✅ Sucesso!
+        // ✅ Sucesso - props_change vai atualizar o saldo automaticamente
         setState({
           isLoading: false,
           error: null,
@@ -73,15 +69,9 @@ export function useStorePurchase({
           result,
         });
 
-        // ⭐ Atualiza saldo se disponível
-        if (result.user_balance !== undefined) {
-          onBalanceUpdate?.(result.user_balance);
-        }
-
         onSuccess?.(result);
         return result;
       } catch (err: any) {
-        // ⭐ Erro de rede ou exceção
         const errorMsg = err?.message || "Erro ao processar compra";
         
         setState({
@@ -91,7 +81,6 @@ export function useStorePurchase({
           result: null,
         });
         
-        // Cria erro genérico
         const genericError: PurchaseError = {
           code: -1,
           message: err?.message || "Unknown error",
@@ -105,11 +94,10 @@ export function useStorePurchase({
         setPurchaseError(genericError);
         onError?.(genericError);
         
-        // ⭐ NÃO lança exceção, apenas retorna null
         return null;
       }
     },
-    [transport, onSuccess, onError, onBalanceUpdate]
+    [transport, onSuccess, onError]
   );
 
   const reset = useCallback(() => {

@@ -9,9 +9,7 @@ import UserProfileHeader from "@/components/games/giftbox/UserProfile";
 import ChestCarousel from "@/components/games/giftbox/ChestCarousel";
 import ChestShop from "@/components/games/giftbox/ChestShop";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
-import {
-  validateGameParamsFromURL,
-} from "@/@games/core/utils/validation";
+import { validateGameParamsFromURL } from "@/@games/core/utils/validation";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
 
 const rubik = Rubik({
@@ -35,7 +33,7 @@ export default function HallPage() {
   const { uid, lang } = validation.params;
 
   if (smarticoError) {
-    return <ErrorState title="Erro de Conexão" message={smarticoError} />; 
+    return <ErrorState title="Erro de Conexão" message={smarticoError} />;
   }
 
   if (!isReady) {
@@ -45,6 +43,10 @@ export default function HallPage() {
   return <HallContent uid={uid} lang={lang} />;
 }
 
+/**
+ * Conteúdo do Hall
+ * ⭐ Simplificado: useChestHall escuta props_change automaticamente
+ */
 function HallContent({ uid, lang }: { uid: string; lang: string }) {
   const hall = useChestHall();
 
@@ -66,14 +68,12 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
         rubik.className,
       ].join(" ")}
     >
-      {/* Conteúdo Principal */}
       <div className="relative p-4 pb-6">
-        {/* Header do Jogador */}
+        {/* Header - Atualiza automaticamente via props_change */}
         <section className="relative z-20 mb-2">
           <UserProfileHeader profile={hall.profile} level={hall.level} />
         </section>
 
-        {/* Título da Seção */}
         <div className="text-center relative z-10 mt-4">
           <h1
             className="text-4xl font-black uppercase tracking-tighter
@@ -85,33 +85,16 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
           </h1>
         </div>
 
-        {/* Carousel de Baús Disponíveis */}
         <section className="relative z-10">
           <ChestCarousel games={hall.games} uid={uid} lang={lang} />
         </section>
 
-        {/* Loja de Baús */}
+        {/* Loja - Sem callbacks manuais, props_change cuida de tudo */}
         <section className="relative z-30 mt-12">
           <ChestShop
             chests={hall.chests}
             games={hall.games}
             userProfile={hall.profile}
-            onPurchaseSuccess={() => {
-              // ⭐ Atualiza todos os dados após compra bem-sucedida
-              console.log("🔄 Atualizando dados após compra...");
-              
-              // Aguarda um pouco para a API processar
-              setTimeout(() => {
-                hall.refresh();
-              }, 500);
-            }}
-            onBalanceUpdate={(newBalance) => {
-              // ⭐ NOVO: Atualização otimista de saldo
-              console.log("💰 Novo saldo recebido:", newBalance);
-              
-              // Força refresh para garantir sincronização
-              hall.refresh();
-            }}
           />
         </section>
       </div>

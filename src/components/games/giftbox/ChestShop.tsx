@@ -25,16 +25,16 @@ type Props = {
   chests: ChestItem[];
   games: MiniGameTemplate[];
   userProfile: any;
-  onPurchaseSuccess?: () => void;
-  onBalanceUpdate?: (newBalance: number) => void;
 };
 
+/**
+ * Loja de Baús
+ * ⭐ Simplificado: props_change da Smartico cuida das atualizações automaticamente
+ */
 export default function ChestShop({
   chests,
   games,
   userProfile,
-  onPurchaseSuccess,
-  onBalanceUpdate,
 }: Props) {
   const searchParams = useSearchParams();
   const { smartico } = useSmartico();
@@ -42,12 +42,10 @@ export default function ChestShop({
   const uid = searchParams.get("uid") || "test-user";
   const lang = searchParams.get("lang") || "pt";
 
-  // Estados - SEM modal de preview
   const [selectedChest, setSelectedChest] = useState<ChestItem | null>(null);
   const [purchasedChest, setPurchasedChest] = useState<ChestItem | null>(null);
   const [modalMode, setModalMode] = useState<"confirm" | "success" | null>(null);
 
-  // Transport e hook de compra
   const transport = useMemo(
     () => (smartico ? createSmarticoTransport(smartico, false) : null),
     [smartico]
@@ -61,7 +59,6 @@ export default function ChestShop({
   } = useStorePurchase({
     transport: transport!,
     onSuccess: (result) => {
-      console.log("✅ Compra realizada com sucesso!", result);
       
       setModalMode(null);
       
@@ -69,44 +66,34 @@ export default function ChestShop({
         setPurchasedChest(selectedChest);
         setModalMode("success");
       }, 300);
-
-      onPurchaseSuccess?.();
+      
+      // ⭐ Não precisa de callback manual - props_change cuida disso
     },
     onError: (error) => {
       console.error("❌ Erro na compra:", error);
-    },
-    onBalanceUpdate: (newBalance) => {
-      console.log("💰 Saldo atualizado:", newBalance);
-      onBalanceUpdate?.(newBalance);
     },
   });
 
   const sortedChests = useMemo(() => sortChestsByOrder(chests), [chests]);
 
-  // ⭐ CORRIGIDO: Permite ver modal mesmo bloqueado
   const handleCardClick = (chest: ChestItem, status: string) => {
     const game = findGameByTemplateId(games, chest.templateId);
     const spins = getGameSpins(game);
     const isReady = chest.hasAttempts && spins > 0;
 
     if (isReady) {
-      // Tem tentativas → vai pro jogo
       const skin = getSkinByChest(chest);
       if (skin) {
         window.location.href = getGameUrl(skin.id, uid, lang);
       }
     } else {
-      // ✅ ABRE MODAL mesmo se locked (usuário pode ver, só não pode comprar)
       setSelectedChest(chest);
       setModalMode("confirm");
     }
   };
 
-  // ⭐ CORRIGIDO: Permite ver modal mesmo bloqueado
   const handleBuyClick = (chest: ChestItem, status: string, e?: any) => {
     e?.stopPropagation?.();
-    
-    // ✅ ABRE MODAL mesmo se locked
     setSelectedChest(chest);
     setModalMode("confirm");
   };
@@ -123,9 +110,8 @@ export default function ChestShop({
     resetPurchase();
   };
 
-  // ⭐ NOVO: Fecha toast permanentemente
   const handleCloseToast = () => {
-    resetPurchase(); // Limpa erro do estado
+    resetPurchase();
   };
 
   const handleRetry = () => {
@@ -144,14 +130,12 @@ export default function ChestShop({
 
   return (
     <div className="w-full">
-      {/* Título */}
       <div className="relative text-center mb-8">
         <div className="inline-block relative">
           <img src="/games/giftbox/assets/shop-title.png" alt="Loja" />
         </div>
       </div>
 
-      {/* Grid */}
       <div className="grid grid-cols-2 gap-y-7 gap-x-2">
         {sortedChests.map((chest, index) => {
           const isWide = index >= sortedChests.length - 2;
@@ -190,7 +174,6 @@ export default function ChestShop({
         })}
       </div>
 
-      {/* Modal de Confirmação */}
       {modalMode === "confirm" && selectedChest && userProfile && (
         <PurchaseConfirmModal
           chest={selectedChest}
@@ -200,11 +183,10 @@ export default function ChestShop({
           isLoading={purchaseState.isLoading}
           error={purchaseError}
           onRetry={handleRetry}
-          onCloseToast={handleCloseToast} // ⭐ NOVO: Fecha toast permanentemente
+          onCloseToast={handleCloseToast}
         />
       )}
 
-      {/* Modal de Sucesso */}
       {modalMode === "success" && purchasedChest && (
         <PurchaseSuccessModal
           chest={purchasedChest}
@@ -215,7 +197,6 @@ export default function ChestShop({
         />
       )}
 
-      {/* Empty State */}
       {sortedChests.length === 0 && (
         <div className="text-center py-12 opacity-60">
           <h3 className="text-xl font-black text-white uppercase">

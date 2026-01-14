@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
+import { usePropsChange } from "@/@sdk/smartico/hooks/useSmarticoEvent";
 import { createSmarticoTransport } from "@/@sdk/smartico";
 import { createStoreItemsStore } from "@/@sdk/smartico/services/storeItemsStore";
 import { createUserProfileStore } from "@/@sdk/smartico/services/userProfileStore";
@@ -34,7 +35,7 @@ type State = {
 
 /**
  * Hook para o Hall dos Baús
- * Boot completo garante que setup interno já completou
+ * ⭐ Usa callback props_change da Smartico para atualizações em tempo real
  */
 export function useChestHall() {
   const { smartico } = useSmartico();
@@ -114,7 +115,6 @@ export function useChestHall() {
     try {
       setState((p) => ({ ...p, isLoading: true, error: null }));
 
-      // Chama em paralelo - boot já garantiu que setup completou
       const [items, profile, level, games] = await Promise.all([
         storeItemsStore.fetch(),
         userProfileStore.fetch(),
@@ -143,6 +143,13 @@ export function useChestHall() {
     miniGamesStore,
     computeState,
   ]);
+
+  // ⭐ Escuta props_change da Smartico para atualizar em tempo real
+  usePropsChange(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   // Load inicial
   useEffect(() => {
