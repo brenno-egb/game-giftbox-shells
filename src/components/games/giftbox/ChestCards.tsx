@@ -144,11 +144,11 @@ export const ChestCardCompact = ({
               </div>
             ) : (
               <div className="relative flex items-center gap-1.5 px-3 py-1 rounded-md border shadow-sm transition-colors bg-black/40 border-white/10">
-                <div className="absolute -left-4 -top-1 w-10 h-10">
+                <div className="absolute -left-3 -top-0.5  w-7.5 h-7.5">
                   <CurrencyIcon type={currencyType} />
                 </div>
                 <span className="font-semibold text-md shadow-black drop-shadow-sm pl-3 text-white">
-                  {priceLabel}
+                  {priceLabel} chave{((Number(priceLabel)) > 1) ? "s" : ""}
                 </span>
               </div>
             )}
@@ -294,11 +294,11 @@ export const ChestCardWide = ({
               </div>
             ) : (
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-md border shadow-sm transition-colors bg-black/85 border-white/10">
-                <div className="absolute -left-4 -top-1 w-10 h-10">
+                <div className="absolute -left-3 w-7.5 h-7.5">
                   <CurrencyIcon type={currencyType} />
                 </div>
                 <span className="font-semibold text-md shadow-black drop-shadow-sm pl-3 text-white">
-                  {priceLabel}
+                  {priceLabel} chave{((Number(priceLabel)) > 1) ? "s" : ""}
                 </span>
               </div>
             )}

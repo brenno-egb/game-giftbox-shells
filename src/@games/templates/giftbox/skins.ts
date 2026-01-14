@@ -9,7 +9,7 @@ export const giftboxSkins = {
     templateId: 7282,
     storeId: 6127,
     background: "bg-gold.webp",
-    backgroundStore: "bg-store-gold.png",
+    backgroundStore: "bg-store-gold.webp",
     backgroundColor: "#07080c",
     theme: {
       panelBorder: "#FFAE00",
@@ -24,7 +24,7 @@ export const giftboxSkins = {
     templateId: 7257,
     storeId: 6136,
     background: "bg-bronze.webp",
-    backgroundStore: "bg-store-bronze.png",
+    backgroundStore: "bg-store-bronze.webp",
     backgroundColor: "#703F29",
     theme: {
       panelBorder: "#703F29",
@@ -39,7 +39,7 @@ export const giftboxSkins = {
     templateId: 7279,
     storeId: 6126,
     background: "bg-silver.webp",
-    backgroundStore: "bg-store-silver.png",
+    backgroundStore: "bg-store-silver.webp",
     backgroundColor: "#07080c",
     theme: {
       panelBorder: "#D9D9D9",
@@ -54,7 +54,7 @@ export const giftboxSkins = {
     templateId: 7284,
     storeId: 6129,
     background: "bg-diamond.webp",
-    backgroundStore: "bg-store-diamond.png",
+    backgroundStore: "bg-store-diamond.webp",
     backgroundColor: "#05070b",
     theme: {
       accent: "#5A55FF",
@@ -74,7 +74,7 @@ export const giftboxSkins = {
     templateId: 7285,
     storeId: 6130,
     background: "bg-black-diamond.webp",
-    backgroundStore: "bg-store-black-diamond.png",
+    backgroundStore: "bg-store-black-diamond.webp",
     backgroundColor: "#030409",
     theme: {
       accent: "black",
@@ -94,7 +94,7 @@ export const giftboxSkins = {
     templateId: 7283,
     storeId: 6128,
     background: "bg-emerald.webp",
-    backgroundStore: "bg-store-emerald.png",
+    backgroundStore: "bg-store-emerald.webp",
     backgroundColor: "#04080a",
     theme: {
       panelBorder: "#00FF15",

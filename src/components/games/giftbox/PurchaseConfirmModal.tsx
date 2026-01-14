@@ -213,7 +213,7 @@ export default function PurchaseConfirmModal({
                     onClick={onClose}
                     disabled={isLoading}
                     className={`
-                        flex-1 py-3 rounded-lg border-b-[4px] font-bold uppercase text-sm
+                        flex-1 py-3 rounded-lg border-b-4 font-black uppercase text-sm
                         transition-all
                         ${
                           isLoading
@@ -226,6 +226,7 @@ export default function PurchaseConfirmModal({
                       borderColor: "#363d45",
                       color: "white",
                       textShadow: "1px 1px 0 black",
+                      WebkitTextStroke: "0.5px gray",
                     }}
                   >
                     Cancelar
@@ -237,7 +238,7 @@ export default function PurchaseConfirmModal({
                   disabled={confirmDisabled}
                   className={`
                         ${showCancelButton ? "flex-1" : "w-full"}
-                        py-3 rounded-lg border-b-[4px] font-bold uppercase text-sm
+                        py-3 rounded-lg border-b-4 font-black uppercase text-sm
                         relative overflow-hidden transition-all
                         ${
                           confirmDisabled
@@ -250,6 +251,7 @@ export default function PurchaseConfirmModal({
                     borderColor: theme.accentBorder,
                     color: "white",
                     textShadow: "1px 1px 0 black",
+                    WebkitTextStroke: "0.5px black",
                   }}
                 >
                   <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
