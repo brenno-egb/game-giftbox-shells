@@ -173,7 +173,7 @@ export default function PurchaseConfirmModal({
                 </div>
 
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-white/60">Custo:</span>
+                  <span className="text-white/60">Valor:</span>
                   <div className="flex items-center gap-2">
                     <span className="text-white font-bold">{chest.price}</span>
                     <div className="w-5 h-5">
@@ -213,7 +213,7 @@ export default function PurchaseConfirmModal({
                     onClick={onClose}
                     disabled={isLoading}
                     className={`
-                        flex-1 py-3 rounded-lg border-b-4 font-black uppercase text-sm
+                        flex-1 py-3 rounded-lg border-b-4 font-black uppercase text-md
                         transition-all
                         ${
                           isLoading
@@ -237,23 +237,21 @@ export default function PurchaseConfirmModal({
                   onClick={onConfirm}
                   disabled={confirmDisabled}
                   className={`
-                        ${showCancelButton ? "flex-1" : "w-full"}
-                        py-3 rounded-lg border-b-4 font-black uppercase text-sm
-                        relative overflow-hidden transition-all
-                        ${
-                          confirmDisabled
-                            ? "opacity-80 cursor-not-allowed bg-gray-600! border-gray-700!"
-                            : "hover:scale-[1.02] active:scale-[0.98] active:border-b-0 active:translate-y-1"
-                        }
-                    `}
+                  relative w-full max-w-55 py-3.5 rounded-lg border-b-[5px] font-black uppercase tracking-tight text-xl text-white transition-all select-none
+                  ${
+                    !canAfford
+                      ? "opacity-90 grayscale cursor-not-allowed"
+                      : "hover:scale-[1.02] active:scale-[0.98] active:border-b-0 active:translate-y-1.5"
+                  }
+                `}
                   style={{
-                    backgroundColor: theme.accent,
-                    borderColor: theme.accentBorder,
-                    color: "white",
+                    backgroundColor: canAfford ? theme.accent : "#555f6d",
+                    borderColor: canAfford ? theme.accentBorder : "#363d45",
                     textShadow: "1px 1px 0 black",
                     WebkitTextStroke: "0.5px black",
                   }}
                 >
+                  {/* Shine Overlay */}
                   <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
 
                   <span className="relative z-10">
