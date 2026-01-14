@@ -2,20 +2,16 @@
 
 import { useMemo } from "react";
 import { useMiniGame } from "./useMiniGame";
-import { getAttemptsDisplay } from "../../domain/formatting";
+import { getAttemptsDisplay } from "@/@sdk/smartico";
 
-/**
- * Hook específico para jogos tipo wheel/giftbox
- * Adiciona attemptsDisplay sobre o useMiniGame base
- */
-export function useWheelGame({
-  smartico,
-  templateId,
-}: {
+type UseWheelGameOptions = {
   smartico: any;
   templateId: number | string;
-}) {
+};
+
+export function useWheelGame({ smartico, templateId }: UseWheelGameOptions) {
   const base = useMiniGame({ smartico, templateId });
+
   const attemptsDisplay = useMemo(
     () => getAttemptsDisplay(base.game, base.playerInfo, base.countdown),
     [base.game, base.playerInfo, base.countdown]

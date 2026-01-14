@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Rubik } from "next/font/google";
-import { useWheelGame } from "@/@sdk/smartico";
+import { useWheelGame } from "@/@sdk/smartico/ui/hooks/useWheel";
 import GiftboxChestRive from "./animation";
 import { runPrizeAcknowledge } from "@/@sdk/smartico/domain/acknowledge";
 import { HostBridge } from "@/@sdk/smartico/messaging/hostBridge";

@@ -1,78 +1,67 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
-import { usePropsChange } from "@/@sdk/smartico/hooks/useSmarticoEvent";
-import { createSmarticoTransport } from "@/@sdk/smartico";
-import { createStoreItemsStore } from "@/@sdk/smartico/services/storeItemsStore";
-import { createUserProfileStore } from "@/@sdk/smartico/services/userProfileStore";
-import { createUserLevelStore } from "@/@sdk/smartico/services/userLevelStore";
-import { createMiniGamesStore } from "@/@sdk/smartico";
-import { UserProfile, UserLevel } from "@/@sdk/smartico";
+import {
+  useSmartico,
+  usePropsChange,
+  createSmarticoTransport,
+  createStoreItemsStore,
+  createUserProfileStore,
+  createUserLevelStore,
+  createMiniGamesStore,
+  type UserProfile,
+  type UserLevel,
+  type MiniGameTemplate,
+} from "@/@sdk/smartico";
+import type { ChestItem, CategorizedChests } from "./chest.types";
 import {
   filterChests,
   enrichChestsWithGameData,
   categorizeChests,
   hasAnyAvailableChest,
-} from "@/@games/templates/giftbox/chest/chest.rules";
-import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
-import type { MiniGameTemplate } from "@/@sdk/smartico";
+} from "../chest/chest.rules";
 
-type State = {
+type ChestHallState = CategorizedChests & {
   chests: ChestItem[];
-  available: ChestItem[];
-  purchasable: ChestItem[];
-  locked: ChestItem[];
-
   profile: UserProfile | null;
   level: UserLevel | null;
   games: MiniGameTemplate[];
-
   hasAvailable: boolean;
   isLoading: boolean;
   error: string | null;
 };
 
+const INITIAL_STATE: ChestHallState = {
+  chests: [],
+  available: [],
+  purchasable: [],
+  locked: [],
+  profile: null,
+  level: null,
+  games: [],
+  hasAvailable: false,
+  isLoading: true,
+  error: null,
+};
+
 export function useChestHall() {
   const { smartico } = useSmartico();
+  const [state, setState] = useState<ChestHallState>(INITIAL_STATE);
 
   const transport = useMemo(
     () => (smartico ? createSmarticoTransport(smartico, false) : null),
     [smartico]
   );
 
-  const storeItemsStore = useMemo(
-    () => (transport ? createStoreItemsStore(transport, false) : null),
-    [transport]
-  );
-
-  const userProfileStore = useMemo(
-    () => (transport ? createUserProfileStore(transport, false) : null),
-    [transport]
-  );
-
-  const userLevelStore = useMemo(
-    () => (transport ? createUserLevelStore(transport, false) : null),
-    [transport]
-  );
-
-  const miniGamesStore = useMemo(
-    () => (transport ? createMiniGamesStore(transport, false) : null),
-    [transport]
-  );
-
-  const [state, setState] = useState<State>({
-    chests: [],
-    available: [],
-    purchasable: [],
-    locked: [],
-    profile: null,
-    level: null,
-    games: [],
-    hasAvailable: false,
-    isLoading: true,
-    error: null,
-  });
+  const stores = useMemo(() => {
+    if (!transport) return null;
+    return {
+      storeItems: createStoreItemsStore(transport, false),
+      userProfile: createUserProfileStore(transport, false),
+      userLevel: createUserLevelStore(transport, false),
+      miniGames: createMiniGamesStore(transport, false),
+    };
+  }, [transport]);
 
   const computeState = useCallback(
     (
@@ -80,7 +69,7 @@ export function useChestHall() {
       games: MiniGameTemplate[],
       profile: UserProfile | null,
       level: UserLevel | null
-    ) => {
+    ): Omit<ChestHallState, "isLoading" | "error"> => {
       const chests = filterChests(storeItems);
       const enrichedChests = enrichChestsWithGameData(chests, games, profile);
       const categorized = categorizeChests(enrichedChests);
@@ -98,46 +87,28 @@ export function useChestHall() {
   );
 
   const refresh = useCallback(async () => {
-    if (
-      !storeItemsStore ||
-      !userProfileStore ||
-      !userLevelStore ||
-      !miniGamesStore
-    ) {
-      return;
-    }
+    if (!stores) return;
+
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      setState((p) => ({ ...p, isLoading: true, error: null }));
-
       const [items, profile, level, games] = await Promise.all([
-        storeItemsStore.fetch(),
-        userProfileStore.fetch(),
-        userLevelStore.fetch(),
-        miniGamesStore.refresh(),
+        stores.storeItems.fetch(),
+        stores.userProfile.fetch(),
+        stores.userLevel.fetch(),
+        stores.miniGames.refresh(),
       ]);
 
       const newState = computeState(items, games, profile, level);
-
+      setState((prev) => ({ ...prev, ...newState, isLoading: false }));
+    } catch (e: any) {
       setState((prev) => ({
         ...prev,
-        ...newState,
-        isLoading: false,
-      }));
-    } catch (e: any) {
-      setState((p) => ({
-        ...p,
         isLoading: false,
         error: e?.message ?? "Erro ao carregar dados",
       }));
     }
-  }, [
-    storeItemsStore,
-    userProfileStore,
-    userLevelStore,
-    miniGamesStore,
-    computeState,
-  ]);
+  }, [stores, computeState]);
 
   usePropsChange(
     useCallback(() => {
@@ -145,7 +116,6 @@ export function useChestHall() {
     }, [refresh])
   );
 
-  // Load inicial
   useEffect(() => {
     if (!smartico) return;
 
@@ -156,8 +126,8 @@ export function useChestHall() {
         await refresh();
       } catch (e: any) {
         if (!mounted) return;
-        setState((p) => ({
-          ...p,
+        setState((prev) => ({
+          ...prev,
           isLoading: false,
           error: e?.message ?? "Erro ao carregar",
         }));
@@ -169,8 +139,5 @@ export function useChestHall() {
     };
   }, [smartico, refresh]);
 
-  return {
-    ...state,
-    refresh,
-  };
+  return { ...state, refresh };
 }

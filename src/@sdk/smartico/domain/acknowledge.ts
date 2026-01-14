@@ -1,4 +1,4 @@
-import type { PrizeLike } from "./domain.type";
+import type { Prize } from "../types";
 
 export type RedirectMode = "assign" | "replace";
 
@@ -7,28 +7,24 @@ export type AckIntent =
   | { kind: "redirect"; url: URL; mode: RedirectMode }
   | { kind: "dp"; payload: unknown };
 
-function asHttpUrl(v: unknown): URL | null {
-  if (typeof v !== "string" || !v) return null;
+function parseHttpUrl(value: unknown): URL | null {
+  if (typeof value !== "string" || !value) return null;
   try {
-    const u = new URL(v);
-    if (u.protocol === "http:" || u.protocol === "https:") return u;
-    return null;
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url : null;
   } catch {
     return null;
   }
 }
 
-/**
- * Resolve o tipo de acknowledge de um prêmio (puro)
- */
 export function resolvePrizeAcknowledge(
-  prize: PrizeLike | null | undefined,
+  prize: Prize | null | undefined,
   opts?: { redirectMode?: RedirectMode }
 ): AckIntent {
   const raw = prize?.acknowledge_dp;
   if (raw == null || raw === "") return { kind: "none" };
 
-  const url = asHttpUrl(raw);
+  const url = parseHttpUrl(raw);
   if (url) {
     return { kind: "redirect", url, mode: opts?.redirectMode ?? "assign" };
   }
@@ -41,11 +37,8 @@ export type AckDeps = {
   redirect?: (url: string, mode: RedirectMode) => void;
 };
 
-/**
- * Executa o acknowledge de um prêmio (com side-effects)
- */
 export function runPrizeAcknowledge(
-  prize: PrizeLike | null | undefined,
+  prize: Prize | null | undefined,
   deps: AckDeps,
   opts?: { redirectMode?: RedirectMode }
 ): AckIntent {

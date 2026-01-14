@@ -1,8 +1,3 @@
-/**
- * Tipos relacionados a compras na loja
- * Segue o padrão da Smartico API
- */
-
 export type PurchaseResult = {
   err_code?: number;
   err_msg?: string;

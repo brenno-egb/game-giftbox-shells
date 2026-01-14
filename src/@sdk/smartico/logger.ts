@@ -14,24 +14,11 @@ class Logger {
   }
 
   private log(level: LogLevel, ...args: any[]) {
-    const prefix = `[${this.namespace}]`;
-    
     if (level === "debug" && !this.debugEnabled) return;
 
-    switch (level) {
-      case "debug":
-        console.debug(prefix, ...args);
-        break;
-      case "info":
-        console.info(prefix, ...args);
-        break;
-      case "warn":
-        console.warn(prefix, ...args);
-        break;
-      case "error":
-        console.error(prefix, ...args);
-        break;
-    }
+    const prefix = `[${this.namespace}]`;
+    const method = level === "debug" ? "log" : level;
+    console[method](prefix, ...args);
   }
 
   debug(...args: any[]) {

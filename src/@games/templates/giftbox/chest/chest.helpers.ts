@@ -1,28 +1,17 @@
-import { giftboxSkins } from "@/@games/templates/giftbox/skins";
+import { giftboxSkins } from "../skins";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
-import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
+import type { ChestItem, ChestTier } from "./chest.types";
+import { CHEST_ORDER } from "./chest.types";
 
-/**
- * Gera URL do jogo com skin
- */
 export function getGameUrl(skinId: string, uid: string, lang: string): string {
   return `/games/giftbox?skin=${skinId}&uid=${uid}&lang=${lang}`;
 }
 
-/**
- * Obtém número de spins disponíveis do game (mesma lógica do GameHost)
- */
 export function getGameSpins(game: MiniGameTemplate | undefined): number {
   if (!game) return 0;
-
-  const spinCount = game.spin_count;
-  return typeof spinCount === "number" ? spinCount : 0;
+  return typeof game.spin_count === "number" ? game.spin_count : 0;
 }
 
-/**
- * Encontra game por templateId na lista de games
- * templateId é o mesmo que MiniGame.id
- */
 export function findGameByTemplateId(
   games: MiniGameTemplate[],
   templateId: number | undefined
@@ -31,34 +20,20 @@ export function findGameByTemplateId(
   return games.find((g) => Number(g.id) === Number(templateId));
 }
 
-/**
- * Obtém imagem do baú da loja
- * Para ChestShop: usa chest.image (da loja)
- * Para ChestCarousel: usa skin.background diretamente
- */
 export function getChestImageFromStore(
   chestImage: string | undefined
 ): string | null {
   return chestImage || null;
 }
 
-/**
- * Tenta encontrar a skin associada a um ChestItem usando múltiplas estratégias.
- * Prioridade:
- * 1. Store ID (chest.id === skin.storeId) -> Exato para a loja
- * 2. Template ID (chest.templateId === skin.templateId) -> Fallback técnico
- * 3. Nome (Fuzzy match) -> Fallback visual
- */
 export function getSkinByChest(chest: ChestItem) {
   const skins = Object.values(giftboxSkins);
 
-  // 1. Pelo ID da Loja (Prioridade Máxima)
   if (chest.id) {
     const byStore = skins.find((s) => Number(s.storeId) === Number(chest.id));
     if (byStore) return byStore;
   }
 
-  // 2. Pelo Template ID
   if (chest.templateId) {
     const byTemplate = skins.find(
       (s) => Number(s.templateId) === Number(chest.templateId)
@@ -66,33 +41,25 @@ export function getSkinByChest(chest: ChestItem) {
     if (byTemplate) return byTemplate;
   }
 
-  // 3. Pelo Nome (Fallback)
   if (chest.name) {
-    const normalizedName = chest.name
+    const normalized = chest.name
       .toLowerCase()
       .replace(/baú\s+/, "")
       .trim();
     return skins.find(
-      (s) => normalizedName.includes(s.id) || s.id.includes(normalizedName)
+      (s) => normalized.includes(s.id) || s.id.includes(normalized)
     );
   }
 
   return undefined;
 }
 
-/**
- * Helper legado ou para uso direto quando só se tem o templateId
- */
 export function getSkinByTemplateId(templateId: number) {
   return Object.values(giftboxSkins).find(
     (skin) => Number(skin.templateId) === Number(templateId)
   );
 }
 
-/**
- * Obtém imagem do baú para o Shop
- * Prioriza: skin.backgroundStore > chest.image > null
- */
 export function getChestShopImage(chest: ChestItem): string | null {
   const skin = getSkinByChest(chest);
   if (skin?.backgroundStore) {
@@ -101,32 +68,18 @@ export function getChestShopImage(chest: ChestItem): string | null {
   return chest.image || null;
 }
 
-/**
- * Ordem de exibição dos baús na loja
- * bronze → silver → gold → emerald → diamond → black diamond
- */
-const CHEST_ORDER = [
-  "bronze",
-  "silver",
-  "gold",
-  "emerald",
-  "diamond",
-  "black-diamond",
-] as const;
-
-/**
- * Ordena chests pela ordem desejada
- * bronze > silver > gold > emerald > diamond > black diamond
- */
 export function sortChestsByOrder(chests: ChestItem[]): ChestItem[] {
   return [...chests].sort((a, b) => {
     const skinA = getSkinByChest(a);
     const skinB = getSkinByChest(b);
 
-    const orderA = skinA ? CHEST_ORDER.indexOf(skinA.id as any) : 999;
-    const orderB = skinB ? CHEST_ORDER.indexOf(skinB.id as any) : 999;
+    const orderA = skinA
+      ? CHEST_ORDER.indexOf(skinA.id as ChestTier)
+      : CHEST_ORDER.length;
+    const orderB = skinB
+      ? CHEST_ORDER.indexOf(skinB.id as ChestTier)
+      : CHEST_ORDER.length;
 
-    // Se não encontrou, mantém ordem original
     if (orderA === -1) return 1;
     if (orderB === -1) return -1;
 

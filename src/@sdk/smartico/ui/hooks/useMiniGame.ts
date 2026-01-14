@@ -1,17 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createSmarticoTransport } from "../../infra/transport/transport.smartico";
-import { createMiniGamesStore } from "../../services/miniGamesStore";
-import { createPlayerStore } from "../../services/playerStore";
-import { useSmarticoEvent } from "../../hooks/useSmarticoEvent";
 import {
+  createSmarticoTransport,
+  createMiniGamesStore,
+  createPlayerStore,
+  useSmarticoEvent,
   computeCanPlay,
   computeStatus,
   computeNextAvailableTs,
-} from "../../domain/gameRules";
-import { formatCountdown } from "../../domain/formatting";
-import type { MiniGameTemplate, PlayerInfo } from "../../domain/domain.type";
+  formatCountdown,
+  type MiniGameTemplate,
+  type PlayerInfo,
+} from "@/@sdk/smartico";
 
 type State = {
   game: MiniGameTemplate | null;
@@ -19,29 +20,37 @@ type State = {
   canPlay: boolean;
   statusMessage: string;
   nextAvailableTs: number | null;
-
   countdownMs: number | null;
   countdown: string | null;
-
   isLoading: boolean;
   isPlaying: boolean;
   error: string | null;
 };
 
-/**
- * Hook principal para mini-games
- */
+const INITIAL_STATE: State = {
+  game: null,
+  playerInfo: null,
+  canPlay: false,
+  statusMessage: "Carregando…",
+  nextAvailableTs: null,
+  countdownMs: null,
+  countdown: null,
+  isLoading: true,
+  isPlaying: false,
+  error: null,
+};
+
+type UseMiniGameOptions = {
+  smartico: any;
+  templateId: number | string;
+  onTemplatesUpdate?: (items: MiniGameTemplate[]) => void;
+};
+
 export function useMiniGame({
   smartico,
   templateId,
   onTemplatesUpdate,
-}: {
-  smartico: any;
-  templateId: number | string;
-  onTemplatesUpdate?: (items: MiniGameTemplate[]) => void;
-}) {
-
-  // Cria transport e stores (memoizados)
+}: UseMiniGameOptions) {
   const transport = useMemo(
     () => createSmarticoTransport(smartico, false),
     [smartico]
@@ -57,24 +66,9 @@ export function useMiniGame({
     [transport]
   );
 
-  const [state, setState] = useState<State>({
-    game: null,
-    playerInfo: null,
-    canPlay: false,
-    statusMessage: "Carregando…",
-    nextAvailableTs: null,
-
-    countdownMs: null,
-    countdown: null,
-
-    isLoading: true,
-    isPlaying: false,
-    error: null,
-  });
-
+  const [state, setState] = useState<State>(INITIAL_STATE);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Computa estado derivado
   const computeState = useCallback(
     (game: MiniGameTemplate | null, info: PlayerInfo | null) => {
       if (!game) {
@@ -111,7 +105,6 @@ export function useMiniGame({
     []
   );
 
-  // Subscribe na store de mini-games
   useEffect(() => {
     const unsubscribe = miniGamesStore.subscribe((games) => {
       const game =
@@ -126,7 +119,6 @@ export function useMiniGame({
         isLoading: false,
       }));
 
-      // Callback opcional para UI
       onTemplatesUpdate?.(games);
     });
 
@@ -139,7 +131,6 @@ export function useMiniGame({
     onTemplatesUpdate,
   ]);
 
-  // Carrega dados iniciais
   const refresh = useCallback(async () => {
     try {
       setState((p) => ({ ...p, isLoading: true, error: null }));
@@ -168,11 +159,13 @@ export function useMiniGame({
     }
   }, [miniGamesStore, playerStore, templateId, computeState]);
 
-  useSmarticoEvent("props_change", useCallback(() => {
-    refresh();
-  }, [refresh]));
+  useSmarticoEvent(
+    "props_change",
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
-  // Load inicial
   useEffect(() => {
     let mounted = true;
 
@@ -195,7 +188,6 @@ export function useMiniGame({
     };
   }, [refresh]);
 
-  // Countdown timer baseado em timestamp absoluto
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
@@ -227,7 +219,6 @@ export function useMiniGame({
     };
   }, [state.nextAvailableTs, refresh]);
 
-  // Executa jogada
   const play = useCallback(async () => {
     if (!state.game || !state.canPlay || state.isPlaying) return null;
 

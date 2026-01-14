@@ -16,7 +16,10 @@ export type ErrorInfo = {
 /**
  * Mapeamento de códigos de erro conhecidos
  */
-export const SMARTICO_ERROR_CODES: Record<ErrorCode, Omit<ErrorInfo, "code">> = {
+export const SMARTICO_ERROR_CODES: Record<
+  ErrorCode,
+  Omit<ErrorInfo, "code">
+> = {
   // Sucesso
   0: {
     message: "Success",
@@ -158,7 +161,10 @@ export function isActionableError(code: ErrorCode): boolean {
 /**
  * Formata mensagem de erro para o usuário
  */
-export function formatErrorMessage(code: ErrorCode, fallbackMessage?: string): string {
+export function formatErrorMessage(
+  code: ErrorCode,
+  fallbackMessage?: string
+): string {
   const info = getErrorInfo(code);
   return info.userMessage || fallbackMessage || "Ocorreu um erro";
 }

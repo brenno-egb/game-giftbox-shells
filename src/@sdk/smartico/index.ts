@@ -1,41 +1,64 @@
-/**
- * SDK Smartico - Entry point
- * Exporta todos os módulos públicos
- */
+// Types
+export * from "./types";
 
 // Logger
 export { createLogger } from "./logger";
 
-// Domain
-export * from "./domain/domain.type";
-export * from "./domain/gameRules";
-export * from "./domain/acknowledge";
-export * from "./domain/formatting";
+// Context
+export { SmarticoProvider, useSmartico } from "./context/SmarticoProvider";
+
+// Hooks
+export { useSmarticoEvent, usePropsChange } from "./hooks/useSmarticoEvent";
+export type { SmarticoEventType } from "./hooks/useSmarticoEvent";
+export { useStorePurchase } from "./hooks/useStorePurchase";
 
 // Infra
-export { bootSmartico, type BootOptions } from "./infra/boot";
+export { bootSmartico } from "./infra/boot";
+export type { BootOptions } from "./infra/boot";
 export type { Transport } from "./infra/transport/transport.type";
 export {
-  createSmarticoTransport,
   SmarticoTransport,
+  createSmarticoTransport,
 } from "./infra/transport/transport.smartico";
 
 // Services
 export {
-  createMiniGamesStore,
   MiniGamesStore,
+  createMiniGamesStore,
 } from "./services/miniGamesStore";
-export { createPlayerStore, PlayerStore } from "./services/playerStore";
-
-// Messaging
 export {
-  MESSAGE_TYPES,
-  type MessageType,
-  type RedirectMode,
-  type RedirectPayload,
-} from "./messaging/message.type";
-export { HostBridge } from "./messaging/hostBridge";
+  StoreItemsStore,
+  createStoreItemsStore,
+} from "./services/storeItemsStore";
+export { PlayerStore, createPlayerStore } from "./services/playerStore";
+export {
+  UserProfileStore,
+  createUserProfileStore,
+} from "./services/userProfileStore";
+export {
+  UserLevelStore,
+  createUserLevelStore,
+} from "./services/userLevelStore";
 
-// UI Hooks
-export { useMiniGame } from "./ui/hooks/useMiniGame";
-export { useWheelGame } from "./ui/hooks/useWheel";
+// Domain
+export {
+  safeNumber,
+  computeNextAvailableTs,
+  computeCanPlay,
+  computeStatus,
+} from "./domain/gameRules";
+
+export { formatCountdown, getAttemptsDisplay } from "./domain/formatting";
+export type { AttemptsDisplay } from "./domain/formatting";
+
+export {
+  resolvePrizeAcknowledge,
+  runPrizeAcknowledge,
+} from "./domain/acknowledge";
+export type { AckIntent, AckDeps, RedirectMode } from "./domain/acknowledge";
+
+export {
+  handlePurchaseError,
+  logPurchaseError,
+} from "./domain/errors/errorHandler";
+export type { PurchaseError } from "./domain/errors/errorHandler";

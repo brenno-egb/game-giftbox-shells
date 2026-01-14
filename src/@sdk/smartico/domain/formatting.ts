@@ -1,13 +1,6 @@
-import type { MiniGameTemplate, PlayerInfo } from "./domain.type";
+import type { MiniGameTemplate, PlayerInfo } from "../types";
+import { safeNumber } from "./gameRules";
 
-function safeNumber(v: any, fallback = 0): number {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-/**
- * Formata tempo em milissegundos para countdown legível
- */
 export function formatCountdown(ms: number): string | null {
   if (ms <= 0) return null;
 
@@ -29,9 +22,6 @@ export type AttemptsDisplay = {
   showCountdown?: boolean;
 };
 
-/**
- * Calcula a exibição de tentativas/status do jogo
- */
 export function getAttemptsDisplay(
   game: MiniGameTemplate | null,
   playerInfo: PlayerInfo | null,
@@ -54,12 +44,10 @@ export function getAttemptsDisplay(
 
   if (buyin === "spins") {
     const remaining = safeNumber(game.spin_count, 0);
-    // const maxAttempts = safeNumber(game.max_number_of_attempts, 0);
     return {
       label: "Tentativas",
-      // value: maxAttempts > 0 ? `${remaining} / ${maxAttempts}` : remaining,
       value: remaining,
-      valueColor: remaining === 0 ? "text-red-600" : "",
+      valueColor: remaining === 0 ? "text-red-600" : undefined,
     };
   }
 
@@ -69,7 +57,7 @@ export function getAttemptsDisplay(
     return {
       label: `Pontos (custo: ${cost})`,
       value: balance,
-      valueColor: balance < cost ? "text-red-600" : "",
+      valueColor: balance < cost ? "text-red-600" : undefined,
     };
   }
 

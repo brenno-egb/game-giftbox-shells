@@ -1,24 +1,13 @@
 "use client";
 
-/**
- * 🎯 COMPONENTES DE ESTADOS DE ERRO E WARNING
- *
- * Componentes reutilizáveis para mostrar erros e warnings de forma consistente
- * Podem ser usados em qualquer lugar da aplicação
- */
-
-interface ErrorStateProps {
+type ErrorStateProps = {
   title?: string;
   message: string;
   onRetry?: () => void;
   retryLabel?: string;
   showRetry?: boolean;
-}
+};
 
-/**
- * Estado de Erro Crítico
- * Visual: Card vermelho com ícone de erro
- */
 export const ErrorState = ({
   title = "Erro ao Carregar",
   message,
@@ -30,7 +19,6 @@ export const ErrorState = ({
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-black p-8">
       <div className="max-w-2xl w-full bg-red-950/30 border-2 border-red-500 rounded-xl p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
-          {/* Ícone de Erro */}
           <svg
             className="w-8 h-8 text-red-500 flex-shrink-0"
             fill="none"
@@ -66,19 +54,15 @@ export const ErrorState = ({
   );
 };
 
-interface WarningStateProps {
+type WarningStateProps = {
   title?: string;
   message: string;
   details?: string;
   onBack?: () => void;
   backLabel?: string;
   showBack?: boolean;
-}
+};
 
-/**
- * Estado de Warning/Alerta
- * Visual: Card amarelo com ícone de warning
- */
 export const WarningState = ({
   title = "Atenção",
   message,
@@ -131,7 +115,7 @@ export const WarningState = ({
   );
 };
 
-interface InfoStateProps {
+type InfoStateProps = {
   title?: string;
   message: string;
   icon?: React.ReactNode;
@@ -139,12 +123,8 @@ interface InfoStateProps {
     label: string;
     onClick: () => void;
   };
-}
+};
 
-/**
- * Estado de Informação
- * Visual: Card azul com ícone de info
- */
 export const InfoState = ({
   title = "Informação",
   message,
@@ -191,24 +171,9 @@ export const InfoState = ({
   );
 };
 
-interface EmptyStateProps {
-  title?: string;
-  message: string;
-  icon?: React.ReactNode;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
-
-/**
- * Empty State (Nenhum conteúdo)
- * Visual: Card cinza com ícone
- */
 export const EmptyState = () => {
   return (
     <div className="bg-[#1a233a] rounded-3xl border-4 border-[#2d3548] p-8 text-center shadow-xl relative overflow-hidden my-8">
-      {/* ... */}
       <div className="relative z-10 flex flex-col items-center">
         <h2 className="text-2xl font-black text-white uppercase mb-2">
           Inventário Vazio
@@ -217,41 +182,3 @@ export const EmptyState = () => {
     </div>
   );
 };
-
-/**
- * EXEMPLO DE USO:
- *
- * // Erro
- * <ErrorState
- *   message="Falha ao conectar com servidor"
- *   onRetry={() => window.location.reload()}
- * />
- *
- * // Warning
- * <WarningState
- *   title="Template Não Suportado"
- *   message="Este template ainda não está disponível."
- *   details="template: giftbox-v2"
- *   onBack={() => router.back()}
- * />
- *
- * // Info
- * <InfoState
- *   title="Manutenção Programada"
- *   message="Estaremos em manutenção das 02:00 às 04:00"
- *   action={{
- *     label: "Entendi",
- *     onClick: () => router.push("/")
- *   }}
- * />
- *
- * // Empty
- * <EmptyState
- *   title="Nenhum Jogo Disponível"
- *   message="Você ainda não tem jogos disponíveis."
- *   action={{
- *     label: "Ver Loja",
- *     onClick: () => router.push("/store")
- *   }}
- * />
- */

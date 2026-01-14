@@ -4,7 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import ClientWrapper from "./ClientWrapper";
 
 export const metadata: Metadata = {
-  title: "SDK Host",
+  title: "Games",
   robots: {
     index: false,
     follow: false,

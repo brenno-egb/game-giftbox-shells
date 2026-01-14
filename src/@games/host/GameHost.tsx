@@ -3,8 +3,8 @@
 import { useMemo } from "react";
 import type { GameKey } from "@/@games/registry";
 import { gamesRegistry } from "@/@games/registry";
-import GameRenderer from "@/@games/host/GameRenderer.client";
-import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
+import GameRenderer from "./GameRenderer.client";
+import { useSmartico } from "@/@sdk/smartico";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
 import type { BaseSkin } from "../core/types";
@@ -24,9 +24,10 @@ export default function GameHost({ gameKey, skinId }: Props) {
     return skins[id] ?? skins[entry.defaultSkinId];
   }, [entry, skinId]);
 
-  const resolvedTemplateId = useMemo(() => {
-    return resolvedSkin.templateId ?? entry.templateId;
-  }, [resolvedSkin, entry.templateId]);
+  const resolvedTemplateId = useMemo(
+    () => resolvedSkin.templateId ?? entry.templateId,
+    [resolvedSkin, entry.templateId]
+  );
 
   if (error) {
     return (
@@ -40,12 +41,7 @@ export default function GameHost({ gameKey, skinId }: Props) {
   }
 
   if (!isReady || !smartico) {
-    return (
-      <LoadingScreen
-        message="Inicializando Sistema"
-        backgroundImage={"/games/giftbox/background.avif"}
-      />
-    );
+    return <LoadingScreen message="Inicializando Sistema" />;
   }
 
   return (
