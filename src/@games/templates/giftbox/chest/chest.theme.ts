@@ -31,7 +31,7 @@ export const LOCKED_THEME: ChestTheme = {
 };
 
 export const resolveChestTheme = (
-  status: 'ready' | 'buyable' | 'locked', 
+  status: 'ready' | 'buyable' | 'insufficient' |  'locked', 
   skinTheme?: Partial<ChestTheme>
 ): ChestTheme => {
   

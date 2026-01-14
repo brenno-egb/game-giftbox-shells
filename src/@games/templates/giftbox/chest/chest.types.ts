@@ -2,7 +2,7 @@ import { StoreItem } from "@/@sdk/smartico";
 
 export type ChestItem = StoreItem & {
   type: "minigamespin";
-  templateId?: number; // Relacionado ao minigame
+  templateId?: number;
   hasAttempts?: boolean; // Pode jogar agora
   canAfford?: boolean; // Tem saldo para comprar
 };

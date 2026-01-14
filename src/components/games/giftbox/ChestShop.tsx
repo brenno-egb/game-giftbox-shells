@@ -148,9 +148,12 @@ export default function ChestShop({
 
           const isReady = chest.hasAttempts && spins > 0;
           const canAfford = chest.canAfford;
+          const canBuy = chest.can_buy;
+          console.log(chest)
 
-          let status: "ready" | "buyable" | "locked" = "locked";
+          let status: "ready" | "buyable" | "insufficient" | "locked" = "locked";
           if (isReady) status = "ready";
+          else if (!canAfford && canBuy) status = "insufficient";
           else if (canAfford) status = "buyable";
 
           return (

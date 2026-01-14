@@ -60,7 +60,7 @@ export default function PurchaseConfirmModal({
     <>
       <ErrorToast error={error} onClose={onCloseToast || onClose} />
 
-      <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 font-sans">
+      <div className="fixed inset-0 z-100 flex items-center justify-center px-4 font-sans">
         <div
           onClick={!isLoading ? onClose : undefined}
           className={`absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300 ${

@@ -6,7 +6,7 @@ import { getSkinByChest } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { resolveChestTheme } from "@/@games/templates/giftbox/chest/chest.theme";
 
 export type ChestCardProps = {
-  status: "ready" | "buyable" | "locked";
+  status: "ready" | "buyable" | "insufficient" | "locked";
   name: string;
   ribbon?: string | null;
   imageInner?: string;
@@ -38,6 +38,7 @@ export const ChestCardCompact = ({
 }: ChestCardProps) => {
   const isLocked = status === "locked";
   const isReady = status === "ready";
+  const isInsufficient = status === "insufficient";
   const canAfford = status === "buyable";
 
   const skin = getSkinByChest(chest);
@@ -148,7 +149,7 @@ export const ChestCardCompact = ({
                   <CurrencyIcon type={currencyType} />
                 </div>
                 <span className="font-semibold text-md shadow-black drop-shadow-sm pl-3 text-white">
-                  {priceLabel} chave{((Number(priceLabel)) > 1) ? "s" : ""}
+                  {priceLabel} chave{Number(priceLabel) > 1 ? "s" : ""}
                 </span>
               </div>
             )}
@@ -187,7 +188,13 @@ export const ChestCardCompact = ({
         >
           <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-lg pointer-events-none" />
           <span className="relative z-10 tracking-normal px-3 mt-1">
-            {isReady ? "ABRIR" : canAfford ? "COMPRAR" : "BLOQUEADO"}
+            {isReady
+              ? "ABRIR"
+              : isInsufficient
+              ? "SEM SALDO"
+              : canAfford
+              ? "COMPRAR"
+              : "BLOQUEADO"}
           </span>
         </button>
       </div>
@@ -212,6 +219,7 @@ export const ChestCardWide = ({
 }: ChestCardProps) => {
   const isLocked = status === "locked";
   const isReady = status === "ready";
+  const isInsufficient = status === "insufficient";
   const canAfford = status === "buyable";
 
   const skin = getSkinByChest(chest);
@@ -298,7 +306,7 @@ export const ChestCardWide = ({
                   <CurrencyIcon type={currencyType} />
                 </div>
                 <span className="font-semibold text-md shadow-black drop-shadow-sm pl-3 text-white">
-                  {priceLabel} chave{((Number(priceLabel)) > 1) ? "s" : ""}
+                  {priceLabel} chave{Number(priceLabel) > 1 ? "s" : ""}
                 </span>
               </div>
             )}
@@ -329,7 +337,13 @@ export const ChestCardWide = ({
           >
             <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-lg pointer-events-none" />
             <span className="relative z-10 truncate px-1 skew-x-8">
-              {isReady ? "ABRIR" : canAfford ? "COMPRAR" : "BLOQUEADO"}
+              {isReady
+                ? "ABRIR"
+                : isInsufficient
+                ? "SEM SALDO"
+                : canAfford
+                ? "COMPRAR"
+                : "BLOQUEADO"}
             </span>
           </button>
         </div>
