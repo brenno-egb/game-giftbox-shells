@@ -20,7 +20,7 @@ const OPEN_INPUT = "isOpen";
 const FINAL_INPUT = "final";
 const FINAL_STATE = "final";
 
-const PEAK_ANIMATION_MS = 800; // quando já está bem aberto
+const PEAK_ANIMATION_MS = 800;
 const FALLBACK_MS = 2200;
 const STATECHANGE_EVENT = "statechange";
 
@@ -191,7 +191,6 @@ export default function GiftboxChestRive({
     finalFiredRef.current = true;
     setFinalValue();
 
-    // Callback após um delay para a animação completar
     setTimeout(() => {
       onFinalCompleteRef.current?.();
     }, 800);
@@ -204,18 +203,15 @@ export default function GiftboxChestRive({
     completedOnceRef.current = false;
     peakFiredRef.current = false;
 
-    // Dispara callback de início imediatamente
     onOpenStartRef.current?.();
 
     setOpenValue(true);
 
-    // Timer para o "pico" da abertura (quando já está bem aberto)
     clearPeak();
     peakTimerRef.current = window.setTimeout(() => {
       firePeakOnce();
     }, PEAK_ANIMATION_MS);
 
-    // Fallback para garantir que complete
     clearFallback();
     fallbackTimerRef.current = window.setTimeout(() => {
       fireCompleteOnce();

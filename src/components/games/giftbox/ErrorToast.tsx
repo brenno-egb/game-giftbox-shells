@@ -1,22 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PurchaseError } from "@/@sdk/smartico/domain/errors/errorHandler";
+import type { PurchaseError } from "@/@sdk/smartico";
 
 type Props = {
   error: PurchaseError | null;
   onClose?: () => void;
 };
 
-/**
- * Toast flutuante para erros
- */
 export function ErrorToast({ error, onClose }: Props) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (error) {
-      // Anima entrada
       setTimeout(() => setIsVisible(true), 10);
     } else {
       setIsVisible(false);
@@ -68,7 +64,6 @@ export function ErrorToast({ error, onClose }: Props) {
           backdropFilter: "blur(8px)",
         }}
       >
-        {/* Ícone */}
         <div className={`flex-shrink-0 ${colorScheme.icon}`}>
           {error.severity === "error" && (
             <svg
@@ -117,14 +112,12 @@ export function ErrorToast({ error, onClose }: Props) {
           )}
         </div>
 
-        {/* Mensagem */}
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-sm leading-relaxed">
             {error.userMessage}
           </p>
         </div>
 
-        {/* Botão fechar */}
         <button
           onClick={handleClose}
           className="flex-shrink-0 text-white/80 hover:text-white transition-colors"

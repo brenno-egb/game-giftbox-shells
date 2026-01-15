@@ -1,15 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { Rubik } from "next/font/google";
-import { useWheelGame } from "@/@sdk/smartico/ui/hooks/useWheel";
-import GiftboxChestRive from "./animation";
-import { runPrizeAcknowledge } from "@/@sdk/smartico/domain/acknowledge";
-import { HostBridge } from "@/@sdk/smartico/messaging/hostBridge";
 
+import { useWheelGame } from "@/@sdk/smartico/ui/hooks/useWheel";
+import { runPrizeAcknowledge, HostBridge } from "@/@sdk/smartico";
+
+import GiftboxChestRive from "./animation";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
-
 import { PrizeItem, PrizeAnnouncement } from "./PrizeComponents";
 
 import {
@@ -26,57 +31,36 @@ const rubik = Rubik({
   display: "swap",
 });
 
-// ========================================
-// TIPOS
-// ========================================
-
 interface GiftboxGameProps {
   smartico: any;
   templateId: number | string;
   skin: any;
 }
 
-// ========================================
-// COMPONENTE PRINCIPAL
-// ========================================
-
 export default function GiftboxGame({
   smartico,
   templateId,
   skin,
 }: GiftboxGameProps) {
-  // ========================================
-  // HOOKS E STATE
-  // ========================================
-
   const gameState = useWheelGame({ smartico, templateId });
 
-  // Estados do baú
   const [isShaking, setIsShaking] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
   const [triggerFinal, setTriggerFinal] = useState(false);
 
-  // Estados da roleta
   const [showWheel, setShowWheel] = useState(false);
   const [targetPrizeIndex, setTargetPrizeIndex] = useState<number | null>(null);
   const [currentX, setCurrentX] = useState(0);
 
-  // Estados do prêmio
   const [lastPrize, setLastPrize] = useState<any>(null);
   const [showPrizeAnnouncement, setShowPrizeAnnouncement] = useState(false);
 
-  // Estados de controle
   const [isAnimating, setIsAnimating] = useState(false);
   const [isCompactMode, setIsCompactMode] = useState(false);
 
-  // Refs
   const trackRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const currentXRef = useRef<number>(0);
-
-  // ========================================
-  // COMPUTED VALUES
-  // ========================================
 
   const pool = useMemo(() => gameState.game?.prizes || [], [gameState.game]);
 
@@ -85,17 +69,17 @@ export default function GiftboxGame({
     [pool]
   );
 
-  // Cria strip de prêmios (array longo para roleta)
   const strip = useMemo(() => {
     if (!pool.length) return [];
-    const repeats = Math.max(3, Math.ceil(WHEEL_CONFIG.STRIP_SIZE / pool.length));
+    const repeats = Math.max(
+      3,
+      Math.ceil(WHEEL_CONFIG.STRIP_SIZE / pool.length)
+    );
     return Array.from({ length: repeats }, () => pool).flat();
   }, [poolKey, pool.length]);
 
-  // Cor do glow baseada no tema
   const themeGlowColor = skin?.theme?.panelBorder ?? "#00000060";
 
-  // Background do jogo
   const bgUrl = skin?.background
     ? `${skin.assetsBase}/${skin.background}`
     : null;
@@ -105,13 +89,6 @@ export default function GiftboxGame({
     backgroundColor: skin?.backgroundColor ?? DEFAULT_BACKGROUND.COLOR,
   } as React.CSSProperties;
 
-  // ========================================
-  // FUNÇÕES DE ANIMAÇÃO
-  // ========================================
-
-  /**
-   * Anima a roleta de uma posição X para outra
-   */
   const animateTo = useCallback(
     (fromX: number, toX: number, durationMs: number) => {
       return new Promise<void>((resolve) => {
@@ -143,19 +120,11 @@ export default function GiftboxGame({
     []
   );
 
-  // ========================================
-  // FUNÇÕES DE JOGO
-  // ========================================
-
-  /**
-   * Executa uma jogada
-   */
   const playGame = useCallback(async () => {
     if (!gameState.canPlay || gameState.isPlaying || isAnimating) return;
 
     setIsAnimating(true);
 
-    // Reset state
     setTargetPrizeIndex(null);
     setLastPrize(null);
     setCurrentX(0);
@@ -165,21 +134,20 @@ export default function GiftboxGame({
       trackRef.current.style.transform = "translate3d(0px, 0, 0)";
     }
 
-    // Chama API de jogo
     const result = await gameState.play();
     if (!result) {
       setIsAnimating(false);
       return;
     }
 
-    // Encontra prêmio ganho
     const prizeId = result?.prize_id != null ? String(result.prize_id) : "";
     const prize = prizeId
       ? pool.find((p: any) => String(p.id) === prizeId) || null
       : null;
 
-    // Encontra índice alvo na strip
-    const startIndex = Math.floor(strip.length * WHEEL_CONFIG.START_POSITION_RATIO);
+    const startIndex = Math.floor(
+      strip.length * WHEEL_CONFIG.START_POSITION_RATIO
+    );
     let targetIndex = startIndex;
 
     if (prizeId) {
@@ -193,11 +161,17 @@ export default function GiftboxGame({
 
     setTargetPrizeIndex(targetIndex);
 
-    // Anima roleta
-    const toX = calculateTargetX(trackRef.current, targetIndex, currentXRef.current);
-    await animateTo(currentXRef.current, toX, WHEEL_CONFIG.ANIMATION_DURATION_MS);
+    const toX = calculateTargetX(
+      trackRef.current,
+      targetIndex,
+      currentXRef.current
+    );
+    await animateTo(
+      currentXRef.current,
+      toX,
+      WHEEL_CONFIG.ANIMATION_DURATION_MS
+    );
 
-    // Mostra resultado
     setLastPrize(prize);
 
     setTimeout(() => {
@@ -208,13 +182,9 @@ export default function GiftboxGame({
     setShowPrizeAnnouncement(true);
     setIsAnimating(false);
 
-    // Atualiza estado do jogo
     await gameState.refresh();
   }, [gameState, isAnimating, pool, strip, animateTo]);
 
-  /**
-   * Clique no baú
-   */
   const handleChestClick = () => {
     if (!gameState.canPlay || isAnimating || chestOpen) return;
 
@@ -225,14 +195,8 @@ export default function GiftboxGame({
     }, CHEST_CONFIG.SHAKE_DURATION_MS);
   };
 
-  /**
-   * Baú começou a abrir
-   */
   const handleChestOpenStart = () => {};
 
-  /**
-   * Baú no pico da abertura
-   */
   const handleChestOpenPeak = () => {
     setShowWheel(true);
     setTimeout(() => {
@@ -240,13 +204,9 @@ export default function GiftboxGame({
     }, CHEST_CONFIG.OPEN_DELAY_MS);
   };
 
-  /**
-   * Fecha anúncio de prêmio
-   */
   const closePrizeAnnouncement = useCallback(() => {
     setShowPrizeAnnouncement(false);
 
-    // Processa acknowledge do prêmio
     if (lastPrize) {
       runPrizeAcknowledge(
         lastPrize,
@@ -261,7 +221,6 @@ export default function GiftboxGame({
     setTriggerFinal(true);
     setIsCompactMode(true);
 
-    // Reset se não puder jogar mais
     setTimeout(() => {
       if (!gameState.canPlay) {
         setChestOpen(false);
@@ -274,13 +233,6 @@ export default function GiftboxGame({
     }, CHEST_CONFIG.POST_ANNOUNCEMENT_DELAY_MS);
   }, [lastPrize, smartico, gameState.canPlay]);
 
-  // ========================================
-  // EFFECTS
-  // ========================================
-
-  /**
-   * Recalcula posição ao redimensionar
-   */
   useEffect(() => {
     if (!trackRef.current || targetPrizeIndex === null || isAnimating) return;
 
@@ -311,18 +263,11 @@ export default function GiftboxGame({
     };
   }, [targetPrizeIndex, isAnimating]);
 
-  /**
-   * Cleanup animation frame
-   */
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
-
-  // ========================================
-  // RENDER STATES
-  // ========================================
 
   if (gameState.isLoading) {
     return (
@@ -337,10 +282,6 @@ export default function GiftboxGame({
     return <ErrorState message={gameState.error} />;
   }
 
-  // ========================================
-  // RENDER PRINCIPAL
-  // ========================================
-
   const chestPath = skin?.rivePath ?? skin?.lottiePath;
 
   return (
@@ -349,7 +290,6 @@ export default function GiftboxGame({
       style={rootStyle}
       className={`${rubik.className} min-h-screen relative text-white overflow-hidden bg-center bg-cover bg-no-repeat`}
     >
-      {/* Glow Overlay quando abre */}
       {chestOpen && (
         <div
           className="absolute inset-0 pointer-events-none animate-pulse-glow"
@@ -360,30 +300,25 @@ export default function GiftboxGame({
         />
       )}
 
-      {/* Container principal */}
       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 gap-3 pt-10">
-        {/* Gradientes laterais */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-linear-to-r from-black/70 to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-linear-to-l from-black/70 to-transparent z-10" />
 
-        {/* ROLETA */}
         {showWheel && (
           <div className="w-full max-w-4xl animate-slide-up-fade shrink-0 z-50">
-            {/* Header da roleta */}
             <div className="text-center mb-3">
-              <div className="mt-0.5 text-2xl font-black text-white uppercase"
-              style={{
-                textShadow: "2px 2px 0 black",
-                WebkitTextStroke: "1px dark-gray",
-              }}
+              <div
+                className="mt-0.5 text-2xl font-black text-white uppercase"
+                style={{
+                  textShadow: "2px 2px 0 black",
+                  WebkitTextStroke: "1px dark-gray",
+                }}
               >
                 {isAnimating ? "Girando..." : "Resultado"}
               </div>
             </div>
 
-            {/* Container da roleta */}
             <div className="relative">
-              {/* Pointer indicador */}
               <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-2">
                 <img
                   src="/games/giftbox/pointer.png"
@@ -393,7 +328,6 @@ export default function GiftboxGame({
               </div>
               <div className="absolute left-1/2 top-0 bottom-0 z-10 w-0.5 -translate-x-1/2 bg-linear-to-b from-white/60 via-white/40 to-transparent opacity-60" />
 
-              {/* Track da roleta */}
               <div className="relative h-36 overflow-hidden rounded-lg border border-white/15 bg-black/45 backdrop-blur-xs shadow-[0_0_30px_rgba(0,0,0,0.25)]">
                 <div
                   ref={trackRef}
@@ -411,7 +345,6 @@ export default function GiftboxGame({
               </div>
             </div>
 
-            {/* Botão girar novamente */}
             {!isAnimating && gameState.canPlay && !showPrizeAnnouncement && (
               <div className="mt-4 flex flex-col items-center gap-2 animate-fade-in">
                 <button
@@ -432,7 +365,6 @@ export default function GiftboxGame({
           </div>
         )}
 
-        {/* ANÚNCIO DE PRÊMIO */}
         {showPrizeAnnouncement && lastPrize && (
           <PrizeAnnouncement
             prize={lastPrize}
@@ -440,13 +372,11 @@ export default function GiftboxGame({
           />
         )}
 
-        {/* BAÚ */}
         <div
           className={`relative z-30 shrink-0 transition-all duration-500 ${
             isCompactMode ? "scale-90" : "scale-100"
           }`}
         >
-          {/* Glow atrás do baú */}
           <div
             className="absolute top-1/3 left-1/2 w-80 h-80 pointer-events-none -z-10 -translate-x-1/2 -translate-y-1/2 animate-pulse-slow"
             style={{
@@ -487,21 +417,18 @@ export default function GiftboxGame({
             </div>
           </button>
 
-          {/* Texto abaixo do baú */}
           {!showWheel && (
             <div className="mt-4 text-center">
               {gameState.canPlay ? (
-                <>
-                  <div
-                    className="mt-1.5 text-2xl font-black text-white/90 animate-fade-in uppercase"
-                    style={{
-                      textShadow: "2px 2px 0 black",
-                      WebkitTextStroke: "1px black",
-                    }}
-                  >
-                    Toque no baú
-                  </div>
-                </>
+                <div
+                  className="mt-1.5 text-2xl font-black text-white/90 animate-fade-in uppercase"
+                  style={{
+                    textShadow: "2px 2px 0 black",
+                    WebkitTextStroke: "1px black",
+                  }}
+                >
+                  Toque no baú
+                </div>
               ) : gameState.countdown ? (
                 <>
                   <div className="text-[11px] uppercase tracking-[0.2em] text-white/60 font-semibold">

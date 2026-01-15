@@ -3,8 +3,8 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 
-import { giftboxSkins } from "@/@games/templates/giftbox/skins";
 import type { MiniGameTemplate } from "@/@sdk/smartico";
+import { giftboxSkins } from "@/@games/templates/giftbox/skins";
 import {
   getGameUrl,
   getGameSpins,
@@ -73,7 +73,6 @@ const ChestCard = ({
   const opacity = dist > 1 ? 0 : 1 - dist * 0.4;
   const zIndex = 100 - dist;
 
-  // Filtros visuais
   const filter = isActive
     ? "brightness(1) blur(0px) grayscale(0)"
     : "brightness(0.5) blur(2px) grayscale(0.8)";
@@ -90,22 +89,18 @@ const ChestCard = ({
         opacity: opacity,
         zIndex: zIndex,
         filter: filter,
-        // Se estiver muito longe, esconde pointer events para não clicar no invisível
         pointerEvents: dist > 1 ? "none" : "auto",
-        visibility: dist > 2 ? "hidden" : "visible", // Otimização de render
+        visibility: dist > 2 ? "hidden" : "visible",
       }}
     >
-      {/* Sombra de chão (Apenas no ativo) */}
       <div
         className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-[80%] h-6 bg-black/40 blur-xl rounded-[100%] transition-opacity duration-500"
         style={{ opacity: isActive ? 1 : 0 }}
       />
 
-      {/* Container Principal do Card */}
       <div
         className={`relative w-full h-full rounded-3xl border-[6px] overflow-hidden transition-all duration-500 ${borderStyle}`}
       >
-        {/* Título do Jogo */}
         <div className="absolute top-5 inset-x-0 text-center z-20 px-4">
           <h3
             className="text-white font-black uppercase text-2xl italic leading-tight drop-shadow-md"
@@ -118,7 +113,6 @@ const ChestCard = ({
           </h3>
         </div>
 
-        {/* Imagem do Baú */}
         <div className="absolute inset-0 flex items-center justify-center z-10 p-8 pt-12">
           <div
             className={`relative w-full h-full ${
@@ -135,7 +129,6 @@ const ChestCard = ({
           </div>
         </div>
 
-        {/* Rodapé do Card (Info) */}
         <div className="absolute bottom-0 inset-x-0 py-3 flex flex-col items-center z-20">
           <span className="text-[#a8b5cc] text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
             Quantidade
@@ -151,8 +144,6 @@ const ChestCard = ({
     </div>
   );
 };
-
-// --- COMPONENTE PRINCIPAL ---
 
 type Props = {
   games: MiniGameTemplate[];
@@ -193,9 +184,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
-      {/* 2. PALCO DO CARROSSEL */}
       <div className="relative w-full h-95 flex items-center justify-center perspective-[1000px] overflow-visible">
-        {/* 1. HEADER (Contador) */}
         <div className="absolute w-[65%] flex justify-end -top-6 z-20 animate-slideDown">
           <div className="w-8  rotate-20">
             <div className="bg-[#7a5e00] text-white text-xl font-black px-2 py-0.5 rounded-md shadow-sm border border-black">
@@ -227,9 +216,7 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
         })}
       </div>
 
-      {/* 3. CONTROLES */}
       <div className="flex items-center justify-center gap-4 z-30 w-full px-4">
-        {/* Botão Anterior */}
         {chests.length > 1 ? (
           <JuicyButton
             variant="yellow"
@@ -237,7 +224,6 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             className="max-w-14 flex items-center justify-center shrink-0"
             title="Anterior"
           >
-            {/* SVG Seta Esquerda */}
             <svg
               width="30"
               height="43"
@@ -255,7 +241,6 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
           <div className="w-14 h-14 hidden" />
         )}
 
-        {/* Botão ABRIR */}
         <div className="relative group shrink-0">
           <JuicyButton
             variant="yellow"
@@ -276,7 +261,6 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
           </JuicyButton>
         </div>
 
-        {/* Botão Próximo */}
         {chests.length > 1 ? (
           <JuicyButton
             variant="yellow"
@@ -284,7 +268,6 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
             className="max-w-14 flex items-center justify-center shrink-0"
             title="Próximo"
           >
-            {/* SVG Seta Direita */}
             <svg width="30" height="43" viewBox="0 0 30 43" fill="none">
               <path
                 d="M28.0011 23.902L4.83292 41.6437C2.86033 43.1542 -0.000931937 41.7602 3.0754e-06 39.289L0.0137407 2.98086C0.0146873 0.479131 2.93921 -0.905675 4.90045 0.666943L28.0548 19.2333C29.5611 20.4411 29.5348 22.7275 28.0011 23.902Z"
@@ -321,4 +304,3 @@ export default function ChestCarousel({ games, uid, lang }: Props) {
     </div>
   );
 }
-

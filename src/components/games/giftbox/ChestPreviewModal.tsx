@@ -3,10 +3,11 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
+import type { ChestItem } from "@/@games/templates/giftbox/chest";
 import GiftboxChestRive from "@/@games/templates/giftbox/animation";
 import { getSkinByChest } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { resolveChestTheme } from "@/@games/templates/giftbox/chest/chest.theme";
-import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
+
 import { CurrencyIcon } from "./ChestComponents";
 
 type Props = {
@@ -30,7 +31,6 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center px-4 font-sans">
-      {/* Backdrop */}
       <div
         onClick={onClose}
         className={`absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300 ${
@@ -38,7 +38,6 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
         }`}
       />
 
-      {/* Container do Modal */}
       <div
         className={`relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 ${
           isVisible
@@ -64,7 +63,6 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
           transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
-        {/* Botão Fechar */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-50 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-colors border border-white/10"
@@ -86,9 +84,7 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
 
         <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
 
-        {/* --- ÁREA DE SHOWCASE (Topo) --- */}
         <div className="relative h-64 w-full flex items-center justify-center overflow-hidden z-10 shrink-0">
-          {/* ITEM (Rive ou Imagem) */}
           <div className="relative z-10 w-full h-full flex items-center justify-center p-4 mb-12">
             {skin?.rivePath ? (
               <div className="w-full h-full transform scale-125 translate-y-4">
@@ -118,9 +114,7 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
           </div>
         </div>
 
-        {/* --- ÁREA DE INFO E AÇÃO (Base) --- */}
         <div className="px-6 pb-6 pt-2 text-center space-y-5 relative z-20 flex flex-col items-center">
-          {/* Título e Descrição */}
           <div>
             <h2
               className="text-3xl font-black text-white uppercase italic tracking-wider drop-shadow-md leading-none"
@@ -133,12 +127,9 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
             </h2>
           </div>
 
-          {/* Container de Preço e Botão */}
           <div className="w-full space-y-5">
-            {/* PRICE TAG (Com o novo ícone) */}
             <div className="flex justify-center mt-2">
               <div className="relative flex items-center gap-2 px-6 py-2.5 rounded-md bg-black/70">
-                {/* Container do ícone flutuando para fora */}
                 <div className="absolute -left-4 top-0 w-12 h-12 z-20 scale-150">
                   <CurrencyIcon type={chest.purchase_type} />
                 </div>
@@ -149,7 +140,6 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
               </div>
             </div>
 
-            {/* Botão de Compra (Estilo Cards) */}
             <button
               onClick={onBuy}
               disabled={!canAfford}
@@ -175,7 +165,6 @@ export default function ChestPreviewModal({ chest, onClose, onBuy }: Props) {
                 WebkitTextStroke: "0.5px black",
               }}
             >
-              {/* Shine Overlay */}
               <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
 
               <span className="relative z-10">

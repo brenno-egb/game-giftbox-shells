@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+
+import type { PurchaseError } from "@/@sdk/smartico";
+import type { ChestItem } from "@/@games/templates/giftbox/chest";
 import GiftboxChestRive from "@/@games/templates/giftbox/animation";
 import { getSkinByChest } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { resolveChestTheme } from "@/@games/templates/giftbox/chest/chest.theme";
-import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
+
 import { CurrencyIcon } from "./ChestComponents";
 import { ErrorToast } from "./ErrorToast";
-import type { PurchaseError } from "@/@sdk/smartico/domain/errors/errorHandler";
 
 type Props = {
   chest: ChestItem;
@@ -159,7 +161,6 @@ export default function PurchaseConfirmModal({
               </h2>
             </div>
 
-            {/* Info de Saldo */}
             {canAfford && (
               <div className="w-full bg-black/30 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between items-center text-sm">
@@ -251,7 +252,6 @@ export default function PurchaseConfirmModal({
                     WebkitTextStroke: "0.5px black",
                   }}
                 >
-                  {/* Shine Overlay */}
                   <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
 
                   <span className="relative z-10">

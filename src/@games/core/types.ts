@@ -1,10 +1,10 @@
 export type SkinTheme = {
-  accent: string;       // destaque (substitui “amarelo”)
-  accentSoft: string;   // texto/linhas mais fracas
-  accentBorder: string; // bordas
-  accentGlow: string;   // sombras/glow
-  panelBg: string;      // cards/containers
-  panelBorder: string;  // borda dos cards
+  accent: string;
+  accentSoft: string;
+  accentBorder: string;
+  accentGlow: string;
+  panelBg: string;
+  panelBorder: string;
 };
 
 export type BaseSkin = {
@@ -13,10 +13,8 @@ export type BaseSkin = {
   rivePath?: string;
   templateId?: number;
   storeId?: number;
-
   background?: string;
   backgroundStore?: string;
   backgroundColor?: string;
-
   theme?: Partial<SkinTheme>;
 };

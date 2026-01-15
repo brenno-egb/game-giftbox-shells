@@ -1,9 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { CurrencyIcon } from "./ChestComponents";
+
+import type { CurrencyType } from "@/@sdk/smartico";
 import { getSkinByChest } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { resolveChestTheme } from "@/@games/templates/giftbox/chest/chest.theme";
+
+import { CurrencyIcon } from "./ChestComponents";
 
 export type ChestCardProps = {
   status: "ready" | "buyable" | "insufficient" | "locked";
@@ -13,7 +16,7 @@ export type ChestCardProps = {
   imageBackground?: string;
   backgroundColor: string;
   priceLabel: string | number;
-  currencyType?: "diamonds" | "gems" | "points";
+  currencyType?: CurrencyType;
   spinsAvailable: number;
   index: number;
   onClick: () => void;
@@ -21,7 +24,6 @@ export type ChestCardProps = {
   chest: any;
 };
 
-// --- CARD COMPACT ---
 export const ChestCardCompact = ({
   status,
   name,
@@ -75,7 +77,6 @@ export const ChestCardCompact = ({
           boxShadow: `0 1px 1px -3px ${theme.accentGlow}`,
         }}
       >
-        {/* Background Imagem Container */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -85,7 +86,6 @@ export const ChestCardCompact = ({
             backgroundColor,
           }}
         >
-          {/* Gradiente Colorido da Borda (Bottom -> Top) --- */}
           <div
             className="absolute inset-0 opacity-40 pointer-events-none"
             style={{
@@ -95,11 +95,9 @@ export const ChestCardCompact = ({
             }}
           />
 
-          {/* Fade Escuro para o texto */}
           <div className="absolute inset-0 bg-linear-to-b from-transparent via-[#242424]/50 to-[#242424]" />
         </div>
 
-        {/* Imagem do Baú */}
         <div className="relative w-24 h-24 mb-2 z-10">
           <div
             className={`relative w-full h-full transition-all duration-300 ${
@@ -124,7 +122,6 @@ export const ChestCardCompact = ({
           </div>
         </div>
 
-        {/* Textos e Footer */}
         <div className="relative w-full mt-2 mb-3 z-10 flex flex-col items-center gap-2">
           <div className="relative z-10 w-full text-center">
             <h3
@@ -157,7 +154,6 @@ export const ChestCardCompact = ({
         </div>
       </div>
 
-      {/* BOTÃO */}
       <div className="absolute -bottom-3 flex w-full justify-center">
         <button
           onClick={onActionClick}
@@ -202,7 +198,6 @@ export const ChestCardCompact = ({
   );
 };
 
-// --- CARD WIDE ---
 export const ChestCardWide = ({
   status,
   name,
@@ -258,7 +253,6 @@ export const ChestCardWide = ({
           boxShadow: `0 1px 1px -3px ${theme.accentGlow}`,
         }}
       >
-        {/* Background Imagem Container */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
@@ -268,10 +262,8 @@ export const ChestCardWide = ({
             backgroundColor,
           }}
         >
-          {/* Padrão (Existente) */}
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,white_1px,transparent_1px)] bg-size-[8px_8px]" />
 
-          {/* gradiente */}
           <div
             className="absolute inset-0 opacity-40 pointer-events-none"
             style={{

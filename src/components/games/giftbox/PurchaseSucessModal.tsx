@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+
+import type { ChestItem } from "@/@games/templates/giftbox/chest";
 import GiftboxChestRive from "@/@games/templates/giftbox/animation";
 import { getSkinByChest, getGameUrl } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { resolveChestTheme } from "@/@games/templates/giftbox/chest/chest.theme";
-import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
 
 type Props = {
   chest: ChestItem;
@@ -34,7 +35,6 @@ export default function PurchaseSuccessModal({
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center px-4 font-sans">
-      {/* Backdrop */}
       <div
         onClick={onClose}
         className={`absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300 ${
@@ -42,7 +42,6 @@ export default function PurchaseSuccessModal({
         }`}
       />
 
-      {/* Container do Modal - MANTENDO ESTILO ORIGINAL */}
       <div
         className={`relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 ${
           isVisible
@@ -68,7 +67,6 @@ export default function PurchaseSuccessModal({
           transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
-        {/* Botão Fechar */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-50 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-colors border border-white/10"
@@ -88,10 +86,8 @@ export default function PurchaseSuccessModal({
           </svg>
         </button>
 
-        {/* Overlay - MANTENDO ESTILO ORIGINAL */}
         <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
 
-        {/* Confetti Effect */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
           {[...Array(20)].map((_, i) => (
             <div
@@ -115,7 +111,6 @@ export default function PurchaseSuccessModal({
         </div>
 
         <div className="relative h-64 w-full flex items-center justify-center overflow-hidden z-30 shrink-0">
-          {/* Badge de Sucesso */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40">
             <div className="bg-green-500/20 rounded-full px-4 py-2 flex items-center gap-2 border-2 border-green-400">
               <svg
@@ -165,7 +160,6 @@ export default function PurchaseSuccessModal({
             )}
           </div>
 
-          {/* Glow Effect */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -175,9 +169,7 @@ export default function PurchaseSuccessModal({
           />
         </div>
 
-        {/* --- ÁREA DE INFO E AÇÃO (Base) - MANTENDO ESTILO ORIGINAL --- */}
         <div className="px-6 pb-6 pt-2 text-center space-y-4 relative z-30 flex flex-col items-center">
-          {/* Título */}
           <div>
             <h2
               className="text-3xl font-black text-white uppercase italic tracking-wider drop-shadow-md leading-none"
@@ -193,9 +185,7 @@ export default function PurchaseSuccessModal({
             </p>
           </div>
 
-          {/* Botões de Ação - MANTENDO ESTILO ORIGINAL */}
           <div className="space-y-3 w-full">
-            {/* Jogar Agora */}
             <button
               onClick={onPlayNow}
               className={`
@@ -213,7 +203,6 @@ export default function PurchaseSuccessModal({
                 boxShadow: `0 4px 10px ${theme.accentGlow}`,
               }}
             >
-              {/* Shine Overlay */}
               <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
 
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -221,7 +210,6 @@ export default function PurchaseSuccessModal({
               </span>
             </button>
 
-            {/* Fechar */}
             <button
               onClick={onClose}
               className={`
@@ -242,7 +230,6 @@ export default function PurchaseSuccessModal({
         </div>
       </div>
 
-      {/* Animações - MANTENDO ESTILO ORIGINAL */}
       <style jsx>{`
         @keyframes float-success {
           0%,

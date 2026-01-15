@@ -55,10 +55,19 @@ export {
   resolvePrizeAcknowledge,
   runPrizeAcknowledge,
 } from "./domain/acknowledge";
-export type { AckIntent, AckDeps, RedirectMode } from "./domain/acknowledge";
+export type { AckIntent, AckDeps } from "./domain/acknowledge";
 
 export {
   handlePurchaseError,
   logPurchaseError,
 } from "./domain/errors/errorHandler";
 export type { PurchaseError } from "./domain/errors/errorHandler";
+
+// Messaging
+export { HostBridge, MESSAGE_TYPES } from "./messaging/hostBridge";
+export type {
+  RedirectMode,
+  MessageType,
+  RedirectPayload,
+  MessagePayload,
+} from "./messaging/hostBridge";

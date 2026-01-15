@@ -2,8 +2,15 @@
 
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import type { ChestItem } from "@/@games/templates/giftbox/chest/chest.types";
-import type { MiniGameTemplate } from "@/@sdk/smartico";
+
+import {
+  useSmartico,
+  createSmarticoTransport,
+  useStorePurchase,
+  type MiniGameTemplate,
+} from "@/@sdk/smartico";
+
+import type { ChestItem } from "@/@games/templates/giftbox/chest";
 import {
   findGameByTemplateId,
   getGameSpins,
@@ -13,9 +20,6 @@ import {
   getGameUrl,
 } from "@/@games/templates/giftbox/chest/chest.helpers";
 import { getUserBalance } from "@/@games/templates/giftbox/chest/chest.rules";
-import { useStorePurchase } from "@/@sdk/smartico/hooks/useStorePurchase";
-import { useSmartico } from "@/@sdk/smartico/context/SmarticoProvider";
-import { createSmarticoTransport } from "@/@sdk/smartico";
 
 import { ChestCardCompact, ChestCardWide } from "./ChestCards";
 import PurchaseConfirmModal from "./PurchaseConfirmModal";
@@ -27,11 +31,7 @@ type Props = {
   userProfile: any;
 };
 
-export default function ChestShop({
-  chests,
-  games,
-  userProfile,
-}: Props) {
+export default function ChestShop({ chests, games, userProfile }: Props) {
   const searchParams = useSearchParams();
   const { smartico } = useSmartico();
 
@@ -47,25 +47,23 @@ export default function ChestShop({
     [smartico]
   );
 
-  const { 
-    purchase, 
-    state: purchaseState, 
+  const {
+    purchase,
+    state: purchaseState,
     purchaseError,
-    reset: resetPurchase 
+    reset: resetPurchase,
   } = useStorePurchase({
     transport: transport!,
-    onSuccess: (result) => {
-      
+    onSuccess: () => {
       setModalMode(null);
-      
+
       setTimeout(() => {
         setPurchasedChest(selectedChest);
         setModalMode("success");
       }, 300);
-      
     },
     onError: (error) => {
-      console.error("❌ Erro na compra:", error);
+      console.error("Erro na compra:", error);
     },
   });
 
@@ -116,7 +114,7 @@ export default function ChestShop({
 
   const handlePlayNow = () => {
     if (!purchasedChest) return;
-    
+
     const skin = getSkinByChest(purchasedChest);
     if (skin) {
       window.location.href = getGameUrl(skin.id, uid, lang);

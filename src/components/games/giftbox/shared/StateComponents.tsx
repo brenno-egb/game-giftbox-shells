@@ -16,11 +16,11 @@ export const ErrorState = ({
   showRetry = true,
 }: ErrorStateProps) => {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-black p-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-linear-to-b from-slate-900 to-black p-8">
       <div className="max-w-2xl w-full bg-red-950/30 border-2 border-red-500 rounded-xl p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
           <svg
-            className="w-8 h-8 text-red-500 flex-shrink-0"
+            className="w-8 h-8 text-red-500 shrink-0"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

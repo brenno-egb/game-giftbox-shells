@@ -11,20 +11,13 @@ type RiveOnStateChange = (event: any) => void;
 
 type Props = {
   path: string;
-
   animations?: RiveAnimations;
-
   stateMachines?: RiveStateMachines;
-
   artboard?: string;
-
   play?: boolean;
-
   className?: string;
   style?: React.CSSProperties;
-
   onReady?: (inst: RiveInstance) => void;
-
   onStateChange?: RiveOnStateChange;
 };
 

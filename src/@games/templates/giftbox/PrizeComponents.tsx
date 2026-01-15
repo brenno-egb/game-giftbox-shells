@@ -1,11 +1,7 @@
-// prizeComponents.tsx
-
 import { DEFAULT_PRIZE_ICON } from "./config";
 
-// --- 1. AJUSTE NA INTERFACE PRIZE ---
-// Permitimos que id seja opcional ou undefined para casar com o tipo do SDK
 export interface Prize {
-  id?: string | number; // Mudou de "string | number" para "id?" ou "string | number | undefined"
+  id?: string | number;
   name?: string;
   icon?: string;
   prize_type?: string;
@@ -19,9 +15,6 @@ interface PrizeItemProps {
   isTarget?: boolean;
 }
 
-/**
- * Item de prêmio na roleta (grande com nome)
- */
 export function PrizeItem({ prize, isTarget = false }: PrizeItemProps) {
   return (
     <div
@@ -47,9 +40,6 @@ interface CompactPrizeItemProps {
   prize: Prize;
 }
 
-/**
- * Item de prêmio compacto (pequeno para preview)
- */
 export function CompactPrizeItem({ prize }: CompactPrizeItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
@@ -75,11 +65,7 @@ interface PrizeAnnouncementProps {
   onClose: () => void;
 }
 
-/**
- * Card de anúncio de prêmio ganho
- */
 export function PrizeAnnouncement({ prize, onClose }: PrizeAnnouncementProps) {
-  // Monta mensagem de prêmio
   const prizeLabel = (() => {
     if (!prize) return "Jogada concluída.";
 
@@ -94,41 +80,32 @@ export function PrizeAnnouncement({ prize, onClose }: PrizeAnnouncementProps) {
 
   return (
     <div className="w-full max-w-sm animate-bounce-in z-50 shrink-0 mx-auto px-4">
-      {/* Container Principal Horizontal */}
       <div className="relative overflow-hidden rounded-xl border-[3px] border-[#374151] bg-[#1a1f2e] shadow-[0_8px_0_#0f1219,0_15px_20px_rgba(0,0,0,0.5)] flex flex-row h-32">
-        
-        {/* Fundo Decorativo */}
         <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_left,_var(--tw-gradient-stops))] from-blue-500/30 via-transparent to-transparent" />
 
-        {/* ESQUERDA: Imagem do Prêmio (Slot Colorido) */}
         <div className="relative w-28 shrink-0 border-r-2 border-[#374151] bg-[#151925] flex items-center justify-center overflow-hidden group">
-            {/* Burst Effect atrás do item */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)] animate-pulse" />
-            
-            <div className="relative w-26 h-26 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] transition-transform group-hover:scale-110 duration-300">
-                <img
-                    src={prize?.icon || DEFAULT_PRIZE_ICON}
-                    alt={prize?.name || "Prêmio"}
-                    className="h-full w-full object-contain"
-                    decoding="async"
-                />
-            </div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)] animate-pulse" />
+
+          <div className="relative w-26 h-26 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)] transition-transform group-hover:scale-110 duration-300">
+            <img
+              src={prize?.icon || DEFAULT_PRIZE_ICON}
+              alt={prize?.name || "Prêmio"}
+              className="h-full w-full object-contain"
+              decoding="async"
+            />
+          </div>
         </div>
 
-        {/* DIREITA: Informações e Ação */}
         <div className="flex-1 flex flex-col justify-center px-4 py-2 min-w-0">
-          
-          {/* Header */}
           <div className="flex flex-col mb-2">
-            <h2 
-                className="text-sm font-bold text-white uppercase leading-tight text-center"
-                style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
+            <h2
+              className="text-sm font-bold text-white uppercase leading-tight text-center"
+              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}
             >
-                {prize?.name ?? "Item"}
+              {prize?.name ?? "Item"}
             </h2>
           </div>
 
-          {/* Botão Compacto */}
           <button
             onClick={onClose}
             className="
@@ -141,15 +118,17 @@ export function PrizeAnnouncement({ prize, onClose }: PrizeAnnouncementProps) {
                 flex items-center justify-center
             "
           >
-            <span 
-                className="text-sm font-black text-white uppercase tracking-wide group-hover:scale-[1.02] transform transition-transform"
-                style={{ textShadow: "1px 1px 0 black", WebkitTextStroke: "0.5px black" }}
+            <span
+              className="text-sm font-black text-white uppercase tracking-wide group-hover:scale-[1.02] transform transition-transform"
+              style={{
+                textShadow: "1px 1px 0 black",
+                WebkitTextStroke: "0.5px black",
+              }}
             >
               Resgatar
             </span>
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -160,9 +139,6 @@ interface PossiblePrizesProps {
   maxVisible?: number;
 }
 
-/**
- * Preview de prêmios possíveis (opcional)
- */
 export function PossiblePrizes({
   prizes,
   maxVisible = 5,
@@ -177,11 +153,8 @@ export function PossiblePrizes({
         Prêmios Possíveis:
       </div>
       <div className="flex gap-2 bg-black/30 backdrop-blur-sm rounded-lg p-2 border border-white/10">
-        {visiblePrizes.map((prize) => (
-          // Usamos 'prize.id ?? index' se necessário, mas o React pede key única.
-          // Como id é opcional na interface agora, o TS pode reclamar do key.
-          // O ideal é garantir que id exista ou usar index como fallback.
-          <CompactPrizeItem key={prize.id ?? Math.random()} prize={prize} />
+        {visiblePrizes.map((prize, index) => (
+          <CompactPrizeItem key={prize.id ?? index} prize={prize} />
         ))}
         {prizes.length > maxVisible && (
           <div className="flex items-center justify-center w-10 h-10 text-white/60 text-xs">
