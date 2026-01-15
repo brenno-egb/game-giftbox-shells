@@ -11,10 +11,12 @@ import { resolveChestTheme } from "@/@games/templates/giftbox/chest/chest.theme"
 
 import { CurrencyIcon } from "./ChestComponents";
 import { ErrorToast } from "./ErrorToast";
+import { UserProfile } from "@/@sdk/smartico/domain/domain.type";
+import { getUserBalance } from "@/@games/templates/giftbox/chest/chest.rules";
 
 type Props = {
   chest: ChestItem;
-  userBalance: number;
+  userProfile: UserProfile;
   onClose: () => void;
   onConfirm: () => void;
   isLoading?: boolean;
@@ -25,7 +27,7 @@ type Props = {
 
 export default function PurchaseConfirmModal({
   chest,
-  userBalance,
+  userProfile,
   onClose,
   onConfirm,
   isLoading = false,
@@ -50,7 +52,7 @@ export default function PurchaseConfirmModal({
 
   const confirmDisabled = isLoading || !!error || !canBuy || !canAfford;
 
-  const balanceAfter = userBalance - chest.price;
+  const userBalance = getUserBalance(userProfile, chest.purchase_type);
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -62,7 +64,7 @@ export default function PurchaseConfirmModal({
     <>
       <ErrorToast error={error} onClose={onCloseToast || onClose} />
 
-      <div className="fixed inset-0 z-100 flex items-center justify-center px-4 font-sans">
+      <div className="fixed inset-0 z-100 flex items-center justify-center px-4 font-sans pt-12">
         <div
           onClick={!isLoading ? onClose : undefined}
           className={`absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity duration-300 ${
@@ -70,56 +72,45 @@ export default function PurchaseConfirmModal({
           } ${isLoading ? "cursor-wait" : "cursor-pointer"}`}
         />
 
-        <div
-          className={`relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 ${
-            isVisible
-              ? "scale-100 opacity-100 translate-y-0"
-              : "scale-80 opacity-0 translate-y-5"
-          }`}
-          style={{
-            backgroundImage: `
-              url(${skin?.assetsBase}/${skin?.backgroundStore}), 
-              linear-gradient(to top, ${
-                theme.panelBorder || theme.accent
-              } 0%, transparent 60%)
-            `,
-            backgroundSize: "cover",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundClip: "padding-box, border-box",
-            backgroundOrigin: "padding-box, border-box",
-            borderWidth: "4px",
-            borderStyle: "solid",
-            borderColor: "transparent",
-            boxShadow: `0 0 40px -20px ${theme.accentGlow}`,
-            transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
-          }}
-        >
-          {!isLoading && (
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-50 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-colors border border-white/10"
+        <div className="relative w-full flex flex-col items-center">
+
+          {/* Header usuário */}
+          <div
+            className={`absolute w-full -top-25 flex justify-center items-center text-sm z-100 transition-all pointer-events-none duration-200 ${
+              isVisible
+                ? "scale-100 opacity-100 translate-y-0"
+                : "scale-80 opacity-0 translate-y-5"
+            }`}
+          >
+            <div className="flex items-center gap-4 py-1 px-3 border-2 border-gray-600 bg-gray-800 rounded-sm drop-shadow-[0px_2px_0px_rgba(11,11,11)]">
+              <div className="w-8 h-8 drop-shadow-[2px_2px_2px_rgba(0,0,0)]">
+                <img src={userProfile.avatar_url} alt="" />
+              </div>
+              <div className="flex flex-row items-center gap-2">
+                <div className="w-4 h-4 drop-shadow-[1px_1px_1px_rgba(0,0,0)]">
+                  <CurrencyIcon type={chest.purchase_type} />
+                </div>
+                <span
+                  className="text-white text-lg font-bold"
+                  style={{
+                    textShadow: "1px 1px 0 black",
+                    WebkitTextStroke: "1px black",
+                  }}
+                >
+                  {userBalance}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bau */}
+          <div className={`absolute -top-22 h-58 w-full flex items-center justify-center z-10 shrink-0 pointer-events-none transition-all duration-300 ${
+              isVisible
+                ? "scale-100 opacity-100 translate-y-0"
+                : "scale-80 opacity-0 translate-y-5"
+            }`}
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          )}
-
-          <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
-
-          <div className="relative h-64 w-full flex items-center justify-center overflow-hidden z-10 shrink-0">
-            <div className="relative z-10 w-full h-full flex items-center justify-center p-4 mb-12">
+            <div className="relative z-10 w-full h-full flex items-center justify-center">
               {skin?.rivePath ? (
                 <div className="w-full h-full transform scale-125 translate-y-4">
                   <GiftboxChestRive
@@ -148,73 +139,103 @@ export default function PurchaseConfirmModal({
             </div>
           </div>
 
-          <div className="px-6 pb-6 pt-2 text-center space-y-4 relative z-20 flex flex-col items-center">
-            <div>
-              <h2
-                className="text-3xl font-black text-white uppercase italic tracking-wider drop-shadow-md leading-none"
-                style={{
-                  textShadow: "2px 2px 0 black",
-                  WebkitTextStroke: "1px black",
-                }}
+          <div
+            className={`relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 ${
+              isVisible
+                ? "scale-100 opacity-100 translate-y-0"
+                : "scale-80 opacity-0 translate-y-5"
+            }`}
+            style={{
+              backgroundImage: `
+              url(${skin?.assetsBase}/${skin?.backgroundStore}), 
+              linear-gradient(to top, ${
+                theme.panelBorder || theme.accent
+              } 0%, transparent 60%)
+            `,
+              backgroundSize: "cover",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
+              backgroundClip: "padding-box, border-box",
+              backgroundOrigin: "padding-box, border-box",
+              borderWidth: "4px",
+              borderStyle: "solid",
+              borderColor: "transparent",
+              boxShadow: `0 0 40px -20px ${theme.accentGlow}`,
+              transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            {!isLoading && (
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 z-50 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white/80 hover:text-white transition-colors border border-white/10"
               >
-                {chest.name}
-              </h2>
-            </div>
-
-            {canAfford && (
-              <div className="w-full bg-black/30 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-white/60">Seu Saldo:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">{userBalance}</span>
-                    <div className="w-5 h-5">
-                      <CurrencyIcon type={chest.purchase_type} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-white/60">Valor:</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-bold">{chest.price}</span>
-                    <div className="w-5 h-5">
-                      <CurrencyIcon type={chest.purchase_type} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-white/10 my-2" />
-
-                <div className="flex justify-between items-center">
-                  <span className="text-white/80 font-bold">Saldo Final:</span>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`text-lg font-black ${
-                        balanceAfter >= 0 ? "text-green-400" : "text-red-400"
-                      }`}
-                    >
-                      {balanceAfter}
-                    </span>
-                    <div className="w-5 h-5">
-                      <CurrencyIcon type={chest.purchase_type} />
-                    </div>
-                  </div>
-                </div>
-              </div>
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             )}
 
-            <div className="w-full pt-2">
-              <div
-                className={`flex gap-3 ${
-                  showCancelButton ? "" : "justify-center"
-                }`}
-              >
-                {showCancelButton && (
-                  <button
-                    onClick={onClose}
-                    disabled={isLoading}
-                    className={`
-                        flex-1 py-3 rounded-lg border-b-4 font-black uppercase text-md
+            <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
+
+            {/* Espaco (container bau) */}
+            <div className="relative h-45 w-full"></div>
+
+            <div className="px-6 pb-6 pt-2 text-center space-y-4 relative z-20 flex flex-col items-center">
+              <div>
+                <h2
+                  className="text-3xl font-black text-white uppercase italic tracking-wider drop-shadow-md leading-none"
+                  style={{
+                    textShadow: "2px 2px 0 black",
+                    WebkitTextStroke: "1px black",
+                  }}
+                >
+                  {chest.name}
+                </h2>
+              </div>
+
+              {canAfford && (
+                <div className="w-full">
+                  <div className="flex justify-center items-center text-sm">
+                    <div className="relative flex justify-end items-center gap-2 bg-black/60 pb-0.5 pl-6 pr-2 rounded-sm">
+                      <div className="absolute -left-3 w-7.5 h-7.5">
+                        <CurrencyIcon type={chest.purchase_type} />
+                      </div>
+                      <span
+                        className="text-white text-xl font-bold"
+                        style={{
+                          textShadow: "2px 2px 0 black",
+                          WebkitTextStroke: "0.5px black",
+                        }}
+                      >
+                        {chest.price} chave{Number(chest.price) > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full pt-2">
+                <div
+                  className={`flex gap-3 ${
+                    showCancelButton ? "" : "justify-center"
+                  }`}
+                >
+                  {showCancelButton && (
+                    <button
+                      onClick={onClose}
+                      disabled={isLoading}
+                      className={`
+                        flex-1 py-3 px-1 rounded-lg border-b-4 font-black uppercase text-md
                         transition-all
                         ${
                           isLoading
@@ -222,42 +243,43 @@ export default function PurchaseConfirmModal({
                             : "hover:scale-[1.02] active:scale-[0.98] active:border-b-0 active:translate-y-1"
                         }
                     `}
-                    style={{
-                      backgroundColor: "#555f6d",
-                      borderColor: "#363d45",
-                      color: "white",
-                      textShadow: "1px 1px 0 black",
-                      WebkitTextStroke: "0.5px gray",
-                    }}
-                  >
-                    Cancelar
-                  </button>
-                )}
+                      style={{
+                        backgroundColor: "#555f6d",
+                        borderColor: "#363d45",
+                        color: "white",
+                        textShadow: "1px 1px 0 black",
+                        WebkitTextStroke: "0.5px gray",
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  )}
 
-                <button
-                  onClick={onConfirm}
-                  disabled={confirmDisabled}
-                  className={`
-                  relative w-full max-w-55 py-3.5 rounded-lg border-b-[5px] font-black uppercase tracking-tight text-xl text-white transition-all select-none
+                  <button
+                    onClick={onConfirm}
+                    disabled={confirmDisabled}
+                    className={`
+                  relative w-full max-w-55 py-3.5 px-1 rounded-lg border-b-[5px] font-black uppercase tracking-tight text-xl text-white transition-all select-none
                   ${
                     !canAfford
                       ? "opacity-90 grayscale cursor-not-allowed"
                       : "hover:scale-[1.02] active:scale-[0.98] active:border-b-0 active:translate-y-1.5"
                   }
                 `}
-                  style={{
-                    backgroundColor: canAfford ? theme.accent : "#555f6d",
-                    borderColor: canAfford ? theme.accentBorder : "#363d45",
-                    textShadow: "1px 1px 0 black",
-                    WebkitTextStroke: "0.5px black",
-                  }}
-                >
-                  <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
+                    style={{
+                      backgroundColor: canAfford ? theme.accent : "#555f6d",
+                      borderColor: canAfford ? theme.accentBorder : "#363d45",
+                      textShadow: "1px 1px 0 black",
+                      WebkitTextStroke: "0.5px black",
+                    }}
+                  >
+                    <div className="absolute top-1 left-1 right-1 h-1/3 bg-white/10 rounded-t-md pointer-events-none" />
 
-                  <span className="relative z-10">
-                    {isLoading ? "COMPRANDO..." : confirmLabel}
-                  </span>
-                </button>
+                    <span className="relative z-10">
+                      {isLoading ? "COMPRANDO..." : confirmLabel}
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

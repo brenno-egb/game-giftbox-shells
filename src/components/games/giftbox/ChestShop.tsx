@@ -19,16 +19,17 @@ import {
   sortChestsByOrder,
   getGameUrl,
 } from "@/@games/templates/giftbox/chest/chest.helpers";
-import { getUserBalance } from "@/@games/templates/giftbox/chest/chest.rules";
+// import { getUserBalance } from "@/@games/templates/giftbox/chest/chest.rules";
 
 import { ChestCardCompact, ChestCardWide } from "./ChestCards";
 import PurchaseConfirmModal from "./PurchaseConfirmModal";
 import PurchaseSuccessModal from "./PurchaseSucessModal";
+import { UserProfile } from "@/@sdk/smartico/domain/domain.type";
 
 type Props = {
   chests: ChestItem[];
   games: MiniGameTemplate[];
-  userProfile: any;
+  userProfile: UserProfile;
 };
 
 export default function ChestShop({ chests, games, userProfile }: Props) {
@@ -172,7 +173,8 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
       {modalMode === "confirm" && selectedChest && userProfile && (
         <PurchaseConfirmModal
           chest={selectedChest}
-          userBalance={getUserBalance(userProfile, selectedChest.purchase_type)}
+          // userBalance={getUserBalance(userProfile, selectedChest.purchase_type)}
+          userProfile={userProfile}
           onClose={handleCloseModal}
           onConfirm={handleConfirmPurchase}
           isLoading={purchaseState.isLoading}

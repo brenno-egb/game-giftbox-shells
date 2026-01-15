@@ -11,6 +11,7 @@ import ChestShop from "@/components/games/giftbox/ChestShop";
 import LoadingScreen from "@/components/games/giftbox/LoadingScreen";
 import { validateGameParamsFromURL } from "@/@games/core/utils/validation";
 import { ErrorState } from "@/components/games/giftbox/shared/StateComponents";
+import { UserProfile } from "@/@sdk/smartico/domain/domain.type";
 
 const rubik = Rubik({
   subsets: ["latin"],
@@ -90,7 +91,7 @@ function HallContent({ uid, lang }: { uid: string; lang: string }) {
           <ChestShop
             chests={hall.chests}
             games={hall.games}
-            userProfile={hall.profile}
+            userProfile={hall.profile as UserProfile}
           />
         </section>
       </div>
