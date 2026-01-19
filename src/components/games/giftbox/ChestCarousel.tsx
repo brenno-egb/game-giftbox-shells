@@ -35,7 +35,7 @@ const JuicyButton = ({
         relative px-6 py-3 border-2 skew-x-4
         font-black text-xl uppercase tracking-wide transition-all select-none
         hover:scale-105 hover:brightness-110 
-        active:scale-95 active:translate-y-[4px] active:shadow-none
+        active:scale-95 active:translate-y-1 active:shadow-none
         disabled:opacity-50 disabled:grayscale
         ${styles[variant]} 
         ${className}

@@ -132,7 +132,7 @@ export const InfoState = ({
   action,
 }: InfoStateProps) => {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-black p-8">
+    <div className="min-h-screen w-full flex items-center justify-center bg-linear-to-b from-slate-900 to-black p-8">
       <div className="max-w-lg w-full bg-blue-950/30 border-2 border-blue-500 rounded-xl p-8 text-center shadow-2xl">
         <div className="mb-4">
           {icon || (

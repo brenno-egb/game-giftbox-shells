@@ -64,7 +64,7 @@ export function ErrorToast({ error, onClose }: Props) {
           backdropFilter: "blur(8px)",
         }}
       >
-        <div className={`flex-shrink-0 ${colorScheme.icon}`}>
+        <div className={`shrink-0 ${colorScheme.icon}`}>
           {error.severity === "error" && (
             <svg
               className="w-6 h-6"
@@ -120,7 +120,7 @@ export function ErrorToast({ error, onClose }: Props) {
 
         <button
           onClick={handleClose}
-          className="flex-shrink-0 text-white/80 hover:text-white transition-colors"
+          className="shrink-0 text-white/80 hover:text-white transition-colors"
         >
           <svg
             className="w-5 h-5"

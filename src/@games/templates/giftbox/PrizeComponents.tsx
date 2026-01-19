@@ -81,7 +81,7 @@ export function PrizeAnnouncement({ prize, onClose }: PrizeAnnouncementProps) {
   return (
     <div className="w-full max-w-sm animate-bounce-in z-50 shrink-0 mx-auto px-4">
       <div className="relative overflow-hidden rounded-xl border-[3px] border-[#374151] bg-[#1a1f2e] shadow-[0_8px_0_#0f1219,0_15px_20px_rgba(0,0,0,0.5)] flex flex-row h-32">
-        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_left,_var(--tw-gradient-stops))] from-blue-500/30 via-transparent to-transparent" />
+        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(circle_at_left,var(--tw-gradient-stops))] from-blue-500/30 via-transparent to-transparent" />
 
         <div className="relative w-28 shrink-0 border-r-2 border-[#374151] bg-[#151925] flex items-center justify-center overflow-hidden group">
           <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.05)_0%,transparent_70%)] animate-pulse" />
@@ -112,7 +112,7 @@ export function PrizeAnnouncement({ prize, onClose }: PrizeAnnouncementProps) {
                 group relative w-full
                 bg-[#FFD000] hover:bg-[#ffe033]
                 border-b-[3px] border-b-[#c4a023]
-                active:border-b-0 active:translate-y-[3px]
+                active:border-b-0 active:translate-y-0.75
                 rounded-lg px-2 py-1.5
                 transition-all duration-75
                 flex items-center justify-center
