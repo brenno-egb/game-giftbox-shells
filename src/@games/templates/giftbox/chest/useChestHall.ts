@@ -50,7 +50,7 @@ export function useChestHall() {
 
   const transport = useMemo(
     () => (smartico ? createSmarticoTransport(smartico, false) : null),
-    [smartico]
+    [smartico],
   );
 
   const stores = useMemo(() => {
@@ -68,7 +68,7 @@ export function useChestHall() {
       storeItems: any[],
       games: MiniGameTemplate[],
       profile: UserProfile | null,
-      level: UserLevel | null
+      level: UserLevel | null,
     ): Omit<ChestHallState, "isLoading" | "error"> => {
       const chests = filterChests(storeItems);
       const enrichedChests = enrichChestsWithGameData(chests, games, profile);
@@ -83,7 +83,7 @@ export function useChestHall() {
         hasAvailable: hasAnyAvailableChest(enrichedChests),
       };
     },
-    []
+    [],
   );
 
   const refresh = useCallback(async () => {
@@ -99,7 +99,10 @@ export function useChestHall() {
         stores.miniGames.refresh(),
       ]);
 
-      const newState = computeState(items, games, profile, level);
+      const filteredItems = items.filter(item => item.priority === 9);
+
+      const newState = computeState(filteredItems, games, profile, level);
+
       setState((prev) => ({ ...prev, ...newState, isLoading: false }));
     } catch (e: any) {
       setState((prev) => ({
@@ -113,7 +116,7 @@ export function useChestHall() {
   usePropsChange(
     useCallback(() => {
       refresh();
-    }, [refresh])
+    }, [refresh]),
   );
 
   useEffect(() => {
