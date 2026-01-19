@@ -1,7 +1,3 @@
-/**
- * Constantes para tipos de mensagens entre iframe e host
- */
-
 export const MESSAGE_TYPES = {
   REDIRECT: "SG:REDIRECT",
   HIDE_OVERLAY: "SG:HIDE_OVERLAY",

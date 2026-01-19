@@ -8,13 +8,12 @@ export abstract class BaseStore<T> {
   protected logger: ReturnType<typeof createLogger>;
   protected listeners = new Set<Listener<T>>();
   protected lastResult: T;
-  protected isSubscribed = false;
 
   constructor(
     transport: Transport,
     namespace: string,
     initialValue: T,
-    debug = false
+    debug = false,
   ) {
     this.transport = transport;
     this.logger = createLogger(`smartico:${namespace}`, debug);
@@ -59,6 +58,8 @@ export abstract class BaseStore<T> {
 }
 
 export abstract class SubscribableStore<T> extends BaseStore<T[]> {
+  private updateCallbackRegistered = false;
+
   constructor(transport: Transport, namespace: string, debug = false) {
     super(transport, namespace, [], debug);
   }
@@ -67,38 +68,34 @@ export abstract class SubscribableStore<T> extends BaseStore<T[]> {
     onUpdate?: (items: T[]) => void;
   }): Promise<T[]>;
 
-  protected ensureSubscribed() {
-    if (this.isSubscribed) return;
+  private handleUpdate = (items: T[]) => {
+    this.logger.debug("onUpdate received", items.length, "items");
+    this.lastResult = items;
+    this.notifyListeners(items);
+  };
 
-    this.logger.debug("registering onUpdate");
-    this.isSubscribed = true;
+  protected ensureUpdateCallback() {
+    if (this.updateCallbackRegistered) return;
 
-    this.doFetch({
-      onUpdate: (items) => {
-        this.logger.debug("onUpdate received", items.length, "items");
-        this.lastResult = items;
-        this.notifyListeners(items);
-      },
-    })
-      .then((items) => {
-        this.lastResult = items;
-        this.notifyListeners(items);
-      })
-      .catch((err) => {
-        this.logger.error("initial fetch failed", err);
-      });
+    this.logger.debug("registering onUpdate callback");
+    this.updateCallbackRegistered = true;
   }
 
   subscribe(listener: Listener<T[]>): () => void {
-    this.ensureSubscribed();
+    this.ensureUpdateCallback();
     return super.subscribe(listener);
   }
 
   async fetch(): Promise<T[]> {
     this.logger.debug("manual fetch");
+    this.ensureUpdateCallback();
 
     try {
-      const items = await this.doFetch();
+      const opts = this.updateCallbackRegistered
+        ? { onUpdate: this.handleUpdate }
+        : undefined;
+
+      const items = await this.doFetch(opts);
       this.lastResult = items;
       this.notifyListeners(items);
       return items;
