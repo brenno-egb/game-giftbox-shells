@@ -68,6 +68,5 @@ export { HostBridge, MESSAGE_TYPES } from "./messaging/hostBridge";
 export type {
   RedirectMode,
   MessageType,
-  RedirectPayload,
   MessagePayload,
 } from "./messaging/hostBridge";

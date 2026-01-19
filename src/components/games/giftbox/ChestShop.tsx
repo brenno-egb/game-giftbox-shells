@@ -64,7 +64,7 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
       }, 300);
     },
     onError: (error) => {
-      console.error("Erro na compra:", error);
+      console.error("Erro na compra");
     },
   });
 
