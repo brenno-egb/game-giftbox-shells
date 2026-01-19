@@ -99,7 +99,7 @@ export function useChestHall() {
         stores.miniGames.refresh(),
       ]);
 
-      const filteredItems = items.filter((item) => item.priority === 9);
+      const filteredItems = items.filter(item => item.priority === 9);
 
       const newState = computeState(filteredItems, games, profile, level);
 
@@ -113,30 +113,10 @@ export function useChestHall() {
     }
   }, [stores, computeState]);
 
-  const silentRefresh = useCallback(async () => {
-    if (!stores) return;
-
-    try {
-      const [items, profile, level, games] = await Promise.all([
-        stores.storeItems.fetch(),
-        stores.userProfile.fetch(),
-        stores.userLevel.fetch(),
-        stores.miniGames.refresh(),
-      ]);
-
-      const filteredItems = items.filter((item) => item.priority === 9);
-      const newState = computeState(filteredItems, games, profile, level);
-
-      setState((prev) => ({ ...prev, ...newState }));
-    } catch (e: any) {
-      console.error("Silent refresh failed:", e);
-    }
-  }, [stores, computeState]);
-
   usePropsChange(
     useCallback(() => {
-      silentRefresh();
-    }, [silentRefresh]),
+      refresh();
+    }, [refresh]),
   );
 
   useEffect(() => {
@@ -162,5 +142,5 @@ export function useChestHall() {
     };
   }, [smartico, refresh]);
 
-  return { ...state, refresh, silentRefresh };
+  return { ...state, refresh };
 }
