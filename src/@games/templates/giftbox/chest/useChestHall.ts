@@ -99,7 +99,7 @@ export function useChestHall() {
         stores.miniGames.refresh(),
       ]);
 
-      const filteredItems = items.filter(item => item.priority === 9);
+      const filteredItems = items.filter(item => item.priority === 999);
 
       const newState = computeState(filteredItems, games, profile, level);
 
