@@ -83,6 +83,15 @@ async function waitForInternalSetup(
   throw new Error("Timeout: internal setup");
 }
 
+function suspendUI(smartico: Smartico) {
+  try {
+    smartico.suspendInbox?.(true);
+    smartico.suspendPopups?.(true);
+  } catch (e) {
+    console.error("[Smartico] Failed to suspend UI:", e);
+  }
+}
+
 export type BootOptions = {
   scriptUrl: string;
   labelKey: string;
@@ -133,10 +142,10 @@ export async function bootSmartico(opts: BootOptions): Promise<Smartico> {
     await waitForInternalSetup(smartico, 12000);
 
     step("suspend-ui");
-    try {
-      smartico.suspendInbox?.(true);
-      smartico.suspendPopups?.(true);
-    } catch {}
+    suspendUI(smartico);
+
+    smartico.on?.("init", () => suspendUI(smartico));
+    smartico.on?.("identify", () => suspendUI(smartico));
 
     step("ready");
     return smartico;
