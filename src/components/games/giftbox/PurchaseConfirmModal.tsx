@@ -36,8 +36,7 @@ function PrizeOrbit({ prizes }: { prizes: any[] }) {
     46022, // banca 40000 - esmeralda
     46023, // banca 80000 - diamante
     46484, // banca 160000 - black diamond
-
-  ]
+  ];
 
   useEffect(() => {
     let raf: number;
@@ -56,6 +55,9 @@ function PrizeOrbit({ prizes }: { prizes: any[] }) {
 
   const rx = 120;
   const ry = 42;
+
+  const fireParticles = 30;
+  const particleSize = 8;
 
   return (
     <div className="pointer-events-none absolute top-27 w-full flex justify-center mr-5">
@@ -116,6 +118,7 @@ function PrizeOrbit({ prizes }: { prizes: any[] }) {
           const depth = (sinAngle + 1) / 2;
           const scale = 1 + depth * 0.55;
           const opacity = 0.35 + depth * 0.65;
+          const isSpecial = special.includes(prize.id);
 
           return (
             <div
@@ -126,27 +129,83 @@ function PrizeOrbit({ prizes }: { prizes: any[] }) {
                 opacity,
               }}
             >
-              <div className={`relative w-8 h-8 flex flex-col transition-all duration-300 ${(special.includes(prize.id)) ? 'shadow-md shadow-yellow-500 border border-yellow-400 rounded-md scale-130' : ''} `}>
+              <div className="relative w-8 h-8">
+                {isSpecial && (
+                  <div
+                    className="fire-container"
+                    style={{
+                      position: "absolute",
+                      inset: "-12px",
+                      filter: "blur(0.5px)",
+                    }}
+                  >
+                    {Array.from({ length: fireParticles }).map((_, idx) => (
+                      <div
+                        key={`particle-${idx}`}
+                        className="fire-particle"
+                        style={{
+                          position: "absolute",
+                          bottom: 0,
+                          width: `${particleSize * 8}px`,
+                          height: `${particleSize * 4}px`,
+                          left: `calc((100% - ${particleSize * 8}px) * ${idx / fireParticles})`,
+                          backgroundImage:
+                            "radial-gradient(rgb(255,80,0) 20%, rgba(255,80,0,0) 70%)",
+                          borderRadius: "50%",
+                          mixBlendMode: "screen",
+                          opacity: 0,
+                          animation: `fire-rise 1s ease-in infinite`,
+                          animationDelay: `${idx * 0.35}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {prize.icon ? (
                   <Image
                     src={prize.icon}
                     alt={prize.name}
                     fill
-                    className="object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]"
+                    className={`object-contain relative z-10 ${
+                      isSpecial
+                        ? "scale-120"
+                        : "drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]"
+                    }`}
                   />
                 ) : (
-                  <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center text-sm">
+                  <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center text-sm relative z-10">
                     🎁
                   </div>
                 )}
-                <div className="w-full text-[7px] whitespace-nowrap truncate">
-                  {prize.name}
-                </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      <style jsx>{`
+        @keyframes fire-rise {
+          from {
+            opacity: 0;
+            transform: translateY(0) scale(1);
+          }
+          20% {
+            opacity: 0.8;
+          }
+          30% {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-80px) scale(0);
+          }
+        }
+
+        .fire-particle {
+          will-change: transform, opacity;
+        }
+      `}</style>
     </div>
   );
 }
@@ -313,7 +372,7 @@ export default function PurchaseConfirmModal({
 
             <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
 
-            <div className="relative h-45 w-full"></div>
+            <div className="relative h-48 w-full"></div>
 
             <div className="px-6 pb-6 pt-2 text-center space-y-4 relative z-20 flex flex-col items-center">
               <div>
@@ -427,7 +486,6 @@ export default function PurchaseConfirmModal({
           .animate-float {
             animation: float 4s ease-in-out infinite;
           }
-            
         `}</style>
       </div>
     </>
