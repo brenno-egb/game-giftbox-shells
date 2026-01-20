@@ -19,7 +19,6 @@ import {
   sortChestsByOrder,
   getGameUrl,
 } from "@/@games/templates/giftbox/chest/chest.helpers";
-// import { getUserBalance } from "@/@games/templates/giftbox/chest/chest.rules";
 
 import { ChestCardCompact, ChestCardWide } from "./ChestCards";
 import PurchaseConfirmModal from "./PurchaseConfirmModal";
@@ -70,7 +69,7 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
 
   const sortedChests = useMemo(() => sortChestsByOrder(chests), [chests]);
 
-  const handleCardClick = (chest: ChestItem, status: string) => {
+  const handleCardClick = (chest: ChestItem) => {
     const game = findGameByTemplateId(games, chest.templateId);
     const spins = getGameSpins(game);
     const isReady = chest.hasAttempts && spins > 0;
@@ -86,8 +85,10 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
     }
   };
 
-  const handleBuyClick = (chest: ChestItem, status: string, e?: any) => {
-    e?.stopPropagation?.();
+  const handleBuyClick = (chest: ChestItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
     setSelectedChest(chest);
     setModalMode("confirm");
   };
@@ -163,8 +164,8 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
               spinsAvailable={spins}
               status={status}
               chest={chest}
-              onClick={() => handleCardClick(chest, status)}
-              onActionClick={(e: any) => handleBuyClick(chest, status, e)}
+              onClick={() => handleCardClick(chest)}
+              onActionClick={(e: React.MouseEvent) => handleBuyClick(chest, e)}
             />
           );
         })}
@@ -173,7 +174,6 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
       {modalMode === "confirm" && selectedChest && userProfile && (
         <PurchaseConfirmModal
           chest={selectedChest}
-          // userBalance={getUserBalance(userProfile, selectedChest.purchase_type)}
           userProfile={userProfile}
           onClose={handleCloseModal}
           onConfirm={handleConfirmPurchase}
@@ -181,6 +181,7 @@ export default function ChestShop({ chests, games, userProfile }: Props) {
           error={purchaseError}
           onRetry={handleRetry}
           onCloseToast={handleCloseToast}
+          prizes={findGameByTemplateId(games, getSkinByChest(selectedChest)?.templateId)?.prizes}
         />
       )}
 

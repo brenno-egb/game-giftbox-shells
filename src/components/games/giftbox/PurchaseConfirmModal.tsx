@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 import type { PurchaseError } from "@/@sdk/smartico";
 import type { ChestItem } from "@/@games/templates/giftbox/chest";
@@ -23,7 +23,133 @@ type Props = {
   error?: PurchaseError | null;
   onRetry?: () => void;
   onCloseToast?: () => void;
+  prizes?: any[];
 };
+
+function PrizeOrbit({ prizes }: { prizes: any[] }) {
+  const items = prizes.slice(0, 12);
+  const [t, setT] = useState(0);
+  const special = [
+    46015, // banca 5000 - bronze
+    46020, // banca 10000 - prata
+    46021, // banca 20000 - ouro
+    46022, // banca 40000 - esmeralda
+    46023, // banca 80000 - diamante
+    46484, // banca 160000 - black diamond
+
+  ]
+
+  useEffect(() => {
+    let raf: number;
+    let last = performance.now();
+
+    const loop = (now: number) => {
+      const dt = now - last;
+      last = now;
+      setT((v) => v + dt * 0.00025);
+      raf = requestAnimationFrame(loop);
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const rx = 120;
+  const ry = 42;
+
+  return (
+    <div className="pointer-events-none absolute top-27 w-full flex justify-center mr-5">
+      {/* Itens de TRÁS */}
+      <div className="relative w-0 h-0" style={{ zIndex: 5 }}>
+        {items.map((prize, i) => {
+          const baseAngle = (i / items.length) * Math.PI * 2;
+          const angle = baseAngle + t;
+          const sinAngle = Math.sin(angle);
+
+          if (sinAngle > 0) return null;
+
+          const x = Math.cos(angle) * rx;
+          const y = sinAngle * ry;
+          const depth = (sinAngle + 1) / 2;
+          const scale = 1 + depth * 0.55;
+          const opacity = 0.35 + depth * 0.65;
+
+          return (
+            <div
+              key={`back-${prize.id}-${i}`}
+              className="absolute will-change-transform"
+              style={{
+                transform: `translate(${x}px, ${y}px) scale(${scale})`,
+                opacity,
+              }}
+            >
+              <div className="relative w-8 h-8">
+                {prize.icon ? (
+                  <Image
+                    src={prize.icon}
+                    alt={prize.name}
+                    fill
+                    className="object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center text-sm">
+                    🎁
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Itens da FRENTE */}
+      <div className="relative w-0 h-0" style={{ zIndex: 40 }}>
+        {items.map((prize, i) => {
+          const baseAngle = (i / items.length) * Math.PI * 2;
+          const angle = baseAngle + t;
+          const sinAngle = Math.sin(angle);
+
+          if (sinAngle <= 0) return null;
+
+          const x = Math.cos(angle) * rx;
+          const y = sinAngle * ry;
+          const depth = (sinAngle + 1) / 2;
+          const scale = 1 + depth * 0.55;
+          const opacity = 0.35 + depth * 0.65;
+
+          return (
+            <div
+              key={`front-${prize.id}-${i}`}
+              className="absolute will-change-transform"
+              style={{
+                transform: `translate(${x}px, ${y}px) scale(${scale})`,
+                opacity,
+              }}
+            >
+              <div className={`relative w-8 h-8 flex flex-col transition-all duration-300 ${(special.includes(prize.id)) ? 'shadow-md shadow-yellow-500 border border-yellow-400 rounded-md scale-130' : ''} `}>
+                {prize.icon ? (
+                  <Image
+                    src={prize.icon}
+                    alt={prize.name}
+                    fill
+                    className="object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.35)]"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-white/20 flex items-center justify-center text-sm">
+                    🎁
+                  </div>
+                )}
+                <div className="w-full text-[7px] whitespace-nowrap truncate">
+                  {prize.name}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function PurchaseConfirmModal({
   chest,
@@ -34,6 +160,7 @@ export default function PurchaseConfirmModal({
   error = null,
   onRetry,
   onCloseToast,
+  prizes,
 }: Props) {
   const [isVisible, setIsVisible] = useState(false);
   const skin = getSkinByChest(chest);
@@ -47,8 +174,8 @@ export default function PurchaseConfirmModal({
   const confirmLabel = !canBuy
     ? "BLOQUEADO"
     : !canAfford
-    ? "SEM SALDO"
-    : "CONFIRMAR";
+      ? "SEM SALDO"
+      : "CONFIRMAR";
 
   const confirmDisabled = isLoading || !!error || !canBuy || !canAfford;
 
@@ -73,8 +200,6 @@ export default function PurchaseConfirmModal({
         />
 
         <div className="relative w-full flex flex-col items-center">
-
-          {/* Header usuário */}
           <div
             className={`absolute w-full -top-25 flex justify-center items-center text-sm z-100 transition-all pointer-events-none duration-200 ${
               isVisible
@@ -103,13 +228,13 @@ export default function PurchaseConfirmModal({
             </div>
           </div>
 
-          {/* Bau */}
-          <div className={`absolute -top-22 h-58 w-full flex items-center justify-center z-10 shrink-0 pointer-events-none transition-all duration-300 ${
+          <div
+            className={`absolute -top-22 h-58 w-full flex items-center justify-center z-10 shrink-0 pointer-events-none transition-all duration-300 ${
               isVisible
                 ? "scale-100 opacity-100 translate-y-0"
                 : "scale-80 opacity-0 translate-y-5"
             }`}
-            >
+          >
             <div className="relative z-10 w-full h-full flex items-center justify-center">
               {skin?.rivePath ? (
                 <div className="w-full h-full transform scale-125 translate-y-4">
@@ -138,6 +263,7 @@ export default function PurchaseConfirmModal({
               )}
             </div>
           </div>
+          {prizes && prizes.length > 0 && <PrizeOrbit prizes={prizes} />}
 
           <div
             className={`relative w-full max-w-sm rounded-[20px] overflow-hidden flex flex-col transition-all duration-300 ${
@@ -187,7 +313,6 @@ export default function PurchaseConfirmModal({
 
             <div className="absolute w-full h-full top-0 left-0 z-10 backdrop-blur-[3px] bg-black/40" />
 
-            {/* Espaco (container bau) */}
             <div className="relative h-45 w-full"></div>
 
             <div className="px-6 pb-6 pt-2 text-center space-y-4 relative z-20 flex flex-col items-center">
@@ -230,7 +355,7 @@ export default function PurchaseConfirmModal({
                     showCancelButton ? "" : "justify-center"
                   }`}
                 >
-                  {showCancelButton && (
+                  {/* {showCancelButton && (
                     <button
                       onClick={onClose}
                       disabled={isLoading}
@@ -253,13 +378,13 @@ export default function PurchaseConfirmModal({
                     >
                       Cancelar
                     </button>
-                  )}
+                  )} */}
 
                   <button
                     onClick={onConfirm}
                     disabled={confirmDisabled}
                     className={`
-                  relative w-full max-w-55 py-3.5 px-1 rounded-lg border-b-[5px] font-black uppercase tracking-tight text-xl text-white transition-all select-none
+                  relative w-full py-3.5 px-1 rounded-lg border-b-[5px] font-black uppercase tracking-tight text-xl text-white transition-all select-none
                   ${
                     !canAfford
                       ? "opacity-90 grayscale cursor-not-allowed"
@@ -302,6 +427,7 @@ export default function PurchaseConfirmModal({
           .animate-float {
             animation: float 4s ease-in-out infinite;
           }
+            
         `}</style>
       </div>
     </>
