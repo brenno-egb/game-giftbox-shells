@@ -2,12 +2,14 @@ import type { NextConfig } from "next";
 
 /** @type {import('next').NextConfig} */
 const JavaScriptObfuscator = require("webpack-obfuscator");
+
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
 
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -21,6 +23,7 @@ const nextConfig: NextConfig = {
   },
 
   productionBrowserSourceMaps: false,
+
   webpack: (config, { isServer, dev }) => {
     if (!isServer && !dev) {
       config.plugins.push(
