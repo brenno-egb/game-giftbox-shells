@@ -7,7 +7,7 @@ type Props = {
 
 export default function LoadingScreen({
   message,
-  backgroundImage = "/games/giftbox/background.avif",
+  backgroundImage = "https://static5.smr.vc/9b5ea38ee3c97cd1ba59b2-background.webp",
 }: Props) {
   return (
     <div className="fixed inset-0 z-999 flex flex-col justify-end pb-16 bg-[#162955] overflow-hidden font-sans">

@@ -29,7 +29,7 @@ export const TIMING = {
 export const DEFAULT_PRIZE_ICON = "/images/default-prize-icon.svg";
 
 export const DEFAULT_BACKGROUND = {
-  IMAGE: "/games/giftbox/background.avif",
+  IMAGE: "https://static5.smr.vc/9b5ea38ee3c97cd1ba59b2-background.webp",
   COLOR: "#07080c",
 } as const;
 
