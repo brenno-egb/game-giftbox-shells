@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Script from "next/script";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import ClientWrapper from "./ClientWrapper";
 
 export const metadata: Metadata = {
@@ -49,7 +48,6 @@ export default function RootLayout({
 
       <body style={{ margin: 0, padding: 0 }}>
         <ClientWrapper>{children}</ClientWrapper>
-        <SpeedInsights />
       </body>
     </html>
   );
